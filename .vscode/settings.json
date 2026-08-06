@@ -1,5 +1,4 @@
 {
-  "js/ts.tsdk.path": "node_modules/@typescript/native",
   "sonarlint.connectedMode.project": {
     "connectionId": "olivierzal",
     "projectKey": "OlivierZal_configs"
