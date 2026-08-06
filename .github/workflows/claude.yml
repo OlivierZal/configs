@@ -37,5 +37,8 @@ on:
     types: [created]
   issues:
     types: [opened]
-  workflow_call: {}
+  workflow_call:
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN:
+        required: true
 permissions: {}
