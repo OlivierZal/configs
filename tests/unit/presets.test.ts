@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 
 import { homeyApp } from '../../src/eslint/homey-app.ts'
 import { library } from '../../src/eslint/library.ts'
+import { mainLanguageOptions } from '../../src/eslint/shared.ts'
 
 // Throws instead of narrowing conditionally: the vitest rules ban
 // conditional logic inside tests.
@@ -160,8 +161,16 @@ const lintConfigJsFixture = async (
       // The `allowDefaultProject` globs resolve against
       // `tsconfigRootDir`, which defaults to the node process cwd —
       // the repo root for a consumer's lint run, pinned to the
-      // fixture here.
-      { languageOptions: { parserOptions: { tsconfigRootDir: cwd } } },
+      // fixture here. The spread restates the preset's parser options
+      // rather than leaning on flat-config merge semantics.
+      {
+        languageOptions: {
+          parserOptions: {
+            ...mainLanguageOptions.parserOptions,
+            tsconfigRootDir: cwd,
+          },
+        },
+      },
     ],
     overrideConfigFile: true,
   })

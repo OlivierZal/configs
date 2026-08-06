@@ -2,6 +2,7 @@
 // differently per family (Homey webview constraints, wire-protocol
 // vocabularies) live in the presets; per-repo verdicts (documented
 // `'off'` ledgers, ignores) stay in each consumer's overlay.
+import type { Linter } from 'eslint'
 import { type Config, defineConfig } from 'eslint/config'
 import { jsdoc } from 'eslint-plugin-jsdoc'
 import { configs as packageJsonConfigs } from 'eslint-plugin-package-json'
@@ -23,7 +24,9 @@ export interface TemplateExpressionAllowEntry {
   readonly name: string
 }
 
-export const mainLanguageOptions: NonNullable<Config['languageOptions']> = {
+// Typed more narrowly than the `Config` slot (`Record<string,
+// unknown>`) so consumers can spread `parserOptions`.
+export const mainLanguageOptions: { parserOptions: Linter.ParserOptions } = {
   parserOptions: {
     // Root `*.config.js` files (typedoc) live outside every tsconfig;
     // the default project types them so the type-aware rules still
