@@ -1,10 +1,12 @@
 import { readFile } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
 
-import { Linter } from 'eslint'
+import { ESLint, Linter } from 'eslint'
 import { describe, expect, it } from 'vitest'
 
 import { homeyApp } from '../../src/eslint/homey-app.ts'
 import { library } from '../../src/eslint/library.ts'
+import { mainLanguageOptions } from '../../src/eslint/shared.ts'
 
 // Throws instead of narrowing conditionally: the vitest rules ban
 // conditional logic inside tests.
@@ -139,6 +141,66 @@ describe(library, () => {
       ),
     ).toMatchSnapshot()
   })
+})
+
+// A real end-to-end run over an on-disk fixture: nothing short of it
+// proves the whole `*.config.js` chain (glob match, typed parser,
+// default-project type info). The invalid twin is the mutation guard —
+// a broken link in that chain reports zero messages and fails here.
+const lintConfigJsFixture = async (
+  preset: typeof appPreset,
+  fixture: string,
+): Promise<(string | null)[]> => {
+  const cwd = fileURLToPath(
+    new URL(`../fixtures/config-js/${fixture}/`, import.meta.url),
+  )
+  const eslint = new ESLint({
+    cwd,
+    overrideConfig: [
+      ...preset,
+      // The `allowDefaultProject` globs resolve against
+      // `tsconfigRootDir`, which defaults to the node process cwd —
+      // the repo root for a consumer's lint run, pinned to the
+      // fixture here. The spread restates the preset's parser options
+      // rather than leaning on flat-config merge semantics.
+      {
+        languageOptions: {
+          parserOptions: {
+            ...mainLanguageOptions.parserOptions,
+            tsconfigRootDir: cwd,
+          },
+        },
+      },
+    ],
+    overrideConfigFile: true,
+  })
+  const results = await eslint.lintFiles(['typedoc.config.js'])
+  return results.flatMap(({ messages }) => messages.map(({ ruleId }) => ruleId))
+}
+
+describe.each([
+  { preset: appPreset, presetName: 'homeyApp' },
+  { preset: libraryPreset, presetName: 'library' },
+])('root js config linting via $presetName', ({ preset }) => {
+  it(
+    'should type-lint a root js config through the default project',
+    { timeout: 60_000 },
+    async () => {
+      await expect(lintConfigJsFixture(preset, 'invalid')).resolves.toContain(
+        '@typescript-eslint/no-floating-promises',
+      )
+    },
+  )
+
+  it(
+    'should keep a conforming js config clean',
+    { timeout: 60_000 },
+    async () => {
+      await expect(lintConfigJsFixture(preset, 'valid')).resolves.toStrictEqual(
+        [],
+      )
+    },
+  )
 })
 
 describe('tsconfig bases', () => {

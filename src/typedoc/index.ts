@@ -6,6 +6,7 @@ export interface TypedocBaseOptions {
   readonly hostedBaseUrl: string
   readonly name: string
   readonly navigationLinks: Readonly<Record<string, string>>
+  readonly entryPoints?: readonly string[]
   readonly intentionallyNotExported?: readonly string[]
 }
 
@@ -13,7 +14,6 @@ const staticTypedocOptions: Record<string, unknown> = {
   cacheBust: true,
   categorizeByGroup: false,
   cleanOutputDir: true,
-  entryPoints: ['src/index.ts'],
   excludeInternal: true,
   excludePrivate: true,
   excludeProtected: true,
@@ -65,6 +65,9 @@ const staticTypedocOptions: Record<string, unknown> = {
 
 export const typedocBase = ({
   categoryOrder,
+  // The single-barrel library shape; multi-entry packages (one entry
+  // per subpath export) list theirs instead.
+  entryPoints = ['src/index.ts'],
   hostedBaseUrl,
   intentionallyNotExported = [],
   name,
@@ -72,6 +75,7 @@ export const typedocBase = ({
 }: TypedocBaseOptions): Record<string, unknown> => ({
   ...staticTypedocOptions,
   categoryOrder: [...categoryOrder],
+  entryPoints: [...entryPoints],
   hostedBaseUrl,
   intentionallyNotExported: [...intentionallyNotExported],
   name,

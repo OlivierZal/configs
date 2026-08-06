@@ -14,10 +14,12 @@ import unicorn from 'eslint-plugin-unicorn'
 
 import {
   type TemplateExpressionAllowEntry,
+  configJsBlock,
   configTsBlock,
   jsdocBlock,
   jsonBlock,
   linterOptionsBlock,
+  mainLanguageOptions,
   markdownBlock,
   packageJsonBlock,
   perfectionistSettings,
@@ -239,7 +241,7 @@ const appMainRuleOptions = (
 ): Parameters<typeof sharedMainRules>[0] => ({
   extraneous: {
     devDependencies: [
-      '*.config.ts',
+      '*.config.{js,ts}',
       'scripts/**',
       'tests/**',
       ...bundledSourceGlobs,
@@ -270,13 +272,8 @@ const appMainBlock = ({
         // above.
         prettier,
       ],
-      files: ['**/*.{ts,mts}'],
-      languageOptions: {
-        parserOptions: {
-          projectService: true,
-          warnOnUnsupportedTypeScriptVersion: false,
-        },
-      },
+      files: ['**/*.{ts,mts}', '*.config.js'],
+      languageOptions: mainLanguageOptions,
       plugins: { '@stylistic': stylistic, perfectionist },
       rules: {
         ...sharedMainRules(
@@ -335,7 +332,8 @@ export const homeyApp = ({
         'import-x/prefer-default-export': ['error', { target: 'any' }],
       },
     },
-    configTsBlock(['**/*.config.ts']),
+    configTsBlock(['*.config.{js,ts}']),
+    configJsBlock,
     htmlBlock,
     jsonBlock(['app.json', 'locales/*.json']),
     cssBlock,

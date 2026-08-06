@@ -19,6 +19,7 @@ export { homeyApp } from './homey-app.ts'
 export { library } from './library.ts'
 export {
   changelogBlock,
+  configJsBlock,
   configTsBlock,
   jsdocBlock,
   jsonBlock,

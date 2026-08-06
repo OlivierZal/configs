@@ -2,6 +2,7 @@
 // differently per family (Homey webview constraints, wire-protocol
 // vocabularies) live in the presets; per-repo verdicts (documented
 // `'off'` ledgers, ignores) stay in each consumer's overlay.
+import type { Linter } from 'eslint'
 import { type Config, defineConfig } from 'eslint/config'
 import { jsdoc } from 'eslint-plugin-jsdoc'
 import { configs as packageJsonConfigs } from 'eslint-plugin-package-json'
@@ -23,9 +24,14 @@ export interface TemplateExpressionAllowEntry {
   readonly name: string
 }
 
-export const mainLanguageOptions: NonNullable<Config['languageOptions']> = {
+// Typed more narrowly than the `Config` slot (`Record<string,
+// unknown>`) so consumers can spread `parserOptions`.
+export const mainLanguageOptions: { parserOptions: Linter.ParserOptions } = {
   parserOptions: {
-    projectService: true,
+    // Root `*.config.js` files (typedoc) live outside every tsconfig;
+    // the default project types them so the type-aware rules still
+    // apply. (`allowDefaultProject` accepts no `**` globs.)
+    projectService: { allowDefaultProject: ['*.config.js'] },
     warnOnUnsupportedTypeScriptVersion: false,
   },
 }
@@ -673,6 +679,19 @@ export const configTsBlock = (files: string[]): Config => ({
     'import-x/prefer-default-export': ['error', { target: 'any' }],
   },
 })
+
+// The JS config files (`@ts-check` + JSDoc types) keep the full typed
+// rule set; the only rules stepping aside are those whose fix JS
+// cannot spell: a return-type annotation is TypeScript-only syntax,
+// and a JSDoc `@type` is semantic exactly because it is a block
+// comment — a line comment carries no type.
+export const configJsBlock: Config = {
+  files: ['*.config.js'],
+  rules: {
+    '@typescript-eslint/explicit-function-return-type': 'off',
+    'unicorn/single-line-block-comment-style': 'off',
+  },
+}
 
 export const jsonBlock = (extraIgnores: readonly string[] = []): Config[] =>
   defineConfig([
