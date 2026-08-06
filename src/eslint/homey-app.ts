@@ -77,11 +77,17 @@ const lifecycleHooks = [
 const lifecycleGroupName = (hook: string): string =>
   `homey-lifecycle-${hook.slice(2).toLowerCase()}`
 
-// The webview runtime floor: es2023 array methods are the ceiling — no
-// `Object.groupBy`/`Map.groupBy`, no iterator helpers. The tsconfig
-// `lib` cannot express this (one project, two runtimes), so the
-// constraint lives here.
-const webviewFloorBlock = (files: readonly string[]): Config => ({
+/**
+ * The webview runtime floor as a standalone block: es2023 array methods
+ * are the ceiling — no `Object.groupBy`/`Map.groupBy`, no iterator
+ * helpers, no `v` regex flag. The tsconfig `lib` cannot express this
+ * (one project, two runtimes), so the constraint lives here. Exported
+ * for consumers that need the floor without the full app preset (e.g. a
+ * library shipping webview-bundled sources).
+ * @param files - Globs of the sources that run in the phone webview.
+ * @returns The config block carrying the floor.
+ */
+export const webviewFloorBlock = (files: readonly string[]): Config => ({
   files: [...files],
   rules: {
     'no-restricted-properties': [
