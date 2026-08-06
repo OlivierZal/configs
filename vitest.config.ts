@@ -4,9 +4,14 @@ const config: ViteUserConfig = defineConfig({
   test: {
     clearMocks: true,
     coverage: {
-      exclude: ['src/prettier/**', 'src/typedoc/**', 'src/vitest/**'],
       include: ['src/**/*.ts'],
       reporter: ['text', 'lcov'],
+      thresholds: {
+        branches: 100,
+        functions: 100,
+        lines: 100,
+        statements: 100,
+      },
     },
     include: ['tests/**/*.test.ts'],
   },
