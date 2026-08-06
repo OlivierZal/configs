@@ -1,0 +1,75 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`export contracts > should build a typedoc config around the consumer identity 1`] = `
+{
+  "cacheBust": true,
+  "categorizeByGroup": false,
+  "categoryOrder": [
+    "One",
+    "Two",
+  ],
+  "cleanOutputDir": true,
+  "entryPoints": [
+    "src/index.ts",
+  ],
+  "excludeInternal": true,
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "headings": {
+    "document": false,
+    "readme": false,
+  },
+  "hideGenerator": true,
+  "highlightLanguages": [
+    "ini",
+    "javascript",
+    "shell",
+    "typescript",
+  ],
+  "hostedBaseUrl": "https://example.invalid/docs/",
+  "includeVersion": true,
+  "intentionallyNotExported": [
+    "Internal",
+  ],
+  "markdownLinkExternal": true,
+  "name": "Example",
+  "navigationLinks": {
+    "GitHub": "https://example.invalid",
+  },
+  "out": "docs",
+  "plugin": [
+    "typedoc-plugin-mdn-links",
+    "typedoc-plugin-coverage",
+  ],
+  "readme": "README.md",
+  "requiredToBeDocumented": [
+    "Accessor",
+    "Class",
+    "Constructor",
+    "Enum",
+    "EnumMember",
+    "Function",
+    "Interface",
+    "Method",
+    "Module",
+    "Namespace",
+    "Reference",
+    "TypeAlias",
+    "Variable",
+  ],
+  "searchInComments": true,
+  "searchInDocuments": true,
+  "sourceLinkExternal": true,
+  "treatValidationWarningsAsErrors": true,
+  "tsconfig": "tsconfig.build.json",
+  "useFirstParagraphOfCommentAsSummary": true,
+  "validation": {
+    "invalidLink": true,
+    "invalidPath": true,
+    "notDocumented": true,
+    "notExported": true,
+    "rewrittenLink": true,
+    "unusedMergeModuleWith": true,
+  },
+}
+`;

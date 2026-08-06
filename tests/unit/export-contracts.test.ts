@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { typedocBase } from '../../src/typedoc/index.ts'
-import { swcPlugin } from '../../src/vitest/swc.ts'
+import { swcOptions, swcPlugin } from '../../src/vitest/swc.ts'
 import prettierConfig from '../../src/prettier/index.ts'
 
 // The eslint presets are exercised by real lint runs; these three
@@ -19,23 +19,34 @@ describe('export contracts', () => {
 
   it('should build a typedoc config around the consumer identity', () => {
     const config = typedocBase({
-      categoryOrder: ['One'],
+      categoryOrder: ['One', 'Two'],
       hostedBaseUrl: 'https://example.invalid/docs/',
+      intentionallyNotExported: ['Internal'],
       name: 'Example',
       navigationLinks: { GitHub: 'https://example.invalid' },
     })
 
-    expect(config).toMatchObject({
-      entryPoints: ['src/index.ts'],
-      hostedBaseUrl: 'https://example.invalid/docs/',
-      name: 'Example',
-      out: 'docs',
-      treatValidationWarningsAsErrors: true,
+    // Identity fields forward verbatim…
+    expect(config.categoryOrder).toStrictEqual(['One', 'Two'])
+    expect(config.hostedBaseUrl).toBe('https://example.invalid/docs/')
+    expect(config.intentionallyNotExported).toStrictEqual(['Internal'])
+    expect(config.name).toBe('Example')
+    expect(config.navigationLinks).toStrictEqual({
+      GitHub: 'https://example.invalid',
     })
-    expect(config.intentionallyNotExported).toStrictEqual([])
+    // …and the WHOLE assembled shape is pinned: any drift in the static
+    // defaults must show up as an explicit snapshot update.
+    expect(config).toMatchSnapshot()
   })
 
   it('should carry the decorator transform in the swc fragment', () => {
+    expect(swcOptions).toStrictEqual({
+      jsc: {
+        parser: { decorators: true, syntax: 'typescript' },
+        target: 'es2024',
+        transform: { decoratorVersion: '2022-03' },
+      },
+    })
     expect(swcPlugin.name).toContain('swc')
   })
 })
