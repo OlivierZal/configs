@@ -28,6 +28,7 @@ describe('export contracts', () => {
 
     // Identity fields forward verbatim…
     expect(config.categoryOrder).toStrictEqual(['One', 'Two'])
+    expect(config.entryPoints).toStrictEqual(['src/index.ts'])
     expect(config.hostedBaseUrl).toBe('https://example.invalid/docs/')
     expect(config.intentionallyNotExported).toStrictEqual(['Internal'])
     expect(config.name).toBe('Example')
@@ -37,6 +38,21 @@ describe('export contracts', () => {
     // …and the WHOLE assembled shape is pinned: any drift in the static
     // defaults must show up as an explicit snapshot update.
     expect(config).toMatchSnapshot()
+  })
+
+  it('should forward custom entry points for multi-entry packages', () => {
+    const config = typedocBase({
+      categoryOrder: [],
+      entryPoints: ['src/index.ts', 'src/webview/index.ts'],
+      hostedBaseUrl: 'https://example.invalid/docs/',
+      name: 'Example',
+      navigationLinks: {},
+    })
+
+    expect(config.entryPoints).toStrictEqual([
+      'src/index.ts',
+      'src/webview/index.ts',
+    ])
   })
 
   it('should carry the decorator transform in the swc fragment', () => {

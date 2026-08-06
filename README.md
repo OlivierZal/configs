@@ -55,6 +55,12 @@ evaluations and version bumps happen here once, consumers only bump
 their exact pin. Per-repo ignores and documented rule ledgers stay in
 each consumer — they are verdicts, not shared policy.
 
+Root `*.config.js` files (typedoc) are linted too, with the full
+type-aware rule set: they live outside every tsconfig, so the presets
+type them through the project service's default project. This assumes
+eslint runs from the repo root (the `allowDefaultProject` glob
+resolves against it).
+
 ### prettier
 
 ```jsonc title="package.json"
@@ -76,12 +82,16 @@ resolve relative to the base file, which lives in `node_modules`.
 ```js title="typedoc.config.js"
 import { typedocBase } from '@olivierzal/configs/typedoc'
 
-export default typedocBase({
+const config = typedocBase({
   categoryOrder: ['API Clients', 'Facades'],
+  // Defaults to ['src/index.ts']; multi-entry packages list theirs.
+  entryPoints: ['src/index.ts', 'src/webview/index.ts'],
   hostedBaseUrl: 'https://olivierzal.github.io/<repo>/',
   name: '<Package> for Node.js',
   navigationLinks: { GitHub: 'https://github.com/OlivierZal/<repo>' },
 })
+
+export default config
 ```
 
 ### vitest (decorator transform)

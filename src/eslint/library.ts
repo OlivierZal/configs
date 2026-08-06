@@ -12,6 +12,7 @@ import unicorn from 'eslint-plugin-unicorn'
 
 import {
   changelogBlock,
+  configJsBlock,
   configTsBlock,
   jsdocBlock,
   jsonBlock,
@@ -37,7 +38,7 @@ const libraryMainRuleOptions = (
   wireNamingEntries: NonNullable<LibraryOptions['wireNamingEntries']>,
 ): Parameters<typeof sharedMainRules>[0] => ({
   extraneous: {
-    devDependencies: ['*.config.ts', 'tests/**'],
+    devDependencies: ['*.config.{js,ts}', 'tests/**'],
     includeTypes: true,
   },
   naming: {
@@ -63,7 +64,7 @@ const libraryMainBlock = ({
         // Last: it neutralizes formatting rules from the presets above.
         prettier,
       ],
-      files: ['**/*.ts'],
+      files: ['**/*.ts', '*.config.js'],
       languageOptions: mainLanguageOptions,
       plugins: { '@stylistic': stylistic, perfectionist },
       rules: {
@@ -146,7 +147,8 @@ export const library = (options: LibraryOptions = {}): Config[] =>
     linterOptionsBlock,
     jsdocBlock(['src/**/*.ts']),
     ...libraryMainBlock(options),
-    configTsBlock(['*.config.ts']),
+    configTsBlock(['*.config.{js,ts}']),
+    configJsBlock,
     jsonBlock(),
     markdownBlock,
     changelogBlock,
