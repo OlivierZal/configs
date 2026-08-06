@@ -1,0 +1,15 @@
+# Dogfoods this repo's own reusable audit.
+jobs:
+  audit:
+    permissions:
+      contents: read
+      packages: read
+    uses: ./.github/workflows/reusable-audit.yml
+name: Audit
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch: {}
+permissions: {}

@@ -1,0 +1,4 @@
+{
+  "compilerOptions": { "rootDir": "." },
+  "extends": "@olivierzal/configs/tsconfig/app"
+}

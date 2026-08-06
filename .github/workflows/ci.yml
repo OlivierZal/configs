@@ -1,0 +1,17 @@
+# Dogfoods this repo's own reusable CI.
+jobs:
+  ci:
+    permissions:
+      contents: read
+      packages: read
+    secrets: inherit
+    uses: ./.github/workflows/reusable-ci.yml
+    with:
+      run-lint-package: true
+name: CI
+on:
+  merge_group: {}
+  pull_request: {}
+  push:
+    branches: [main]
+permissions: {}
