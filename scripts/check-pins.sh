@@ -5,6 +5,11 @@
 # these comments but leaves an already-wrong one untouched, and skips
 # the update entirely when the version is not the end of the line.
 #
+# An upstream that ships commits its tags do not name is annotated
+# `# untagged: <reason>` instead. The exemption is checked like every
+# other claim: declaring it on a commit some tag does reach fails, so
+# it states a fact rather than opting out of one.
+#
 # References to this package's own repo carry a second obligation: the
 # tag must match the `@olivierzal/configs` npm pin, because one version
 # covers both delivery channels.
@@ -59,6 +64,22 @@ sha_for_tag() {
   printf '%s' "$sha"
 }
 
+# The mirror of `sha_for_tag`: names a tag reaching the commit, which is
+# what turns an `untagged:` claim into something falsifiable.
+tag_for_sha() {
+  local repo=$1 sha=$2 refs
+  refs=$(refs_for "$repo")
+  awk -v sha="$sha" '
+    $1 == sha && $2 ~ /^refs\/tags\// {
+      tag = $2
+      sub(/^refs\/tags\//, "", tag)
+      sub(/\^\{\}$/, "", tag)
+      print tag
+      exit
+    }
+  ' <<<"$refs"
+}
+
 npm_pin=''
 if [[ -f $root/package.json ]]; then
   npm_pin=$(
@@ -97,7 +118,26 @@ for file in "${files[@]}"; do
     where="$file:$number"
 
     if [[ -z $comment ]]; then
-      fail "$where: $repo is pinned to ${ref:0:8} with no version comment; add \`# <tag>\`"
+      fail "$where: $repo is pinned to ${ref:0:8} with no version comment; add \`# <tag>\` or \`# untagged: <reason>\`"
+      continue
+    fi
+
+    if [[ $comment =~ ^untagged:[[:space:]]*(.*)$ ]]; then
+      reason=${BASH_REMATCH[1]}
+      if [[ -z $reason ]]; then
+        fail "$where: \`untagged:\` needs a reason naming what the pinned commit carries that no tag does"
+        continue
+      fi
+      # This repo tags every release, so an untagged ref here would slip
+      # past the two-channel obligation below instead of stating a fact.
+      if [[ $repo == "$self_repo" ]]; then
+        fail "$where: $self_repo pins name a release tag; \`untagged:\` would bypass the npm-pin agreement"
+        continue
+      fi
+      tag=$(tag_for_sha "$repo" "$ref")
+      if [[ -n $tag ]]; then
+        fail "$where: $repo ${ref:0:8} carries the tag \`$tag\`; name it instead of declaring the pin untagged"
+      fi
       continue
     fi
     # Dependabot only rewrites a comment whose version ends the line,

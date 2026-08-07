@@ -6,6 +6,9 @@ jobs:
       - uses: acme/action@2222222222222222222222222222222222222222 # v1.0.0
       # Lightweight tag: the ref names the commit directly.
       - uses: acme/light@4444444444444444444444444444444444444444 # v2.0.0
+      # A commit no tag reaches: the reason stands in for the version,
+      # and the check proves the upstream really has no tag for it.
+      - uses: acme/untagged@9999999999999999999999999999999999999999 # untagged: master carries a fix no release names yet
       # Local and floating references are out of scope.
       - uses: ./.github/actions/local
       # Prose, not references: a commented-out step and a `run:` body
