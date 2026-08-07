@@ -15,7 +15,7 @@ export {
   typeLikeSortOptions,
   typeSortOptions,
 } from './helpers.ts'
-export { homeyApp } from './homey-app.ts'
+export { homeyApp, webviewFloorBlock } from './homey-app.ts'
 export { library } from './library.ts'
 export {
   changelogBlock,

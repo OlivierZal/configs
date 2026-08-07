@@ -70,10 +70,13 @@ const homeyNamingEntries = [
     format: null,
     selector: 'objectLiteralProperty',
   },
-  // Homey capability ids are platform-imposed snake_case
-  // (`measure_temperature`, `fan_speed`); single-segment ids (`onoff`)
-  // already pass the strict camelCase core, and dotted sub-capability
-  // keys ride the requiresQuotes skip.
+  // Exempts a SHAPE rather than a single origin: multi-segment
+  // snake_case keys. Two realities impose it on a Homey app, neither
+  // ours to rename — capability ids (`measure_temperature`,
+  // `fan_speed`) and the snake_case wire vocabularies devices speak
+  // (`on_off`, `derog_time`). Single-segment ids (`onoff`) already
+  // pass the strict camelCase core, and dotted sub-capability keys
+  // ride the requiresQuotes skip.
   {
     filter: { match: true, regex: '^[a-z0-9]+(_[a-z0-9]+)+$' },
     format: null,
@@ -132,7 +135,7 @@ export const webviewFloorBlock = (files: readonly string[]): Config => ({
         message:
           'Iterator helpers are 2025-era: old iOS webview engines lack them (CLAUDE.md webview floor). Spread into an array first.',
         selector:
-          "CallExpression[callee.type='MemberExpression'][callee.property.name=/^(drop|every|filter|find|flatMap|forEach|map|reduce|some|take|toArray)$/][callee.object.type='CallExpression'][callee.object.callee.type='MemberExpression'][callee.object.callee.property.name=/^(entries|keys|values)$/][callee.object.callee.object.name!='Object']",
+          "CallExpression[callee.type='MemberExpression'][callee.property.name=/^(drop|every|filter|find|flatMap|forEach|map|reduce|some|take|toArray)$/][callee.object.type='CallExpression'][callee.object.callee.type='MemberExpression'][callee.object.callee.property.name=/^(entries|keys|matchAll|values)$/][callee.object.callee.object.name!='Object']",
       },
     ],
     // The global config requires the `v` regex flag; the floor caps
