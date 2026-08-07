@@ -83,8 +83,19 @@ resolves against it).
 ```
 
 Bases: `tsconfig/app`, `tsconfig/library`, plus `-build` variants.
-`outDir` stays consumer-side on purpose: paths in an extended tsconfig
-resolve relative to the base file, which lives in `node_modules`.
+Path-bearing options (`outDir`, `rootDir`, `include`) stay
+consumer-side on purpose: paths in an extended tsconfig resolve
+relative to the base file, which lives in `node_modules` — a base
+carrying them resolves an empty file list. The `-build` bases
+therefore hold no path options; the consumer declares its own:
+
+```jsonc title="tsconfig.build.json"
+{
+  "compilerOptions": { "rootDir": "src" },
+  "extends": "@olivierzal/configs/tsconfig/library-build",
+  "include": ["src"],
+}
+```
 
 ### typedoc
 
