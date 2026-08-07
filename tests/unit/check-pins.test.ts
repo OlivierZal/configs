@@ -22,15 +22,12 @@ const isSpawnError = (error: unknown): error is SpawnSyncReturns<string> =>
 // The fixtures drive the script through its `PIN_CHECK_REFS` seam, so
 // the suite never reaches the network: the fake ref table names both an
 // annotated tag (commit under `^{}`) and a lightweight one.
-const check = (fixture: string): CheckResult => {
+const check = (fixture: string, refs = 'refs.tsv'): CheckResult => {
   try {
     return {
       output: execFileSync(script, [path.join(fixturesDir, fixture)], {
         encoding: 'utf8',
-        env: {
-          ...process.env,
-          PIN_CHECK_REFS: path.join(fixturesDir, 'refs.tsv'),
-        },
+        env: { ...process.env, PIN_CHECK_REFS: path.join(fixturesDir, refs) },
       }),
       status: 0,
     }
@@ -84,5 +81,20 @@ describe('the pin check', () => {
 
     expect(status).toBe(1)
     expect(output).toContain(expected)
+  })
+
+  // An upstream that cannot be read is not an upstream without tags.
+  // Reporting them alike would let every `untagged:` claim through on
+  // the day a lookup fails, which is when the check matters most — so
+  // the same fixture passes when the refs answer and fails when they
+  // cannot be read at all.
+  it.each([
+    { expected: 'checked 1 pinned reference(s)', refs: 'refs.tsv', status: 0 },
+    { expected: 'stands unverified', refs: 'unreachable.tsv', status: 1 },
+  ])('fails closed on refs $refs', ({ expected, refs, status }) => {
+    const result = check('untagged-only', refs)
+
+    expect(result.status).toBe(status)
+    expect(result.output).toContain(expected)
   })
 })

@@ -1,0 +1,8 @@
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: acme/untagged@9999999999999999999999999999999999999999 # untagged: master carries a fix no release names yet
+name: CI
+on:
+  push: {}
