@@ -14,7 +14,12 @@ jobs:
         with:
           fetch-depth: 1
           persist-credentials: false
+      # Audit the real CI surface only: `tests/fixtures/` holds workflow
+      # files that exist to be judged by this repo's own pin check, and
+      # their deliberately fake actions have no upstream to resolve.
       - uses: zizmorcore/zizmor-action@6fc4b006235f201fdab3722e17240ab420d580e5 # v0.6.1
+        with:
+          inputs: .github/
     timeout-minutes: 15
 name: Zizmor
 on:
