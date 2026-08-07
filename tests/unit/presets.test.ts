@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
+import type { Config } from 'eslint/config'
 import { ESLint, Linter } from 'eslint'
 import { describe, expect, it } from 'vitest'
 
@@ -51,6 +52,24 @@ const libraryPreset = library({
     },
   ],
 })
+
+const libraryWith = (
+  wireNamingEntries: readonly unknown[],
+  wireNamingFiles: readonly string[] = [],
+): Config[] => library({ wireNamingEntries, wireNamingFiles })
+
+const homeyAppWith = (
+  wireNamingEntries: readonly unknown[],
+  wireNamingFiles: readonly string[] = [],
+): Config[] =>
+  homeyApp({
+    bundledSourceGlobs: ['settings/**'],
+    defaultExportFiles: ['api.mts', 'app.mts'],
+    jsdocFiles: ['lib/**/*.mts'],
+    webviewFloorFiles: ['settings/**/*.mts'],
+    wireNamingEntries,
+    wireNamingFiles,
+  })
 
 const floorEntry = appPreset.find(
   (entry) =>
@@ -281,6 +300,58 @@ describe('strict naming core', () => {
       ).resolves.toContain(namingRule)
       await expect(
         lintFixture(preset, 'naming', 'underscore-property.ts'),
+      ).resolves.toContain(namingRule)
+    },
+  )
+})
+
+// Both fixtures carry the same `Legacy_key`: one stands where the wire
+// vocabulary is declared, the other anywhere else. Narrowing must move
+// the second from accepted to rejected, or the option is decorative.
+const wireEntries = [
+  {
+    filter: { match: true, regex: '^Legacy_key$' },
+    format: null,
+    selector: 'objectLiteralProperty',
+  },
+]
+
+describe('scoped wire vocabulary', () => {
+  it.each([
+    { build: homeyAppWith, presetName: 'homeyApp' },
+    { build: libraryWith, presetName: 'library' },
+  ])(
+    'should leave $presetName untouched when no files are named',
+    ({ build }) => {
+      const repoWide = build(wireEntries)
+
+      expect(build(wireEntries, [])).toHaveLength(repoWide.length)
+      expect(build(wireEntries, ['wire-property.ts'])).toHaveLength(
+        repoWide.length + 1,
+      )
+    },
+  )
+
+  it.each([
+    { build: homeyAppWith, presetName: 'homeyApp' },
+    { build: libraryWith, presetName: 'library' },
+  ])(
+    'should confine the $presetName wire vocabulary to its own files',
+    { timeout: 60_000 },
+    async ({ build }) => {
+      const repoWide = build(wireEntries)
+      const scoped = build(wireEntries, ['wire-property.ts'])
+
+      await expect(
+        lintFixture(repoWide, 'naming', 'strict-property.ts'),
+      ).resolves.not.toContain(namingRule)
+
+      await expect(
+        lintFixture(scoped, 'naming', 'wire-property.ts'),
+      ).resolves.not.toContain(namingRule)
+
+      await expect(
+        lintFixture(scoped, 'naming', 'strict-property.ts'),
       ).resolves.toContain(namingRule)
     },
   )

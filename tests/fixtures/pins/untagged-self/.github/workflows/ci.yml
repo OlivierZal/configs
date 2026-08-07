@@ -1,0 +1,6 @@
+jobs:
+  ci:
+    uses: OlivierZal/configs/.github/workflows/reusable-ci.yml@7777777777777777777777777777777777777777 # untagged: main between releases
+name: CI
+on:
+  push: {}

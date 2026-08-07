@@ -5,6 +5,11 @@
 # these comments but leaves an already-wrong one untouched, and skips
 # the update entirely when the version is not the end of the line.
 #
+# An upstream that ships commits its tags do not name is annotated
+# `# untagged: <reason>` instead. The exemption is checked like every
+# other claim: declaring it on a commit some tag does reach fails, so
+# it states a fact rather than opting out of one.
+#
 # References to this package's own repo carry a second obligation: the
 # tag must match the `@olivierzal/configs` npm pin, because one version
 # covers both delivery channels.
@@ -31,16 +36,23 @@ cache_dir=$(mktemp -d)
 readonly cache_dir
 trap 'rm -rf "$cache_dir"' EXIT
 
-# One lookup per upstream repo, however many pins reference it.
+# One lookup per upstream repo, however many pins reference it. A
+# lookup that never answered is not an upstream without tags: reporting
+# them alike would let an unverifiable `untagged:` claim through, so the
+# failure propagates and every caller fails closed on it.
 refs_for() {
   local repo=$1 cache
   cache="$cache_dir/${repo//\//__}"
   if [[ ! -f $cache ]]; then
     if [[ -n ${PIN_CHECK_REFS:-} ]]; then
-      awk -F'\t' -v repo="$repo" \
-        '$1 == repo { print $3 "\t" $2 }' "$PIN_CHECK_REFS" >"$cache"
-    else
-      git ls-remote --tags "https://github.com/$repo" >"$cache" 2>/dev/null || true
+      if ! awk -F'\t' -v repo="$repo" \
+        '$1 == repo { print $3 "\t" $2 }' "$PIN_CHECK_REFS" >"$cache" 2>/dev/null; then
+        rm -f "$cache"
+        return 1
+      fi
+    elif ! git ls-remote --tags "https://github.com/$repo" >"$cache" 2>/dev/null; then
+      rm -f "$cache"
+      return 1
     fi
   fi
   cat "$cache"
@@ -51,12 +63,28 @@ refs_for() {
 # always compared against a commit.
 sha_for_tag() {
   local repo=$1 tag=$2 refs sha
-  refs=$(refs_for "$repo")
+  refs=$(refs_for "$repo") || return 1
   sha=$(awk -v ref="refs/tags/$tag^{}" '$2 == ref { print $1 }' <<<"$refs")
   if [[ -z $sha ]]; then
     sha=$(awk -v ref="refs/tags/$tag" '$2 == ref { print $1 }' <<<"$refs")
   fi
   printf '%s' "$sha"
+}
+
+# The mirror of `sha_for_tag`: names a tag reaching the commit, which is
+# what turns an `untagged:` claim into something falsifiable.
+tag_for_sha() {
+  local repo=$1 sha=$2 refs
+  refs=$(refs_for "$repo") || return 1
+  awk -v sha="$sha" '
+    $1 == sha && $2 ~ /^refs\/tags\// {
+      tag = $2
+      sub(/^refs\/tags\//, "", tag)
+      sub(/\^\{\}$/, "", tag)
+      print tag
+      exit
+    }
+  ' <<<"$refs"
 }
 
 npm_pin=''
@@ -97,7 +125,34 @@ for file in "${files[@]}"; do
     where="$file:$number"
 
     if [[ -z $comment ]]; then
-      fail "$where: $repo is pinned to ${ref:0:8} with no version comment; add \`# <tag>\`"
+      # `untagged:` is closed to this repo, so it is not offered here.
+      if [[ $repo == "$self_repo" ]]; then
+        fail "$where: $repo is pinned to ${ref:0:8} with no version comment; add \`# <tag>\`"
+      else
+        fail "$where: $repo is pinned to ${ref:0:8} with no version comment; add \`# <tag>\` or \`# untagged: <reason>\`"
+      fi
+      continue
+    fi
+
+    if [[ $comment =~ ^untagged:[[:space:]]*(.*)$ ]]; then
+      reason=${BASH_REMATCH[1]}
+      if [[ -z $reason ]]; then
+        fail "$where: \`untagged:\` needs a reason naming what the pinned commit carries that no tag does"
+        continue
+      fi
+      # This repo tags every release, so an untagged ref here would slip
+      # past the two-channel obligation below instead of stating a fact.
+      if [[ $repo == "$self_repo" ]]; then
+        fail "$where: $self_repo pins name a release tag; \`untagged:\` would bypass the npm-pin agreement"
+        continue
+      fi
+      if ! tag=$(tag_for_sha "$repo" "$ref"); then
+        fail "$where: could not read $repo's tags, so the \`untagged:\` claim stands unverified"
+        continue
+      fi
+      if [[ -n $tag ]]; then
+        fail "$where: $repo ${ref:0:8} carries the tag \`$tag\`; name it instead of declaring the pin untagged"
+      fi
       continue
     fi
     # Dependabot only rewrites a comment whose version ends the line,
@@ -107,7 +162,10 @@ for file in "${files[@]}"; do
       continue
     fi
 
-    resolved=$(sha_for_tag "$repo" "$comment")
+    if ! resolved=$(sha_for_tag "$repo" "$comment"); then
+      fail "$where: could not read $repo's tags, so \`$comment\` stands unverified"
+      continue
+    fi
     if [[ -z $resolved ]]; then
       fail "$where: $repo has no tag \`$comment\`"
     elif [[ $resolved != "$ref" ]]; then

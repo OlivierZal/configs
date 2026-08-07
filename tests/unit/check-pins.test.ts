@@ -22,15 +22,12 @@ const isSpawnError = (error: unknown): error is SpawnSyncReturns<string> =>
 // The fixtures drive the script through its `PIN_CHECK_REFS` seam, so
 // the suite never reaches the network: the fake ref table names both an
 // annotated tag (commit under `^{}`) and a lightweight one.
-const check = (fixture: string): CheckResult => {
+const check = (fixture: string, refs = 'refs.tsv'): CheckResult => {
   try {
     return {
       output: execFileSync(script, [path.join(fixturesDir, fixture)], {
         encoding: 'utf8',
-        env: {
-          ...process.env,
-          PIN_CHECK_REFS: path.join(fixturesDir, 'refs.tsv'),
-        },
+        env: { ...process.env, PIN_CHECK_REFS: path.join(fixturesDir, refs) },
       }),
       status: 0,
     }
@@ -47,10 +44,11 @@ describe('the pin check', () => {
     const { output, status } = check('valid')
 
     expect(status).toBe(0)
-    // Annotated tag, lightweight tag and the configs workflow ref. The
-    // local `./` reference is not a pin, and neither is a `uses:` that
-    // sits in a comment or a `run:` body — the fixture carries both.
-    expect(output).toContain('checked 3 pinned reference(s)')
+    // Annotated tag, lightweight tag, a declared-untagged commit and
+    // the configs workflow ref. The local `./` reference is not a pin,
+    // and neither is a `uses:` that sits in a comment or a `run:` body
+    // — the fixture carries both.
+    expect(output).toContain('checked 4 pinned reference(s)')
   })
 
   // One fixture per way a comment can lie. The trailing-text case is
@@ -68,10 +66,35 @@ describe('the pin check', () => {
       expected: 'one version covers both channels',
       fixture: 'channel-mismatch',
     },
+    // An exemption that cannot be falsified is an opt-out. These three
+    // keep `untagged:` a claim about the upstream: it holds only where
+    // no tag reaches the commit, it must say why, and this repo — which
+    // tags every release — may never use it to dodge the npm-pin rule.
+    { expected: 'carries the tag `v1.0.0`', fixture: 'untagged-tagged' },
+    { expected: '`untagged:` needs a reason', fixture: 'untagged-no-reason' },
+    {
+      expected: 'would bypass the npm-pin agreement',
+      fixture: 'untagged-self',
+    },
   ])('rejects the $fixture fixture', ({ expected, fixture }) => {
     const { output, status } = check(fixture)
 
     expect(status).toBe(1)
     expect(output).toContain(expected)
+  })
+
+  // An upstream that cannot be read is not an upstream without tags.
+  // Reporting them alike would let every `untagged:` claim through on
+  // the day a lookup fails, which is when the check matters most — so
+  // the same fixture passes when the refs answer and fails when they
+  // cannot be read at all.
+  it.each([
+    { expected: 'checked 1 pinned reference(s)', refs: 'refs.tsv', status: 0 },
+    { expected: 'stands unverified', refs: 'unreachable.tsv', status: 1 },
+  ])('fails closed on refs $refs', ({ expected, refs, status }) => {
+    const result = check('untagged-only', refs)
+
+    expect(result.status).toBe(status)
+    expect(result.output).toContain(expected)
   })
 })

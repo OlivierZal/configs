@@ -29,6 +29,7 @@ import {
   sharedMainRules,
   testNamingRules,
   testsBlock,
+  wireNamingBlock,
   yamlBlock,
 } from './shared.ts'
 
@@ -50,6 +51,11 @@ export interface HomeyAppOptions {
   // App-side wire vocabulary — converters and webview report readers
   // speak the device wire; entries stay filter-scoped per app.
   readonly wireNamingEntries?: readonly unknown[]
+  // Where that vocabulary is allowed to appear. Left out, it applies
+  // app-wide, so a name of ours in the same shape passes unnoticed;
+  // listed, the strict core holds everywhere else. Tests keep the wire
+  // entries either way — doubles mirror payloads verbatim.
+  readonly wireNamingFiles?: readonly string[]
 }
 
 // Capability handlers and the `__` translation key use wire-imposed
@@ -367,12 +373,20 @@ export const homeyApp = ({
   untypedDoubleTestFiles = [],
   webviewFloorFiles,
   wireNamingEntries = [],
+  wireNamingFiles = [],
 }: HomeyAppOptions): Config[] => {
   const naming = appNaming(wireNamingEntries)
+  const isScoped = wireNamingFiles.length > 0
 
   return defineConfig([
     linterOptionsBlock,
-    ...appMainBlock({ bundledSourceGlobs, naming, templateExpressionAllow }),
+    ...appMainBlock({
+      bundledSourceGlobs,
+      naming: isScoped ? appNaming([]) : naming,
+      templateExpressionAllow,
+    }),
+    // After the main block, so the scoped files win the override.
+    ...(isScoped ? [wireNamingBlock(wireNamingFiles, naming)] : []),
     jsdocBlock([...jsdocFiles]),
     webviewFloorBlock(webviewFloorFiles),
     homeyShimBlock,

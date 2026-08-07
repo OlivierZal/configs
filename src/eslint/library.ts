@@ -27,6 +27,7 @@ import {
   sharedMainRules,
   testNamingRules,
   testsBlock,
+  wireNamingBlock,
   yamlBlock,
 } from './shared.ts'
 
@@ -34,6 +35,11 @@ export interface LibraryOptions {
   // The wire-protocol naming entry (e.g. a `__brand` sentinel or split
   // register names) spliced into the naming convention.
   readonly wireNamingEntries?: readonly unknown[]
+  // Where that vocabulary is allowed to appear. Left out, it applies
+  // repo-wide, so a name of ours in the same shape passes unnoticed;
+  // listed, the strict core holds everywhere else. Tests keep the wire
+  // entries either way — doubles mirror payloads verbatim.
+  readonly wireNamingFiles?: readonly string[]
 }
 
 const libraryNaming = (
@@ -150,13 +156,19 @@ const libraryYamlStepOrder = [
 
 export const library = ({
   wireNamingEntries = [],
+  wireNamingFiles = [],
 }: LibraryOptions = {}): Config[] => {
   const naming = libraryNaming(wireNamingEntries)
+  const isScoped = wireNamingFiles.length > 0
 
   return defineConfig([
     linterOptionsBlock,
     jsdocBlock(['src/**/*.ts']),
-    ...libraryMainBlock({ wireNamingEntries }),
+    ...libraryMainBlock({
+      wireNamingEntries: isScoped ? [] : wireNamingEntries,
+    }),
+    // After the main block, so the scoped files win the override.
+    ...(isScoped ? [wireNamingBlock(wireNamingFiles, naming)] : []),
     configTsBlock(['*.config.{js,ts}']),
     configJsBlock,
     jsonBlock(),

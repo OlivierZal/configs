@@ -64,9 +64,19 @@ export default defineConfig([
         selector: 'typeProperty',
       },
     ],
+    // Where that vocabulary may appear. Omitted, it applies repo-wide,
+    // so a snake_case name of ours passes unnoticed among the wire's.
+    wireNamingFiles: ['src/types/**/*.ts'],
   }),
 ])
 ```
+
+`wireNamingFiles` exists because the rule's option array replaces
+rather than merges: narrowing the vocabulary by hand would mean
+restating the whole family policy — boolean prefixes, unused-parameter
+underscores, quoted-key exemption — in every consumer, which is the
+shape that drifts. The preset emits the scoped block instead, so the
+caller names its files and never the policy.
 
 The eslint plugins ship as dependencies of this package: rule
 evaluations and version bumps happen here once, consumers only bump
@@ -196,6 +206,29 @@ when anything follows the version on that line (Dependabot only rewrites
 a comment the version ends). Dependabot has maintained these comments
 since 2022, but it never corrects one that is already wrong — which is
 what makes an unverified comment worse than none.
+
+Some upstreams ship commits their tags never reach — an action whose
+`master` carries a fix no release names. Those pins say so instead:
+
+```yaml title=".github/workflows/validate.yml"
+- uses: athombv/github-action-homey-app-validate@0f3b42c1… # untagged: master carries the `don't npm ci` fix the @typescript/native toolchain needs; v1 predates it
+```
+
+The claim is checked like any other: declaring `untagged:` on a commit
+some tag does reach fails, naming the tag to use, and an empty reason
+fails too. So it records a fact about the upstream rather than opting
+out of the rule — the reader learns there is no version to name and
+why, which is the honest form of "no version comment". Refs to this
+repo may not use it: every release here is tagged, so it could only
+serve to dodge the npm-pin agreement below.
+
+Dependabot is documented to move a SHA pin that no tag reaches to
+another untagged branch HEAD, leaving its comment alone
+([dependabot-core#14716](https://github.com/dependabot/dependabot-core/issues/14716)).
+That suits an `untagged:` comment, which asserts the absence of a tag
+rather than a version, and it does not have to be trusted: the check
+re-derives the truth on every run, and demands a version comment the
+moment the pinned commit becomes reachable from one.
 
 References to this repo carry a second obligation: their tag must match
 the consumer's `@olivierzal/configs` npm pin, because one version covers
