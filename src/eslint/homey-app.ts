@@ -39,12 +39,12 @@ export interface HomeyAppOptions {
   readonly defaultExportFiles: readonly string[]
   // Files that carry API documentation.
   readonly jsdocFiles: readonly string[]
-  // Test files whose Homey driver/device doubles proxy untyped SDK
-  // surfaces.
-  readonly untypedDoubleTestFiles: readonly string[]
   // Sources that run in the phone webview and carry the es2023 floor.
   readonly webviewFloorFiles: readonly string[]
   readonly templateExpressionAllow?: readonly TemplateExpressionAllowEntry[]
+  // Test files whose Homey driver/device doubles proxy untyped SDK
+  // surfaces; omit when the app has none (ESLint rejects `files: []`).
+  readonly untypedDoubleTestFiles?: readonly string[]
 }
 
 // Capability handlers and the `__` translation key use wire-imposed
@@ -291,6 +291,23 @@ const appMainBlock = ({
 
 // The Homey re-export shim needs the SDK dependency shape the rule
 // cannot see.
+// Omitted entirely when empty: ESLint rejects `files: []`.
+const untypedDoubleBlock = (files: readonly string[]): Config[] =>
+  files.length > 0
+    ? [
+        {
+          files: [...files],
+          rules: {
+            // Homey driver/device doubles proxy untyped SDK surfaces.
+            '@typescript-eslint/no-explicit-any': 'off',
+            '@typescript-eslint/no-unsafe-assignment': 'off',
+            '@typescript-eslint/no-unsafe-call': 'off',
+            '@typescript-eslint/no-unsafe-member-access': 'off',
+          },
+        },
+      ]
+    : []
+
 const homeyShimBlock: Config = {
   files: ['lib/homey.mts'],
   rules: {
@@ -316,7 +333,7 @@ export const homeyApp = ({
   defaultExportFiles,
   jsdocFiles,
   templateExpressionAllow = [],
-  untypedDoubleTestFiles,
+  untypedDoubleTestFiles = [],
   webviewFloorFiles,
 }: HomeyAppOptions): Config[] =>
   defineConfig([
@@ -339,16 +356,7 @@ export const homeyApp = ({
     cssBlock,
     markdownBlock,
     ...appTestsBlock,
-    {
-      files: [...untypedDoubleTestFiles],
-      rules: {
-        // Homey driver/device doubles proxy untyped SDK surfaces.
-        '@typescript-eslint/no-explicit-any': 'off',
-        '@typescript-eslint/no-unsafe-assignment': 'off',
-        '@typescript-eslint/no-unsafe-call': 'off',
-        '@typescript-eslint/no-unsafe-member-access': 'off',
-      },
-    },
+    ...untypedDoubleBlock(untypedDoubleTestFiles),
     yamlBlock(['id', 'name', 'if', 'uses', 'with', 'env', 'run']),
     ...appPackageJsonBlock,
   ])
