@@ -26,6 +26,22 @@ const appPreset = homeyApp({
   webviewFloorFiles: ['settings/**/*.mts'],
 })
 
+const noDoublesPreset = homeyApp({
+  bundledSourceGlobs: ['settings/**'],
+  defaultExportFiles: ['api.mts', 'app.mts'],
+  jsdocFiles: ['lib/**/*.mts'],
+  webviewFloorFiles: ['settings/**/*.mts'],
+})
+
+const untypedDoubleBlockOf = (
+  preset: typeof appPreset,
+): (typeof appPreset)[number] | undefined =>
+  preset.find(
+    (entry) =>
+      entry.rules?.['@typescript-eslint/no-explicit-any'] === 'off' &&
+      entry.rules['@typescript-eslint/no-unsafe-call'] === 'off',
+  )
+
 const libraryPreset = library({
   wireNamingEntries: [
     {
@@ -102,6 +118,29 @@ describe(homeyApp, () => {
         first.localeCompare(second),
       ),
     ).toMatchSnapshot()
+  })
+
+  it('should scope the untyped-double offs to the given files', () => {
+    expect(untypedDoubleBlockOf(appPreset)?.files).toStrictEqual([
+      'tests/unit/app.test.ts',
+    ])
+  })
+
+  it('should omit the untyped-double block when no files are given', () => {
+    expect(untypedDoubleBlockOf(noDoublesPreset)).toBeUndefined()
+  })
+
+  // ESLint rejects `files: []` at config normalization, so a real
+  // calculation is the lock: an unconditional block would throw here.
+  it('should stay a valid config with the block omitted', async () => {
+    const eslint = new ESLint({
+      overrideConfig: noDoublesPreset,
+      overrideConfigFile: true,
+    })
+
+    await expect(
+      eslint.calculateConfigForFile('app.mts'),
+    ).resolves.toBeDefined()
   })
 })
 
