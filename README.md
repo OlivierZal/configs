@@ -35,6 +35,15 @@ const config: Config[] = defineConfig([
     jsdocFiles: ['{api,app}.mts', 'drivers/**/*.mts', 'lib/**/*.mts'],
     untypedDoubleTestFiles: ['tests/unit/app.test.ts'],
     webviewFloorFiles: ['settings/**/*.mts'],
+    // App-side wire vocabulary, filter-scoped (converters, report
+    // readers); omit when the app has none.
+    wireNamingEntries: [
+      {
+        filter: { match: true, regex: '^LOCK_C$' },
+        format: null,
+        selector: 'objectLiteralProperty',
+      },
+    ],
   }),
   // Per-repo verdicts (documented `'off'` ledgers) stay here.
 ])
@@ -63,6 +72,13 @@ The eslint plugins ship as dependencies of this package: rule
 evaluations and version bumps happen here once, consumers only bump
 their exact pin. Per-repo ignores and documented rule ledgers stay in
 each consumer — they are verdicts, not shared policy.
+
+Naming is strict-core: properties are camelCase by default, and every
+departure is a scoped opt-out — the Homey preset skips capability-id
+shaped keys (`fan_speed`; platform-imposed), each repo passes its own
+filter-scoped `wireNamingEntries`, and test files widen property
+formats (doubles mirror wire payloads and key mocks by export names).
+The core never loosens family-wide.
 
 Root `*.config.js` files (typedoc) are linted too, with the full
 type-aware rule set: they live outside every tsconfig, so the presets

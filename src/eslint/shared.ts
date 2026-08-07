@@ -161,6 +161,10 @@ const booleanNamingEntry = (filter?: {
 export interface NamingConventionOptions {
   readonly booleanFilter?: { match: boolean; regex: string }
   readonly extraEntries?: readonly unknown[]
+  // Formats accepted on object/type properties. The strict core keeps
+  // camelCase; the tests override widens it (doubles mirror wire
+  // payloads and key mocks by module-export names).
+  readonly propertyFormats?: readonly string[]
 }
 
 const namingConventionHead: unknown[] = [
@@ -192,11 +196,14 @@ const namingConventionMiddle: unknown[] = [
   },
 ]
 
-const namingConventionTail: unknown[] = [
-  // Permissive: DTOs, API contracts, and serialization use mixed
-  // conventions.
+const namingConventionTail = (
+  propertyFormats: readonly string[],
+): unknown[] => [
+  // Strict core: properties are camelCase; wire and platform
+  // vocabularies opt out upstream through scoped entries (the Homey
+  // capability entry, each repo's wire entries) — never here.
   {
-    format: ['camelCase', 'PascalCase', 'snake_case', 'UPPER_CASE'],
+    format: [...propertyFormats],
     selector: ['objectLiteralProperty', 'typeProperty'],
   },
   // Quoted keys ('Content-Type', '@scope/pkg') — skip entirely.
@@ -204,11 +211,6 @@ const namingConventionTail: unknown[] = [
     format: null,
     modifiers: ['requiresQuotes'],
     selector: ['objectLiteralProperty', 'typeProperty'],
-  },
-  {
-    format: ['camelCase'],
-    leadingUnderscore: 'allow',
-    selector: 'classProperty',
   },
   { format: ['camelCase', 'PascalCase'], selector: 'import' },
   { format: ['PascalCase'], selector: 'typeLike' },
@@ -221,13 +223,29 @@ const namingConventionTail: unknown[] = [
 export const namingConventionEntries = ({
   booleanFilter,
   extraEntries = [],
+  propertyFormats = ['camelCase'],
 }: NamingConventionOptions): unknown[] => [
   ...namingConventionHead,
   booleanNamingEntry(booleanFilter),
   ...namingConventionMiddle,
   ...extraEntries,
-  ...namingConventionTail,
+  ...namingConventionTail(propertyFormats),
 ]
+
+// The tests override: same per-repo naming options, properties
+// widened — test doubles mirror wire payloads verbatim and key module
+// mocks by their PascalCase export names.
+export const testNamingRules = (
+  naming: NamingConventionOptions,
+): NonNullable<Config['rules']> => ({
+  '@typescript-eslint/naming-convention': [
+    'error',
+    ...namingConventionEntries({
+      ...naming,
+      propertyFormats: ['camelCase', 'PascalCase', 'snake_case', 'UPPER_CASE'],
+    }),
+  ],
+})
 
 export interface SharedMainRulesOptions {
   readonly extraneous: {

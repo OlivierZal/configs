@@ -13,6 +13,7 @@ import perfectionist from 'eslint-plugin-perfectionist'
 import unicorn from 'eslint-plugin-unicorn'
 
 import {
+  type NamingConventionOptions,
   type TemplateExpressionAllowEntry,
   configJsBlock,
   configTsBlock,
@@ -26,6 +27,7 @@ import {
   sharedClassGroups,
   sharedClassGroupsTail,
   sharedMainRules,
+  testNamingRules,
   testsBlock,
   yamlBlock,
 } from './shared.ts'
@@ -45,6 +47,9 @@ export interface HomeyAppOptions {
   // Test files whose Homey driver/device doubles proxy untyped SDK
   // surfaces; omit when the app has none (ESLint rejects `files: []`).
   readonly untypedDoubleTestFiles?: readonly string[]
+  // App-side wire vocabulary — converters and webview report readers
+  // speak the device wire; entries stay filter-scoped per app.
+  readonly wireNamingEntries?: readonly unknown[]
 }
 
 // Capability handlers and the `__` translation key use wire-imposed
@@ -64,6 +69,15 @@ const homeyNamingEntries = [
     filter: { match: true, regex: '^__$' },
     format: null,
     selector: 'objectLiteralProperty',
+  },
+  // Homey capability ids are platform-imposed snake_case
+  // (`measure_temperature`, `fan_speed`); single-segment ids (`onoff`)
+  // already pass the strict camelCase core, and dotted sub-capability
+  // keys ride the requiresQuotes skip.
+  {
+    filter: { match: true, regex: '^[a-z0-9]+(_[a-z0-9]+)+$' },
+    format: null,
+    selector: ['objectLiteralProperty', 'typeProperty'],
   },
 ]
 
@@ -233,11 +247,19 @@ const appSortClassesOptions: Record<string, unknown> = {
   newlinesInside: 1,
 }
 
+// Per-app wire entries first (most specific), then the platform layer.
+const appNaming = (
+  wireNamingEntries: NonNullable<HomeyAppOptions['wireNamingEntries']>,
+): NamingConventionOptions => ({
+  extraEntries: [...wireNamingEntries, ...homeyNamingEntries],
+})
+
 const appMainRuleOptions = (
   bundledSourceGlobs: HomeyAppOptions['bundledSourceGlobs'],
   templateExpressionAllow: NonNullable<
     HomeyAppOptions['templateExpressionAllow']
   >,
+  naming: NamingConventionOptions,
 ): Parameters<typeof sharedMainRules>[0] => ({
   extraneous: {
     devDependencies: [
@@ -247,18 +269,18 @@ const appMainRuleOptions = (
       ...bundledSourceGlobs,
     ],
   },
-  naming: { extraEntries: homeyNamingEntries },
+  naming,
   templateExpressionAllow,
   unassignedImportAllow: ['source-map-support/register.js'],
 })
 
 const appMainBlock = ({
   bundledSourceGlobs,
+  naming,
   templateExpressionAllow = [],
-}: Pick<
-  HomeyAppOptions,
-  'bundledSourceGlobs' | 'templateExpressionAllow'
->): Config[] =>
+}: Pick<HomeyAppOptions, 'bundledSourceGlobs' | 'templateExpressionAllow'> & {
+  readonly naming: NamingConventionOptions
+}): Config[] =>
   defineConfig([
     {
       extends: [
@@ -277,7 +299,11 @@ const appMainBlock = ({
       plugins: { '@stylistic': stylistic, perfectionist },
       rules: {
         ...sharedMainRules(
-          appMainRuleOptions(bundledSourceGlobs, templateExpressionAllow),
+          appMainRuleOptions(
+            bundledSourceGlobs,
+            templateExpressionAllow,
+            naming,
+          ),
         ),
         'perfectionist/sort-classes': ['error', appSortClassesOptions],
         // Settings and widget sources run in the Homey webview: DOM rules
@@ -316,10 +342,12 @@ const homeyShimBlock: Config = {
   },
 }
 
-const appTestsBlock: Config[] = testsBlock({
-  // Test doubles cast wholesale around the SDK's branded types.
-  '@typescript-eslint/no-unsafe-type-assertion': 'off',
-})
+const appTestsBlock = (naming: NamingConventionOptions): Config[] =>
+  testsBlock({
+    ...testNamingRules(naming),
+    // Test doubles cast wholesale around the SDK's branded types.
+    '@typescript-eslint/no-unsafe-type-assertion': 'off',
+  })
 
 const appPackageJsonBlock: Config[] = packageJsonBlock({
   // A Homey app is not a published library: no exports, files,
@@ -335,10 +363,13 @@ export const homeyApp = ({
   templateExpressionAllow = [],
   untypedDoubleTestFiles = [],
   webviewFloorFiles,
-}: HomeyAppOptions): Config[] =>
-  defineConfig([
+  wireNamingEntries = [],
+}: HomeyAppOptions): Config[] => {
+  const naming = appNaming(wireNamingEntries)
+
+  return defineConfig([
     linterOptionsBlock,
-    ...appMainBlock({ bundledSourceGlobs, templateExpressionAllow }),
+    ...appMainBlock({ bundledSourceGlobs, naming, templateExpressionAllow }),
     jsdocBlock([...jsdocFiles]),
     webviewFloorBlock(webviewFloorFiles),
     homeyShimBlock,
@@ -355,8 +386,9 @@ export const homeyApp = ({
     jsonBlock(['app.json', 'locales/*.json']),
     cssBlock,
     markdownBlock,
-    ...appTestsBlock,
+    ...appTestsBlock(naming),
     ...untypedDoubleBlock(untypedDoubleTestFiles),
     yamlBlock(['id', 'name', 'if', 'uses', 'with', 'env', 'run']),
     ...appPackageJsonBlock,
   ])
+}

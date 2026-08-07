@@ -6,8 +6,26 @@ import { type Config, defineConfig } from 'eslint/config'
 import { library } from './src/eslint/library.ts'
 
 const config: Config[] = defineConfig([
-  { ignores: ['coverage/', 'dist/'] },
-  ...library(),
+  // Fixtures are lint subjects the suite runs the presets against —
+  // several carry deliberate violations.
+  { ignores: ['coverage/', 'dist/', 'tests/fixtures/'] },
+  ...library({
+    wireNamingEntries: [
+      // This repo's domain vocabulary: rule options keyed by
+      // tool-imposed names (AST node types for `prefer-destructuring`,
+      // case-style names for `unicorn/filename-case`) and the typedoc
+      // navigation label the contract tests exercise.
+      {
+        filter: {
+          match: true,
+          regex:
+            '^(?:AssignmentExpression|VariableDeclarator|SCREAMING_SNAKE_CASE|snake_case|GitHub)$',
+        },
+        format: null,
+        selector: 'objectLiteralProperty',
+      },
+    ],
+  }),
   {
     files: ['src/**/*.ts', 'tests/**/*.ts'],
     rules: {
