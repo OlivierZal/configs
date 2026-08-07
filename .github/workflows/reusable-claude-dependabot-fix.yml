@@ -18,6 +18,9 @@ jobs:
       actions: read
       contents: read
       id-token: write
+      # The install step reads @olivierzal packages from GitHub
+      # Packages, which requires auth even on public reads.
+      packages: read
       pull-requests: read
     runs-on: ubuntu-24.04
     steps:
@@ -54,11 +57,19 @@ jobs:
             5. If the failure is out of scope (e.g. an upstream bug in the
                bumped dependency), do NOT push: post one comment on the PR
                with the root cause and the needed fix.
+
+            ${{ inputs.repo-guidance }}
     timeout-minutes: 30
 name: Reusable Claude Dependabot Fix
 on:
   workflow_call:
     inputs:
+      # Repo-specific guidance appended to the prompt (e.g. "a bug in
+      # the upstream library is fixed there, not worked around here").
+      repo-guidance:
+        default: ''
+        required: false
+        type: string
       verify-commands:
         required: true
         type: string
