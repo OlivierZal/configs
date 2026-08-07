@@ -22,7 +22,8 @@ readonly self_package=@olivierzal/configs
 failures=0
 
 fail() {
-  printf 'error: %s\n' "$1" >&2
+  local message=$1
+  printf 'error: %s\n' "$message" >&2
   failures=$((failures + 1))
 }
 
