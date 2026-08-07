@@ -47,8 +47,9 @@ describe('the pin check', () => {
     const { output, status } = check('valid')
 
     expect(status).toBe(0)
-    // Annotated tag, lightweight tag and the configs workflow ref; the
-    // local `./` reference is not a pin and is not counted.
+    // Annotated tag, lightweight tag and the configs workflow ref. The
+    // local `./` reference is not a pin, and neither is a `uses:` that
+    // sits in a comment or a `run:` body — the fixture carries both.
     expect(output).toContain('checked 3 pinned reference(s)')
   })
 

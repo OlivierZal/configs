@@ -116,7 +116,9 @@ for file in "${files[@]}"; do
     if [[ $repo == "$self_repo" && -n $npm_pin && $comment != "v$npm_pin" ]]; then
       fail "$where: workflow ref \`$comment\` and npm pin \`$npm_pin\` disagree; one version covers both channels"
     fi
-  done < <(grep -nE "uses:[[:space:]]*[\'\"]?[A-Za-z0-9._-]+/" "$file" || true)
+    # Anchored at the key position: a `uses:` inside a comment or a
+    # `run:` body is prose, not a reference this repo executes.
+  done < <(grep -nE "^[[:space:]]*(-[[:space:]]+)?uses:[[:space:]]*[\'\"]?[A-Za-z0-9._-]+/" "$file" || true)
 done
 
 if ((failures > 0)); then
