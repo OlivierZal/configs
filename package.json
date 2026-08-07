@@ -57,6 +57,7 @@
   "types": "dist/eslint/index.d.ts",
   "files": [
     "dist",
+    "scripts",
     "src",
     "tsconfig-bases"
   ],

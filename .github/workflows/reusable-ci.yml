@@ -14,13 +14,21 @@ jobs:
       packages: read
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-node-and-install
         with:
           node-version: ${{ inputs.check-node-version }}
           npm-token: ${{ secrets.GITHUB_TOKEN }}
+      # The pin verifier ships inside the package, so it is always the
+      # version the `@olivierzal/configs` pin names — the one this repo
+      # hosts rather than installs.
+      - name: Verify action pins
+        run: |
+          script=node_modules/@olivierzal/configs/scripts/check-pins.sh
+          [ -f "$script" ] || script=scripts/check-pins.sh
+          bash "$script"
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run format
@@ -45,7 +53,7 @@ jobs:
       packages: read
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -63,7 +71,7 @@ jobs:
       # Self-armed on the secret: until SONAR_TOKEN is provisioned the
       # upload skips instead of failing the leg.
       - if: matrix.node-version == inputs.coverage-node-version && env.SONAR_TOKEN != '' && (github.event_name == 'push' || (github.event.pull_request.user.login != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository))
-        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f
+        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
     strategy:
       fail-fast: false
       matrix:

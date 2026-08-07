@@ -1,0 +1,6 @@
+jobs:
+  ci:
+    uses: OlivierZal/configs/.github/workflows/reusable-ci.yml@6666666666666666666666666666666666666666 # v9.9.8
+name: CI
+on:
+  push: {}

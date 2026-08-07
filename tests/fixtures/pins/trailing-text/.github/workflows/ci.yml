@@ -1,0 +1,8 @@
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: acme/action@2222222222222222222222222222222222222222 # v1.0.0 pinned by hand
+name: CI
+on:
+  push: {}

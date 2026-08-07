@@ -92,6 +92,36 @@ describe(homeyApp, () => {
     expect(report[0]?.message).toContain('Iterator helpers')
   })
 
+  // `String#matchAll` returns an iterator, so helpers chained onto it
+  // are 2025-era too — the selector missed it until a consumer's
+  // hand-copied floor proved it did.
+  it('should flag a helper chained onto matchAll', () => {
+    const linter = new Linter()
+    const report = linter.verify('text.matchAll(/x/u).map(toRow)\n', {
+      rules: {
+        'no-restricted-syntax':
+          floorEntry?.rules?.['no-restricted-syntax'] ?? 'off',
+      },
+    })
+
+    expect(report).toHaveLength(1)
+    expect(report[0]?.message).toContain('Iterator helpers')
+  })
+
+  // `Object.entries` returns an array: its `.map` is ES5 and must stay
+  // legal, or the floor would reject the idiom it is meant to allow.
+  it('should leave array helpers on Object.entries alone', () => {
+    const linter = new Linter()
+    const report = linter.verify('Object.entries(source).map(toRow)\n', {
+      rules: {
+        'no-restricted-syntax':
+          floorEntry?.rules?.['no-restricted-syntax'] ?? 'off',
+      },
+    })
+
+    expect(report).toHaveLength(0)
+  })
+
   it('should flag the v regex flag through a real lint run', () => {
     const linter = new Linter()
     const report = linter.verify('const re = /x/v\n', {

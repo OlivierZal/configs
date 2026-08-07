@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { webviewFloorBlock } from '../../src/eslint/index.ts'
 import { typedocBase } from '../../src/typedoc/index.ts'
 import { swcOptions, swcPlugin } from '../../src/vitest/swc.ts'
 import prettierConfig from '../../src/prettier/index.ts'
@@ -15,6 +16,19 @@ describe('export contracts', () => {
       semi: false,
       singleQuote: true,
     })
+  })
+
+  // A library shipping webview-bundled sources composes the floor from
+  // the barrel instead of hand-copying it, so this import path is a
+  // contract: a repo that re-derives the policy watches it drift.
+  it('should expose the webview floor as a composable fragment', () => {
+    const block = webviewFloorBlock(['src/webview/**/*.ts'])
+
+    expect(block.files).toStrictEqual(['src/webview/**/*.ts'])
+    expect(block.rules?.['require-unicode-regexp']).toStrictEqual([
+      'error',
+      { requireFlag: 'u' },
+    ])
   })
 
   it('should build a typedoc config around the consumer identity', () => {

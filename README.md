@@ -80,6 +80,26 @@ filter-scoped `wireNamingEntries`, and test files widen property
 formats (doubles mirror wire payloads and key mocks by export names).
 The core never loosens family-wide.
 
+A library shipping webview-bundled sources composes the runtime floor
+(es2023: no iterator helpers, no `Object.groupBy`, no `v` regex flag)
+rather than restating it — `webviewFloorBlock(files)` is the very
+fragment the Homey preset applies, so it cannot drift from it:
+
+```ts title="eslint.config.ts (library with webview sources)"
+import { webviewFloorBlock } from '@olivierzal/configs/eslint'
+
+export default defineConfig([
+  ...library({}),
+  webviewFloorBlock(['src/webview/**/*.ts']),
+])
+```
+
+Anchor every `wireNamingEntries` filter (`^…$`). An entry carrying a
+filter outranks the core's `requiresQuotes` skip, so an open-ended
+pattern swallows quoted keys it was never meant to judge: a `^[A-Z]`
+filter for PascalCase wire fields also caught `'Content-Type'` and
+demanded it be renamed.
+
 Root `*.config.js` files (typedoc) are linted too, with the full
 type-aware rule set: they live outside every tsconfig, so the presets
 type them through the project service's default project. This assumes
@@ -162,3 +182,30 @@ trigger and passes its verify commands). The single-file workflows
 (`pr-title`, `zizmor`, `claude*`, `dependabot`) also accept
 `workflow_call` so callers can become stubs. `templates/zizmor-apps.yml`
 is the apps' zizmor config variant; this repo ships the libs' form.
+
+## Action pins
+
+Every `uses:` pinned to a commit SHA carries a version comment, and the
+`Verify action pins` step of `reusable-ci` proves the comment true — it
+runs inside the existing check job, so adopting it costs no workflow
+file and no new required status check.
+
+The step fails when a SHA pin has no comment, when the comment names a
+tag the upstream does not have or that resolves to another commit, and
+when anything follows the version on that line (Dependabot only rewrites
+a comment the version ends). Dependabot has maintained these comments
+since 2022, but it never corrects one that is already wrong — which is
+what makes an unverified comment worse than none.
+
+References to this repo carry a second obligation: their tag must match
+the consumer's `@olivierzal/configs` npm pin, because one version covers
+both channels. Keep that single source by letting Dependabot propose the
+npm bump and leaving the workflow refs to follow it in the same branch:
+
+```yaml title=".github/dependabot.yml"
+- package-ecosystem: github-actions
+  ignore:
+    # Not a third-party action: this ref's version is dictated by the
+    # npm pin, and both move together in one reviewed adoption.
+    - dependency-name: OlivierZal/configs
+```

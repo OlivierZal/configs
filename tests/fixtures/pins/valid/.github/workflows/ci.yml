@@ -1,0 +1,14 @@
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      # Annotated tag: the commit lives under `^{}`.
+      - uses: acme/action@2222222222222222222222222222222222222222 # v1.0.0
+      # Lightweight tag: the ref names the commit directly.
+      - uses: acme/light@4444444444444444444444444444444444444444 # v2.0.0
+      # Local and floating references are out of scope.
+      - uses: ./.github/actions/local
+    uses: OlivierZal/configs/.github/workflows/reusable-ci.yml@5555555555555555555555555555555555555555 # v9.9.9
+name: CI
+on:
+  push: {}
