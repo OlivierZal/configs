@@ -64,9 +64,19 @@ export default defineConfig([
         selector: 'typeProperty',
       },
     ],
+    // Where that vocabulary may appear. Omitted, it applies repo-wide,
+    // so a snake_case name of ours passes unnoticed among the wire's.
+    wireNamingFiles: ['src/types/**/*.ts'],
   }),
 ])
 ```
+
+`wireNamingFiles` exists because the rule's option array replaces
+rather than merges: narrowing the vocabulary by hand would mean
+restating the whole family policy — boolean prefixes, unused-parameter
+underscores, quoted-key exemption — in every consumer, which is the
+shape that drifts. The preset emits the scoped block instead, so the
+caller names its files and never the policy.
 
 The eslint plugins ship as dependencies of this package: rule
 evaluations and version bumps happen here once, consumers only bump

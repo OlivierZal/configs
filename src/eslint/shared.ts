@@ -232,6 +232,24 @@ export const namingConventionEntries = ({
   ...namingConventionTail(propertyFormats),
 ]
 
+// Narrowing where a wire vocabulary applies means re-stating the whole
+// option array, which replaces rather than merges — so a consumer that
+// scoped it by hand would carry its own copy of the family policy, the
+// shape that drifts. The preset emits the scoped block instead: the
+// caller names its files, never the policy.
+export const wireNamingBlock = (
+  files: readonly string[],
+  naming: NamingConventionOptions,
+): Config => ({
+  files: [...files],
+  rules: {
+    '@typescript-eslint/naming-convention': [
+      'error',
+      ...namingConventionEntries(naming),
+    ],
+  },
+})
+
 // The tests override: same per-repo naming options, properties
 // widened — test doubles mirror wire payloads verbatim and key module
 // mocks by their PascalCase export names.
