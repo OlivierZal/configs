@@ -183,15 +183,17 @@ describe(library, () => {
 })
 
 // A real end-to-end run over an on-disk fixture: nothing short of it
-// proves the whole `*.config.js` chain (glob match, typed parser,
-// default-project type info). The invalid twin is the mutation guard —
-// a broken link in that chain reports zero messages and fails here.
-const lintConfigJsFixture = async (
+// proves the whole chain (glob match, typed parser, default-project or
+// fixture-tsconfig type info). Each fixture's failing twin is the
+// mutation guard — a broken link in the chain reports zero messages
+// and fails here.
+const lintFixture = async (
   preset: typeof appPreset,
-  fixture: string,
+  fixturePath: string,
+  file: string,
 ): Promise<(string | null)[]> => {
   const cwd = fileURLToPath(
-    new URL(`../fixtures/config-js/${fixture}/`, import.meta.url),
+    new URL(`../fixtures/${fixturePath}/`, import.meta.url),
   )
   const eslint = new ESLint({
     cwd,
@@ -213,7 +215,7 @@ const lintConfigJsFixture = async (
     ],
     overrideConfigFile: true,
   })
-  const results = await eslint.lintFiles(['typedoc.config.js'])
+  const results = await eslint.lintFiles([file])
   return results.flatMap(({ messages }) => messages.map(({ ruleId }) => ruleId))
 }
 
@@ -225,9 +227,9 @@ describe.each([
     'should type-lint a root js config through the default project',
     { timeout: 60_000 },
     async () => {
-      await expect(lintConfigJsFixture(preset, 'invalid')).resolves.toContain(
-        '@typescript-eslint/no-floating-promises',
-      )
+      await expect(
+        lintFixture(preset, 'config-js/invalid', 'typedoc.config.js'),
+      ).resolves.toContain('@typescript-eslint/no-floating-promises')
     },
   )
 
@@ -235,9 +237,42 @@ describe.each([
     'should keep a conforming js config clean',
     { timeout: 60_000 },
     async () => {
-      await expect(lintConfigJsFixture(preset, 'valid')).resolves.toStrictEqual(
-        [],
-      )
+      await expect(
+        lintFixture(preset, 'config-js/valid', 'typedoc.config.js'),
+      ).resolves.toStrictEqual([])
+    },
+  )
+})
+
+const namingRule = '@typescript-eslint/naming-convention'
+
+describe('strict naming core', () => {
+  it(
+    'should accept capability-shaped keys under homeyApp only',
+    { timeout: 60_000 },
+    async () => {
+      await expect(
+        lintFixture(appPreset, 'naming', 'capability.ts'),
+      ).resolves.not.toContain(namingRule)
+      await expect(
+        lintFixture(libraryPreset, 'naming', 'capability.ts'),
+      ).resolves.toContain(namingRule)
+    },
+  )
+
+  it.each([
+    { preset: appPreset, presetName: 'homeyApp' },
+    { preset: libraryPreset, presetName: 'library' },
+  ])(
+    'should reject mixed-case and underscore properties via $presetName',
+    { timeout: 60_000 },
+    async ({ preset }) => {
+      await expect(
+        lintFixture(preset, 'naming', 'strict-property.ts'),
+      ).resolves.toContain(namingRule)
+      await expect(
+        lintFixture(preset, 'naming', 'underscore-property.ts'),
+      ).resolves.toContain(namingRule)
     },
   )
 })

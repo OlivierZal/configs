@@ -11,6 +11,7 @@ import perfectionist from 'eslint-plugin-perfectionist'
 import unicorn from 'eslint-plugin-unicorn'
 
 import {
+  type NamingConventionOptions,
   changelogBlock,
   configJsBlock,
   configTsBlock,
@@ -24,6 +25,7 @@ import {
   sharedClassGroups,
   sharedClassGroupsTail,
   sharedMainRules,
+  testNamingRules,
   testsBlock,
   yamlBlock,
 } from './shared.ts'
@@ -34,6 +36,15 @@ export interface LibraryOptions {
   readonly wireNamingEntries?: readonly unknown[]
 }
 
+const libraryNaming = (
+  wireNamingEntries: NonNullable<LibraryOptions['wireNamingEntries']>,
+): NamingConventionOptions => ({
+  // `device` is excluded: its type includes `false` as a sentinel
+  // but it is not a boolean flag.
+  booleanFilter: { match: false, regex: '^device$' },
+  extraEntries: wireNamingEntries,
+})
+
 const libraryMainRuleOptions = (
   wireNamingEntries: NonNullable<LibraryOptions['wireNamingEntries']>,
 ): Parameters<typeof sharedMainRules>[0] => ({
@@ -41,12 +52,7 @@ const libraryMainRuleOptions = (
     devDependencies: ['*.config.{js,ts}', 'tests/**'],
     includeTypes: true,
   },
-  naming: {
-    // `device` is excluded: its type includes `false` as a sentinel
-    // but it is not a boolean flag.
-    booleanFilter: { match: false, regex: '^device$' },
-    extraEntries: wireNamingEntries,
-  },
+  naming: libraryNaming(wireNamingEntries),
 })
 
 const libraryMainBlock = ({
@@ -142,11 +148,15 @@ const libraryYamlStepOrder = [
   'run',
 ]
 
-export const library = (options: LibraryOptions = {}): Config[] =>
-  defineConfig([
+export const library = ({
+  wireNamingEntries = [],
+}: LibraryOptions = {}): Config[] => {
+  const naming = libraryNaming(wireNamingEntries)
+
+  return defineConfig([
     linterOptionsBlock,
     jsdocBlock(['src/**/*.ts']),
-    ...libraryMainBlock(options),
+    ...libraryMainBlock({ wireNamingEntries }),
     configTsBlock(['*.config.{js,ts}']),
     configJsBlock,
     jsonBlock(),
@@ -155,6 +165,7 @@ export const library = (options: LibraryOptions = {}): Config[] =>
     decoratorsBlock,
     temporalBlock,
     testsBlock({
+      ...testNamingRules(naming),
       // The vitest-concurrent pattern destructures the test-context
       // `expect` (required for exact assertion counts), shadowing the
       // module import by design.
@@ -170,3 +181,4 @@ export const library = (options: LibraryOptions = {}): Config[] =>
       'package-json/require-types': 'error',
     }),
   ])
+}
