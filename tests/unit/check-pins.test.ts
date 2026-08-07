@@ -53,40 +53,25 @@ describe('the pin check', () => {
     expect(output).toContain('checked 3 pinned reference(s)')
   })
 
-  it('rejects a SHA pin carrying no version comment', () => {
-    const { output, status } = check('missing-comment')
+  // One fixture per way a comment can lie. The trailing-text case is
+  // the subtle one: Dependabot leaves a comment alone unless the
+  // version ends the line, so prose would freeze it silently.
+  it.each([
+    { expected: 'no version comment', fixture: 'missing-comment' },
+    {
+      expected: '`v0.9.0` is 33333333, but the pin is 22222222',
+      fixture: 'wrong-tag',
+    },
+    { expected: 'has no tag `v7.7.7`', fixture: 'unknown-tag' },
+    { expected: 'carries trailing text', fixture: 'trailing-text' },
+    {
+      expected: 'one version covers both channels',
+      fixture: 'channel-mismatch',
+    },
+  ])('rejects the $fixture fixture', ({ expected, fixture }) => {
+    const { output, status } = check(fixture)
 
     expect(status).toBe(1)
-    expect(output).toContain('no version comment')
-  })
-
-  it('rejects a comment naming a tag that points elsewhere', () => {
-    const { output, status } = check('wrong-tag')
-
-    expect(status).toBe(1)
-    expect(output).toContain('`v0.9.0` is 33333333, but the pin is 22222222')
-  })
-
-  it('rejects a comment naming a tag the upstream does not have', () => {
-    const { output, status } = check('unknown-tag')
-
-    expect(status).toBe(1)
-    expect(output).toContain('has no tag `v7.7.7`')
-  })
-
-  // Dependabot leaves a comment alone unless the version ends the line,
-  // so trailing prose would freeze the version silently.
-  it('rejects a comment with trailing text', () => {
-    const { output, status } = check('trailing-text')
-
-    expect(status).toBe(1)
-    expect(output).toContain('carries trailing text')
-  })
-
-  it('rejects a configs ref disagreeing with the npm pin', () => {
-    const { output, status } = check('channel-mismatch')
-
-    expect(status).toBe(1)
-    expect(output).toContain('one version covers both channels')
+    expect(output).toContain(expected)
   })
 })
