@@ -289,8 +289,6 @@ const appMainBlock = ({
     },
   ])
 
-// The Homey re-export shim needs the SDK dependency shape the rule
-// cannot see.
 // Omitted entirely when empty: ESLint rejects `files: []`.
 const untypedDoubleBlock = (files: readonly string[]): Config[] =>
   files.length > 0
@@ -308,6 +306,8 @@ const untypedDoubleBlock = (files: readonly string[]): Config[] =>
       ]
     : []
 
+// The Homey re-export shim needs the SDK dependency shape the rule
+// cannot see.
 const homeyShimBlock: Config = {
   files: ['lib/homey.mts'],
   rules: {
