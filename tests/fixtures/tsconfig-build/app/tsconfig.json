@@ -1,0 +1,5 @@
+{
+  "compilerOptions": { "rootDir": "." },
+  "extends": "@olivierzal/configs/tsconfig/app-build",
+  "include": ["src"]
+}
