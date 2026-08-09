@@ -17,6 +17,7 @@ import {
   type TemplateExpressionAllowEntry,
   configJsBlock,
   configTsBlock,
+  deviceNodeBlocks,
   jsdocBlock,
   jsonBlock,
   linterOptionsBlock,
@@ -44,6 +45,10 @@ export interface HomeyAppOptions {
   readonly jsdocFiles: readonly string[]
   // Sources that run in the phone webview and carry the es2023 floor.
   readonly webviewFloorFiles: readonly string[]
+  // The oldest Node the shipped code must run on; see
+  // `deviceNodeBlocks`. The floor skips the webview files (browser
+  // engine) and the dev-only dirs by construction.
+  readonly deviceNodeVersion?: string
   readonly templateExpressionAllow?: readonly TemplateExpressionAllowEntry[]
   // Test files whose Homey driver/device doubles proxy untyped SDK
   // surfaces; omit when the app has none (ESLint rejects `files: []`).
@@ -368,6 +373,7 @@ const appPackageJsonBlock: Config[] = packageJsonBlock({
 export const homeyApp = ({
   bundledSourceGlobs,
   defaultExportFiles,
+  deviceNodeVersion,
   jsdocFiles,
   templateExpressionAllow = [],
   untypedDoubleTestFiles = [],
@@ -389,6 +395,10 @@ export const homeyApp = ({
     ...(isScoped ? [wireNamingBlock(wireNamingFiles, naming)] : []),
     jsdocBlock([...jsdocFiles]),
     webviewFloorBlock(webviewFloorFiles),
+    ...deviceNodeBlocks({
+      floorIgnores: webviewFloorFiles,
+      nodeVersion: deviceNodeVersion,
+    }),
     homeyShimBlock,
     {
       files: [...defaultExportFiles],
