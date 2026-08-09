@@ -71,24 +71,21 @@ export default defineConfig([
 ])
 ```
 
-`wireNamingFiles` exists because the rule's option array replaces
-rather than merges: narrowing the vocabulary by hand would mean
-restating the whole family policy — boolean prefixes, unused-parameter
-underscores, quoted-key exemption — in every consumer, which is the
-shape that drifts. The preset emits the scoped block instead, so the
-caller names its files and never the policy.
+Pass `wireNamingFiles` rather than hand-writing a scoped
+`naming-convention` block: the rule's option array replaces rather
+than merges, so the preset emits the scoped block and the caller names
+its files, never the policy (CLAUDE.md has the drift rationale).
 
 The eslint plugins ship as dependencies of this package: rule
 evaluations and version bumps happen here once, consumers only bump
 their exact pin. Per-repo ignores and documented rule ledgers stay in
-each consumer — they are verdicts, not shared policy.
+each consumer (CLAUDE.md: they are verdicts, not shared policy).
 
 Naming is strict-core: properties are camelCase by default, and every
 departure is a scoped opt-out — the Homey preset skips capability-id
 shaped keys (`fan_speed`; platform-imposed), each repo passes its own
 filter-scoped `wireNamingEntries`, and test files widen property
 formats (doubles mirror wire payloads and key mocks by export names).
-The core never loosens family-wide.
 
 A library shipping webview-bundled sources composes the runtime floor
 (es2023: no iterator helpers, no `Object.groupBy`, no `v` regex flag)
@@ -104,11 +101,9 @@ export default defineConfig([
 ])
 ```
 
-Anchor every `wireNamingEntries` filter (`^…$`). An entry carrying a
-filter outranks the core's `requiresQuotes` skip, so an open-ended
-pattern swallows quoted keys it was never meant to judge: a `^[A-Z]`
-filter for PascalCase wire fields also caught `'Content-Type'` and
-demanded it be renamed.
+Anchor every `wireNamingEntries` filter (`^…$`): a filtered entry
+outranks the core's `requiresQuotes` skip, so an open-ended pattern
+swallows quoted keys (`'Content-Type'`) it was never meant to judge.
 
 Root `*.config.js` files (typedoc) are linted too, with the full
 type-aware rule set: they live outside every tsconfig, so the presets
@@ -198,14 +193,11 @@ is the apps' zizmor config variant; this repo ships the libs' form.
 Every `uses:` pinned to a commit SHA carries a version comment, and the
 `Verify action pins` step of `reusable-ci` proves the comment true — it
 runs inside the existing check job, so adopting it costs no workflow
-file and no new required status check.
-
-The step fails when a SHA pin has no comment, when the comment names a
-tag the upstream does not have or that resolves to another commit, and
-when anything follows the version on that line (Dependabot only rewrites
-a comment the version ends). Dependabot has maintained these comments
-since 2022, but it never corrects one that is already wrong — which is
-what makes an unverified comment worse than none.
+file and no new required status check. The step fails when a SHA pin
+has no comment, when the comment names a tag the upstream does not have
+or that resolves to another commit, and when anything follows the
+version on that line (CLAUDE.md explains why an unverified comment is
+worse than none).
 
 Some upstreams ship commits their tags never reach — an action whose
 `master` carries a fix no release names. Those pins say so instead:
@@ -216,19 +208,8 @@ Some upstreams ship commits their tags never reach — an action whose
 
 The claim is checked like any other: declaring `untagged:` on a commit
 some tag does reach fails, naming the tag to use, and an empty reason
-fails too. So it records a fact about the upstream rather than opting
-out of the rule — the reader learns there is no version to name and
-why, which is the honest form of "no version comment". Refs to this
-repo may not use it: every release here is tagged, so it could only
-serve to dodge the npm-pin agreement below.
-
-Dependabot is documented to move a SHA pin that no tag reaches to
-another untagged branch HEAD, leaving its comment alone
-([dependabot-core#14716](https://github.com/dependabot/dependabot-core/issues/14716)).
-That suits an `untagged:` comment, which asserts the absence of a tag
-rather than a version, and it does not have to be trusted: the check
-re-derives the truth on every run, and demands a version comment the
-moment the pinned commit becomes reachable from one.
+fails too. Refs to this repo may not use it — every release here is
+tagged.
 
 References to this repo carry a second obligation: their tag must match
 the consumer's `@olivierzal/configs` npm pin, because one version covers
