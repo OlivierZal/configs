@@ -250,6 +250,44 @@ const lintFixture = async (
 describe.each([
   { preset: appPreset, presetName: 'homeyApp' },
   { preset: libraryPreset, presetName: 'library' },
+])('device node floor via $presetName', ({ preset, presetName }) => {
+  it(
+    'should reject post-floor APIs and the v regex flag in shipped node code',
+    { timeout: 60_000 },
+    async () => {
+      const file = presetName === 'library' ? 'src/index.ts' : 'app.mts'
+      const ruleIds = await lintFixture(preset, 'device-floor', file)
+
+      // Two hits, one rule: `toSorted` (Node 20 API) and the `v` regex
+      // flag (es2024 syntax) — the exact pair the 2019 crash taught.
+      expect(
+        ruleIds.filter((id) => id === 'node/no-unsupported-features/es-syntax'),
+      ).toHaveLength(2)
+    },
+  )
+})
+
+describe('device node floor exemptions', () => {
+  it(
+    'should leave webview-bundled sources to the webview floor',
+    { timeout: 60_000 },
+    async () => {
+      const ruleIds = await lintFixture(
+        appPreset,
+        'device-floor',
+        'settings/index.mts',
+      )
+
+      expect(
+        ruleIds.filter((id) => id?.startsWith('node/') === true),
+      ).toStrictEqual([])
+    },
+  )
+})
+
+describe.each([
+  { preset: appPreset, presetName: 'homeyApp' },
+  { preset: libraryPreset, presetName: 'library' },
 ])('root js config linting via $presetName', ({ preset }) => {
   it(
     'should type-lint a root js config through the default project',

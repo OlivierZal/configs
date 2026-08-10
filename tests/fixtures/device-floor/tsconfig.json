@@ -1,0 +1,4 @@
+{
+  "compilerOptions": { "module": "nodenext", "strict": true },
+  "include": ["**/*.mts", "**/*.ts"]
+}
