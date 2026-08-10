@@ -111,15 +111,6 @@ type them through the project service's default project. This assumes
 eslint runs from the repo root (the `allowDefaultProject` glob
 resolves against it).
 
-Both presets also carry the **device node floor**: shipped node-side
-code is linted against the oldest supported Homey hardware's Node
-(`node/no-unsupported-features/*`), webview-bundled sources staying
-under the webview floor instead. `deviceNodeVersion` overrides the
-target range — raising it is the "drop old hardware" decision and
-belongs to a reviewed adoption PR; `library` also takes
-`deviceNodeFloorIgnores` for webview-bundled or dev-only sources. The
-triage behind the plugin choice is in `CLAUDE.md`.
-
 ### prettier
 
 ```jsonc title="package.json"

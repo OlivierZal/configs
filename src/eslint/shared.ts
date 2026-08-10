@@ -11,7 +11,6 @@ import { configs as ymlConfigs } from 'eslint-plugin-yml'
 import json from '@eslint/json'
 import markdown from '@eslint/markdown'
 import vitest from '@vitest/eslint-plugin'
-import nodePlugin from 'eslint-plugin-n'
 import unicorn from 'eslint-plugin-unicorn'
 
 import {
@@ -786,123 +785,6 @@ export const changelogBlock: Config = {
     'markdown/no-duplicate-headings': ['error', { checkSiblingsOnly: true }],
   },
 }
-
-/**
- * Options for {@link deviceNodeBlocks}.
- */
-export interface DeviceNodeOptions {
-  /**
-   * Globs the node floor must NOT police: webview-bundled sources (they
-   * run in a browser engine under the webview floor) and dev-only code.
-   */
-  readonly floorIgnores?: readonly string[] | undefined
-  /**
-   * The oldest Node the shipped code must run on. Defaults to the
-   * Homey Pro 2016-2019 runtime — the family's oldest supported
-   * hardware; the knob IS the product decision, and relaxes the day
-   * that hardware is dropped.
-   */
-  readonly nodeVersion?: string | undefined
-}
-
-// Adopted plugin-n rules, repo-wide. Refusals sit beside them as the
-// triage ledger — each a verdict, re-evaluated when its reason expires.
-const deviceNodeRules: NonNullable<Config['rules']> = {
-  // Absent domain: the family promisifies at the SDK boundary; no
-  // node-style callback code exists.
-  'node/callback-return': 'off',
-  // Absent domain: pure ESM, no CommonJS mechanics.
-  'node/exports-style': 'off',
-  'node/global-require': 'off',
-  'node/handle-callback-err': 'off',
-  'node/hashbang': 'error',
-  'node/no-callback-literal': 'off',
-  'node/no-deprecated-api': 'error',
-  'node/no-exports-assign': 'error',
-  // Owned by import-x (resolution, extraneous deps) and publint
-  // (published-surface completeness).
-  'node/no-extraneous-import': 'off',
-  'node/no-extraneous-require': 'off',
-  'node/no-missing-import': 'off',
-  'node/no-missing-require': 'off',
-  'node/no-mixed-requires': 'off',
-  'node/no-new-require': 'off',
-  'node/no-path-concat': 'error',
-  // Platform pattern: Homey injects the documented `env.json` through
-  // `process.env`.
-  'node/no-process-env': 'off',
-  'node/no-process-exit': 'error',
-  // Config-driven vocabulary with no invariant to encode.
-  'node/no-restricted-import': 'off',
-  'node/no-restricted-require': 'off',
-  'node/no-top-level-await': 'error',
-  'node/no-unpublished-bin': 'error',
-  'node/no-unpublished-import': 'off',
-  'node/no-unpublished-require': 'off',
-  'node/prefer-global/buffer': 'error',
-  'node/prefer-global/console': 'error',
-  'node/prefer-global/crypto': 'error',
-  'node/prefer-global/process': 'error',
-  'node/prefer-global/text-decoder': 'error',
-  'node/prefer-global/text-encoder': 'error',
-  'node/prefer-global/timers': 'error',
-  'node/prefer-global/url': 'error',
-  'node/prefer-global/url-search-params': 'error',
-  'node/prefer-import/assert-strict': 'error',
-  // Owned by `unicorn/prefer-node-protocol`.
-  'node/prefer-node-protocol': 'off',
-  // The API itself sits above the device node floor.
-  'node/prefer-process-get-builtin-module': 'off',
-  'node/prefer-promises/dns': 'error',
-  'node/prefer-promises/fs': 'error',
-  'node/process-exit-as-throw': 'error',
-}
-
-/**
- * The device node floor plus the always-on plugin-n rules. Shipped
- * node code runs on the DEVICE's Node, not the developer's: Homey Pro
- * 2016-2019 rejects the es2024 `v` regex flag at parse time (production
- * crash, 2026-08) and predates the es2023 array methods — a floor the
- * tsconfig cannot express (one project, two runtimes), so it lives
- * here, exactly like the webview floor.
- * @param options - Floor exemptions and the target Node range.
- * @param options.floorIgnores - Globs the floor must not police (webview-bundled and dev-only sources).
- * @param options.nodeVersion - The oldest Node the shipped code must run on.
- * @returns The repo-wide rules block and the floor block.
- */
-export const deviceNodeBlocks = ({
-  floorIgnores = [],
-  nodeVersion = '>=18.20.8',
-}: DeviceNodeOptions = {}): Config[] => [
-  {
-    files: ['**/*.{mts,ts}'],
-    plugins: { node: nodePlugin },
-    rules: deviceNodeRules,
-  },
-  {
-    files: ['**/*.{mts,ts}'],
-    ignores: ['tests/**', 'scripts/**', '*.config.{js,ts}', ...floorIgnores],
-    plugins: { node: nodePlugin },
-    rules: {
-      'node/no-sync': 'error',
-      'node/no-unsupported-features/es-builtins': [
-        'error',
-        { version: nodeVersion },
-      ],
-      'node/no-unsupported-features/es-syntax': [
-        'error',
-        { version: nodeVersion },
-      ],
-      'node/no-unsupported-features/node-builtins': [
-        'error',
-        { version: nodeVersion },
-      ],
-      // The global config requires the `v` regex flag; shipped code
-      // caps at `u` — the device engine throws at parse time on `v`.
-      'require-unicode-regexp': ['error', { requireFlag: 'u' }],
-    },
-  },
-]
 
 export const sharedTestRules: NonNullable<Config['rules']> = {
   // Fixtures and assertions are literal-heavy by nature.
