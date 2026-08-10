@@ -43,12 +43,14 @@ package-lock.json
 .github/actions/*/*'
 
 fail() {
-  printf 'error: %s\n' "$1" >&2
+  local message=$1
+  printf 'error: %s\n' "$message" >&2
   exit 1
 }
 
 pass() {
-  printf '%s\n' "$1"
+  local message=$1
+  printf '%s\n' "$message"
   exit 0
 }
 
@@ -156,18 +158,16 @@ wait_for_analysis() {
     revisions='.analyses?.map((entry) => entry?.revision)'
   fi
   while ((attempt <= attempts)); do
-    if api_get "$path" analysis.json; then
-      if node -e '
+    if api_get "$path" analysis.json && node -e '
         const { readFileSync } = require("node:fs")
         const [, file, wanted, ...shas] = process.argv
         const parsed = JSON.parse(readFileSync(file, "utf8"))
         const found = (parsed'"$revisions"' ?? []).filter(Boolean)
         process.exit(found.some((sha) => shas.includes(sha)) ? 0 : 1)
       ' analysis.json "$pr_number" "$head_sha" "$merge_sha"; then
-        printf 'analysis found for %s after %s attempt(s)\n' \
-          "${head_sha:-$merge_sha}" "$attempt"
-        return 0
-      fi
+      printf 'analysis found for %s after %s attempt(s)\n' \
+        "${head_sha:-$merge_sha}" "$attempt"
+      return 0
     fi
     ((attempt < attempts)) && sleep "$delay"
     ((attempt++))
