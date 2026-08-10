@@ -149,9 +149,16 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
   2026-08: the strict reading blocked two `CHANGELOG.md`-only pull
   requests while the bar was fully held.
 - SonarCloud never runs on a Dependabot pull request, and this house
-  does not undo that: Dependabot-triggered workflows get no repository
-  secrets by GitHub's design, and the job that would hold the token is
-  the job that installs the very dependency version under review. So
+  keeps it that way BY CHOICE: a path exists — on Dependabot-triggered
+  runs `secrets.*` resolves from the Dependabot secrets store, so
+  registering `SONAR_TOKEN` there would make these pull requests
+  genuinely analysed — and it is refused on threat model, not
+  inexistence. The token would enter the environment of the job that
+  installs the very dependency version under review, and scoping it to
+  the scan step does not close that (an install script can poison
+  `$GITHUB_ENV` and read a later step's environment), on top of a
+  second secrets store to rotate across the family. Re-evaluate if
+  that model changes. So
   the gate ACCEPTS such a pull request only after establishing that
   every commit on it is Dependabot's own and that it touches nothing
   but manifests and pinned references. That clause is not decorative:

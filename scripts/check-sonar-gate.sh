@@ -12,17 +12,22 @@
 #
 # The one case where an absent analysis is accepted is itself verified
 # rather than assumed. SonarCloud never runs on a Dependabot pull
-# request — Dependabot-triggered workflows get no repository secrets, by
-# a GitHub design decision this house has no reason to undo, since the
-# job that would hold the token is the same job that installs the very
-# dependency version under review. So a Dependabot pull request is
-# accepted only once this script has established that every commit on it
-# is Dependabot's own and that it touches nothing but manifests and
-# pinned action references. A hand- or agent-authored commit on such a
-# branch is not a theoretical case: the family's dependabot-fix workflow
-# pushes fixes onto exactly these branches, and that is the hole this
-# clause closes. Whatever it lets through is analysed anyway by the push
-# build on the default branch, where this same gate runs unconditionally.
+# request. A path to change that EXISTS — on Dependabot-triggered runs
+# `secrets.*` resolves from the Dependabot secrets store, so registering
+# SONAR_TOKEN there would make these pull requests genuinely analysed —
+# and it is refused on threat model, not inexistence: the token would
+# enter the environment of the job that installs the very dependency
+# version under review, and scoping it to the scan step does not close
+# that (an install script can poison $GITHUB_ENV and read a later
+# step's environment). Re-evaluate if that model changes. So a
+# Dependabot pull request is accepted only once this script has
+# established that every commit on it is Dependabot's own and that it
+# touches nothing but manifests and pinned action references. A hand- or
+# agent-authored commit on such a branch is not a theoretical case: the
+# family's dependabot-fix workflow pushes fixes onto exactly these
+# branches, and that is the hole this clause closes. Whatever it lets
+# through is analysed anyway by the push build on the default branch,
+# where this same gate runs unconditionally.
 #
 # Reads its context from the environment so the workflow keeps the
 # GitHub expressions and this keeps the decisions.
