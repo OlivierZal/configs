@@ -401,16 +401,6 @@ describe('the unanalysed-pull-request branch', () => {
     expect(output).toContain(expected)
   })
 
-  it('accepts a merge_group, whose head already passed', () => {
-    const { output, status } = run(gateScript, [], {
-      EVENT_NAME: 'merge_group',
-      THIS_REPO: 'OlivierZal/configs',
-    })
-
-    expect(status).toBe(0)
-    expect(output).toContain('passed this gate on its own head')
-  })
-
   it('refuses to run at all without a trigger', () => {
     const { output, status } = run(gateScript, [])
 

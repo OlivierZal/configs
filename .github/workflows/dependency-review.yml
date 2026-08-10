@@ -27,10 +27,8 @@ jobs:
     timeout-minutes: 15
 name: Dependency review
 # Diff-shaped by construction: the action compares a base ref against a
-# head ref, so it belongs to pull requests and nowhere else. No
-# `merge_group` — that context carries no pull request, and the refs it
-# defaults from would be missing. No `push`, which has no base to
-# compare. What a pull request cannot see — an advisory that landed
+# head ref, so it belongs to pull requests and nowhere else. No `push`,
+# which has no base to compare. What a pull request cannot see — an advisory that landed
 # before it — is Dependabot's continuous job, not this one's.
 on:
   pull_request: {}

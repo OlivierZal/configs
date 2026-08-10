@@ -373,6 +373,15 @@ reference); this file speaks to the MAINTAINER (rules, their reasons,
 the incidents behind them) — a rule stated in both must say the same
 thing, and doctrine evolves HERE first.
 
+GitHub merge queues are gated on ORGANISATION ownership — "available
+in any public repository owned by an organization" — and every repo in
+this family is user-owned, so the `merge_group` event can never fire.
+No workflow declares that trigger and the Sonar gate has no rule for
+it: an event that cannot arrive needs no handling, and "inert but
+harmless" is not a reason to keep configuration. Verified 2026-08
+against the docs source; revisit only if a repo moves under an
+organisation.
+
 Dependabot's commit prefixes are pinned to `build(deps)` /
 `build(deps-dev)` rather than inferred. The **subject** casing cannot
 be pinned: `commit-message` accepts only `prefix`,

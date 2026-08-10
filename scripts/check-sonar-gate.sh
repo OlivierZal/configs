@@ -108,9 +108,6 @@ matches_allowlist() {
 # The accepted-without-analysis branch. Every clause states a fact this
 # script checked; none of them is an assumption about who opened what.
 accept_unanalysed() {
-  if [[ $event == merge_group ]]; then
-    pass 'merge_group: the queued pull request passed this gate on its own head'
-  fi
   [[ $event == pull_request ]] ||
     fail "no analysis runs for a \`$event\` event and this gate has no rule for it; the bar was not verified"
   [[ $head_repo == "$this_repo" ]] ||
