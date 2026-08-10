@@ -152,6 +152,17 @@ export const webviewFloorBlock = (files: readonly string[]): Config => ({
   },
 })
 
+// Every rule turned off below is owned by Prettier (formatter formats,
+// linter lints) — the family rule for every other language, reaching
+// HTML by hand because `eslint-config-prettier` disables 358 rules and
+// ZERO `html/` ones. Each entry names which of two reasons retires it:
+// REDUNDANT, Prettier's output already satisfies it, so keeping it only
+// duplicates the formatter; or CONFLICTING, Prettier's output VIOLATES
+// it, measured rather than assumed — one Prettier pass over a settings
+// page that lints clean today raises 78 errors, from the four
+// conflicting rules and nothing else. The quality rules come through
+// that same pass untouched, which is what makes the split safe:
+// Prettier moves whitespace, it never invents an ARIA role.
 const htmlBlock: Config[] = defineConfig([
   {
     extends: ['html/recommended'],
@@ -159,11 +170,24 @@ const htmlBlock: Config[] = defineConfig([
     language: 'html/html',
     plugins: { html, unicorn },
     rules: {
-      'html/class-spacing': 'error',
+      // CONFLICTING: the rule breaks attributes onto their own lines
+      // past a COUNT, Prettier keeps them inline while they fit the
+      // print WIDTH.
+      'html/attrs-newline': 'off',
+      // REDUNDANT
+      'html/class-spacing': 'off',
       'html/css-no-empty-blocks': 'error',
+      // REDUNDANT
+      'html/element-newline': 'off',
+      // Kept: Prettier never reorders `<head>` children, so no formatter
+      // guarantees this one.
       'html/head-order': 'error',
       'html/id-naming-convention': 'error',
-      'html/lowercase': 'error',
+      // CONFLICTING: Prettier indents HTML by two spaces where the
+      // rule expects four, so every nested line fails.
+      'html/indent': 'off',
+      // REDUNDANT
+      'html/lowercase': 'off',
       'html/max-element-depth': 'error',
       'html/no-abstract-roles': 'error',
       'html/no-accesskey-attrs': 'error',
@@ -171,14 +195,19 @@ const htmlBlock: Config[] = defineConfig([
       'html/no-aria-hidden-on-focusable': 'error',
       'html/no-duplicate-class': 'error',
       'html/no-empty-headings': 'error',
-      'html/no-extra-spacing-text': 'error',
+      // CONFLICTING: Prettier writes the space in `<meta … />` that
+      // this rule rejects.
+      'html/no-extra-spacing-tags': 'off',
+      // REDUNDANT
+      'html/no-extra-spacing-text': 'off',
       'html/no-heading-inside-button': 'error',
       'html/no-ineffective-attrs': 'error',
       'html/no-inline-styles': 'error',
       'html/no-invalid-attr-value': 'error',
       'html/no-invalid-entity': 'error',
       'html/no-invalid-role': 'error',
-      'html/no-multiple-empty-lines': 'error',
+      // REDUNDANT
+      'html/no-multiple-empty-lines': 'off',
       'html/no-nested-interactive': 'error',
       'html/no-non-scalable-viewport': 'error',
       'html/no-positive-tabindex': 'error',
@@ -186,10 +215,19 @@ const htmlBlock: Config[] = defineConfig([
       'html/no-script-style-type': 'error',
       'html/no-skip-heading-levels': 'error',
       'html/no-target-blank': 'error',
-      'html/no-trailing-spaces': 'error',
+      // REDUNDANT
+      'html/no-trailing-spaces': 'off',
       'html/no-whitespace-only-children': 'error',
       'html/prefer-https': 'error',
+      // REDUNDANT
+      'html/quotes': 'off',
       'html/require-button-type': 'error',
+      // CONFLICTING: Prettier self-closes void elements (`<img … />`),
+      // which is exactly what this rule reports. Its name suggests
+      // validity, but the spec makes a trailing slash on a void element
+      // meaningless, not invalid — both spellings parse to the same
+      // DOM, so the rule is style, and style is Prettier's.
+      'html/require-closing-tags': 'off',
       'html/require-content': 'error',
       'html/require-details-summary': 'error',
       'html/require-explicit-size': 'error',
@@ -198,6 +236,9 @@ const htmlBlock: Config[] = defineConfig([
       'html/require-input-label': 'error',
       'html/require-meta-charset': 'error',
       'html/require-meta-viewport': 'error',
+      // Kept: attribute ORDER reads like formatting, but Prettier
+      // preserves the order it is given — no formatter enforces this, so
+      // dropping it would drop the convention itself.
       'html/sort-attrs': 'error',
       'html/svg-require-viewbox': 'error',
       'unicorn/expiring-todo-comments': 'error',

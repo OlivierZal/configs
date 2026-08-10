@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 
 import type { Config } from 'eslint/config'
 import { ESLint, Linter } from 'eslint'
+import { format } from 'prettier'
 import { describe, expect, it } from 'vitest'
 
 import { homeyApp } from '../../src/eslint/homey-app.ts'
@@ -89,6 +90,41 @@ const mainRulesOf = (preset: typeof appPreset): Record<string, unknown> =>
       entry.rules !== undefined,
   )?.rules ?? {}
 
+// Minimal page satisfying every quality rule the preset keeps, so a
+// mutation below can only raise its own message. Written the way
+// Prettier writes it, which is the point: the same bytes must survive
+// both the formatter and the linter.
+const HTML_PAGE = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <title>t</title>
+  </head>
+  <body>
+    <p class="a">x</p>
+  </body>
+</html>
+`
+
+const htmlBlocks = appPreset.filter(
+  (entry) => entry.files?.includes('**/*.html') === true,
+)
+
+const lintHtml = async (text: string): Promise<(string | null)[]> => {
+  const eslint = new ESLint({
+    overrideConfig: htmlBlocks,
+    overrideConfigFile: true,
+  })
+  // The path must sit inside the cwd: `lintText` silently reports
+  // nothing for a path outside it, which would turn every assertion
+  // here into a comparison against an empty list it never populated.
+  const [result] = await eslint.lintText(text, {
+    filePath: 'settings/index.html',
+  })
+  return result?.messages.map(({ ruleId }) => ruleId) ?? []
+}
+
 describe(homeyApp, () => {
   it('should carry the webview floor on the given files only', () => {
     expect(floorEntry).toBeDefined()
@@ -169,6 +205,43 @@ describe(homeyApp, () => {
     await expect(
       eslint.calculateConfigForFile('app.mts'),
     ).resolves.toBeDefined()
+  })
+})
+
+// The HTML handover is the one place `eslint-config-prettier` cannot
+// help: it disables no `html/` rule at all, so the split between what
+// Prettier formats and what the preset still lints is hand-maintained —
+// and only a real Prettier run can prove it lands where it claims.
+describe('html formatting handover', () => {
+  it('should accept what Prettier produces', async () => {
+    const formatted = await format(HTML_PAGE, { parser: 'html' })
+
+    await expect(lintHtml(formatted)).resolves.toStrictEqual([])
+  })
+
+  // The formatter's job, given up here: four-space indent, padded tags
+  // and single quotes are all rewritten by the very next `format` run,
+  // so reporting them would only duplicate it.
+  it('should leave formatting alone', async () => {
+    const misformatted = HTML_PAGE.replace(
+      '    <p class="a">x</p>',
+      "        <p    class='a'  >x</p>",
+    )
+
+    await expect(lintHtml(misformatted)).resolves.toStrictEqual([])
+  })
+
+  // The counterweight: no formatter invents an ARIA role, so the
+  // quality half must survive the handover intact.
+  it('should still reject an invalid ARIA role', async () => {
+    const invalid = HTML_PAGE.replace(
+      '<p class="a">x</p>',
+      '<p role="not-a-role">x</p>',
+    )
+
+    await expect(lintHtml(invalid)).resolves.toStrictEqual([
+      'html/no-invalid-role',
+    ])
   })
 })
 
