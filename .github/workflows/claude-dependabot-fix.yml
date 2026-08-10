@@ -1,0 +1,49 @@
+# workflow_run (not pull_request) is deliberate: dependabot-triggered runs
+# get a read-only token and only dependabot secrets, so they cannot reach
+# CLAUDE_CODE_OAUTH_TOKEN — this run executes in the default-branch context
+# instead. Claude pushes through its GitHub App token, which re-triggers CI
+# (a GITHUB_TOKEN push would not), and the dependabot auto-merge workflow
+# then completes the loop once green.
+#
+# The local `./` reference mirrors ci.yml: this repository dogfoods its own
+# reusable workflows. Calling one from the repository that hosts it is not
+# circular — the caller runs once per completed build, and the callee is
+# resolved from the same commit rather than re-entered.
+concurrency:
+  cancel-in-progress: false
+  group: claude-dependabot-fix-${{ github.event.workflow_run.head_branch }}
+jobs:
+  fix:
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      packages: read
+      pull-requests: read
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+    uses: ./.github/workflows/reusable-claude-dependabot-fix.yml
+    with:
+      repo-guidance: >-
+        This repository is the tooling six others consume, so a fix here
+        is a fix everywhere: prefer the change that keeps every consumer
+        working over the one that is locally tidiest.
+
+        Two channels, one version: the npm package and the reusable
+        workflows consumers pin by SHA must never disagree, and
+        `scripts/check-pins.sh` fails when they do. A bump that moves one
+        moves the other in the same commit.
+
+        Stop and leave the pull request failing for human review when the
+        bump changes lint policy — new or stricter rules, a changed
+        default, a runtime floor. Adopting such a release is a
+        per-repository judgement across seven repositories, and no
+        automated fix can make it.
+      verify-commands: '`npm run format`, `npm run lint`, `npm run typecheck`, `npm test`, and `npm run lint:package`'
+name: Claude Dependabot Fix
+on:
+  workflow_run:
+    types: [completed]
+    # The repo's two always-running required build gates (see ruleset).
+    workflows: [CI, Zizmor]
+permissions: {}

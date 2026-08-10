@@ -3,7 +3,7 @@
 // (ignores, `'off'` ledgers) and its wire-protocol naming entry.
 import { type Config, defineConfig } from 'eslint/config'
 import { flatConfigs as importXConfigs } from 'eslint-plugin-import-x'
-import { configs as tsConfigs } from 'typescript-eslint'
+import { configs as tsConfigs, globs as tsGlobs } from 'typescript-eslint'
 import js from '@eslint/js'
 import stylistic from '@stylistic/eslint-plugin'
 import prettier from 'eslint-config-prettier/flat'
@@ -76,7 +76,7 @@ const libraryMainBlock = ({
         // Last: it neutralizes formatting rules from the presets above.
         prettier,
       ],
-      files: ['**/*.ts', '*.config.js'],
+      files: [tsGlobs.ts, '*.config.js'],
       languageOptions: mainLanguageOptions,
       plugins: { '@stylistic': stylistic, perfectionist },
       rules: {
