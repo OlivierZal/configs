@@ -170,12 +170,19 @@ describe('the reusable CI workflow', () => {
   // exactly as unguarded as before, and every other test here green.
   // The check job is the one that is a required context in all seven
   // repos, which is what makes the failure unmissable.
+  // Naming the script is not running it: the resolution assigns a path
+  // and a separate line invokes it, so both halves are pinned or a
+  // dropped invocation reads as wired.
   it('runs the check in the check job', () => {
     const runs = checkSteps
       .map((step) => asRecord(step, 'step').run)
       .filter((run) => typeof run === 'string')
+      .join('\n')
 
-    expect(runs.join('\n')).toContain('check-coverage-leg.sh')
+    expect(runs).toContain('check-coverage-leg.sh')
+    expect(runs).toMatch(
+      /^\s*bash "\$script" "\$NODE_VERSIONS" "\$COVERAGE_NODE_VERSION"$/mv,
+    )
   })
 
   // A caller that passes neither input still has to get coverage, so
