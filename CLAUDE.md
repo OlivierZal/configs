@@ -140,6 +140,14 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
   window of workflow YAML and shell carries new lines and no coverable
   one; demanding a ratio there would fail on the analyser's language
   support rather than on the code.
+- An EMPTY window is not an UNVERIFIED one. Sonar analyses no Markdown,
+  so a documentation-only pull request comes back with its counters and
+  without a single line-derived figure — a measure with no subject, not
+  a measure that failed. The counters are what prove the analysis
+  answered, so they stay unconditional and their absence still fails;
+  only the figures with nothing to describe are skipped. Measured
+  2026-08: the strict reading blocked two `CHANGELOG.md`-only pull
+  requests while the bar was fully held.
 - SonarCloud never runs on a Dependabot pull request, and this house
   does not undo that: Dependabot-triggered workflows get no repository
   secrets by GitHub's design, and the job that would hold the token is

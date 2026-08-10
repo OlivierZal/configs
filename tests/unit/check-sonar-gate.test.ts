@@ -123,6 +123,14 @@ const NEW_EMPTY_WINDOW = without(
   'new_duplicated_lines_density',
 )
 
+// What SonarCloud answers for a documentation-only change: it analyses
+// no Markdown, so the counters come back and every line-derived figure
+// is simply absent. The window is empty, not unverified.
+const NEW_NOTHING_ANALYSABLE = [
+  measure('new_violations', '0'),
+  measure('new_security_hotspots', '0'),
+]
+
 // Throws instead of narrowing conditionally: the vitest rules ban
 // conditional logic inside tests.
 const asRecord = (value: unknown, what: string): Record<string, unknown> => {
@@ -175,6 +183,11 @@ describe('the Sonar bar', () => {
       ),
       mode: 'new',
     },
+    // A documentation-only pull request: analysed, counters returned,
+    // every line-derived figure absent because there was no subject to
+    // measure. Failing here would report "could not verify" for a window
+    // that is fully verified — and it blocked two real pull requests.
+    { measures: NEW_NOTHING_ANALYSABLE, mode: 'new' },
   ])('accepts a clean $mode window', ({ measures, mode }) => {
     const { output, status } = bar(mode, measures)
 
@@ -271,6 +284,30 @@ describe('the Sonar bar', () => {
 
     expect(status).toBe(1)
     expect(output).toContain('carries no measures')
+  })
+
+  // The tolerance is for figures with no subject, never for the counters
+  // that prove the analysis answered: an empty window still holds them.
+  it('holds the counters on a window with nothing analysable', () => {
+    const { output, status } = bar(
+      'new',
+      withMetric(NEW_NOTHING_ANALYSABLE, 'new_violations', '1'),
+    )
+
+    expect(status).toBe(1)
+    expect(output).toContain('issues on new code: 1')
+  })
+
+  // Counters gone as well: nothing establishes that an analysis answered
+  // at all, so this is the unverified case and not the empty one.
+  it('rejects a window that reports no counter either', () => {
+    const { output, status } = bar(
+      'new',
+      without(NEW_NOTHING_ANALYSABLE, 'new_violations'),
+    )
+
+    expect(status).toBe(1)
+    expect(output).toContain('`new_violations` is absent')
   })
 
   // SonarCloud answers an unauthorized read with a body, not only a
