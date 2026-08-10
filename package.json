@@ -1,6 +1,6 @@
 {
   "name": "@olivierzal/configs",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Shared tooling presets for the OlivierZal repo family: eslint, prettier, tsconfig, typedoc and vitest fragments",
   "keywords": [
     "configs",
