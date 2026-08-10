@@ -143,6 +143,39 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
   rulesets. Adding it first would gate merges on a job whose API
   assumptions have never run.
 
+## Audit doctrine
+
+- `--omit=dev` is the whole scope: only what reaches the device counts.
+  Measured 2026-08 — four of the five consumers carry zero production
+  advisories, so a strict floor costs one exception line family-wide.
+- The floor is `low`, not `high`. `--audit-level=high` was honest about
+  its own contract and still shipped vulnerable code:
+  `com.melcloud.extension` carries four `moderate` advisories on the
+  device and audited green. Raising a threshold hides findings without
+  recording that anyone looked.
+- A permanent red is not a signal either — it gets ignored, then it
+  masks the real one. So the floor drops AND every survivor is named:
+  `audit-exceptions` takes one `GHSA-…` id per line with the reason it
+  is tolerated. Same doctrine as the lint triage ledger — a recorded
+  verdict, never a suppression.
+- Three properties make it a verdict rather than a mute. The id is the
+  ADVISORY, never the package, so a new finding in an already-excepted
+  dependency still fails. A reason is mandatory. And an entry whose
+  advisory no longer appears FAILS: an exception that outlives its cause
+  misrepresents what was reviewed, and upstream fixes are exactly when
+  nobody thinks to look.
+- `npm audit` exits non-zero precisely when it finds something, so the
+  report is written to a file, never piped: a pipeline conflates "found
+  advisories" with "could not run". Every unreadable report — npm error
+  object, empty, non-JSON, foreign document, absent file — fails. A gate
+  must never report a clean run it did not perform.
+- Upstream advisories are NOT worked around in our code. No `overrides`,
+  no defensive branch: a workaround is a permanent certain cost against
+  a rare risk that is not ours, and it outlives its cause — upstream
+  fixes, the workaround stays as invisible debt. The verdict lives in
+  the audit config alone. If exposure ever looks serious, that is a
+  decision to escalate, not to code around.
+
 ## Commands
 
 - `npm run format` / `format:fix` — prettier (self-hosted config).

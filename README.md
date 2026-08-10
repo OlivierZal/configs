@@ -211,6 +211,27 @@ fails, since it carries source nobody analysed. The context is
 `ci / Sonar` — add it to the ruleset only after watching it report
 correctly, and never rename it.
 
+`reusable-audit.yml` audits production dependencies only (`--omit=dev`):
+what does not reach the device is not its business. Every advisory at or
+above `audit-level` (default `low`) must be fixed or recorded in
+`audit-exceptions`, one `GHSA-…` id per line followed by the reason it is
+tolerated:
+
+```yaml title=".github/workflows/audit.yml"
+uses: OlivierZal/configs/.github/workflows/reusable-audit.yml@v1.10.0
+with:
+  audit-exceptions: |
+    GHSA-xxxx-xxxx-xxxx — reached only through <path>; upstream <pkg> pins the vulnerable major
+```
+
+The id names the advisory, never the package, so a new finding in the
+same dependency still fails; a reason is mandatory; and an entry whose
+advisory no longer appears fails too, because an exception that outlives
+its cause misrepresents what was reviewed. Upstream advisories are
+recorded here rather than worked around in consumer code — a workaround
+is a permanent cost against a risk that is not ours, and it outlives the
+fix that makes it pointless.
+
 Available: `reusable-ci.yml` (check + caller-defined test matrix, caller
 picks the legs, the coverage leg and the library gates, plus the Sonar
 gate), `reusable-audit.yml`,
