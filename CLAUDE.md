@@ -272,8 +272,10 @@ the three below fails it: all are active under eslint-community.
   and pinned by its tests. Re-evaluate if hand-written executors
   multiply.
 - **eslint-plugin-security — REFUSED, owned and noisy.** Taint-style
-  analysis is owned by CodeQL and SonarCloud, active and BLOCKING on
-  all seven repos, flow-aware where this plugin is syntactic. Its
+  analysis is owned by CodeQL and SonarCloud, flow-aware where this
+  plugin is syntactic. Both run on all seven repos; only `ci / Sonar`
+  is a required context — CodeQL reports without blocking, and making
+  it block is its own decision, not something this entry assumes. Its
   unique remainder is the noise set (`detect-object-injection` flags
   every computed access; `detect-non-literal-regexp` would condemn the
   route-guard kernels, `detect-non-literal-fs-filename` the manifest
