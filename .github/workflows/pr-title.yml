@@ -25,8 +25,7 @@ name: PR title
 # `edited` is load-bearing: without it, fixing a rejected title in place
 # would never re-run the check. `reopened`/`synchronize` keep the status
 # present on every head commit — for a required check, a missing status
-# blocks the merge as hard as a failing one. No `merge_group`: the action
-# reads a pull_request context and throws without one.
+# blocks the merge as hard as a failing one.
 on:
   pull_request:
     types: [edited, opened, reopened, synchronize]
