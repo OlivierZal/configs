@@ -1,8 +1,9 @@
 # The family CI shape, callable: check job (typecheck/lint/format plus
-# the optional library gates) and a three-leg test matrix whose
-# coverage/Sonar leg is chosen by the caller. Permissions are the
-# family superset — packages:read is inert for repos without scoped
-# dependencies.
+# the optional library gates) and a test matrix whose legs and whose
+# coverage/Sonar leg are both chosen by the caller — a repo whose
+# runtime floor is a specific minor pins that minor here rather than
+# floating with `lts/*`. Permissions are the family superset —
+# packages:read is inert for repos without scoped dependencies.
 concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
   group: ci-${{ github.ref }}
@@ -21,6 +22,19 @@ jobs:
         with:
           node-version: ${{ inputs.check-node-version }}
           npm-token: ${{ secrets.GITHUB_TOKEN }}
+      # The coverage leg is selected by string equality against the
+      # matrix, so a version no leg carries selects nothing and the
+      # quality gate quietly stops running behind green legs. This job
+      # is a required context everywhere, which is what makes the
+      # mistake unmissable rather than merely detected.
+      - name: Verify the coverage leg
+        env:
+          COVERAGE_NODE_VERSION: ${{ inputs.coverage-node-version }}
+          NODE_VERSIONS: ${{ inputs.node-versions }}
+        run: |
+          script=node_modules/@olivierzal/configs/scripts/check-coverage-leg.sh
+          [ -f "$script" ] || script=scripts/check-coverage-leg.sh
+          bash "$script" "$NODE_VERSIONS" "$COVERAGE_NODE_VERSION"
       # The pin verifier ships inside the package, so it is always the
       # version the `@olivierzal/configs` pin names — the one this repo
       # hosts rather than installs.
@@ -62,8 +76,9 @@ jobs:
           node-version: ${{ matrix.node-version }}
           npm-token: ${{ secrets.GITHUB_TOKEN }}
       # Coverage (and the Sonar upload that consumes it) runs once, on
-      # the caller-chosen leg, which stays blocking so the quality gate
-      # cannot be skipped silently.
+      # the caller-chosen leg, which stays blocking. That the leg exists
+      # at all is the check job's guard, not this comparison: a version
+      # outside the matrix would match nothing here and skip both.
       - if: matrix.node-version == inputs.coverage-node-version
         run: npm test -- --coverage
       - if: matrix.node-version != inputs.coverage-node-version
@@ -75,7 +90,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [22, latest, 'lts/*']
+        node-version: ${{ fromJSON(inputs.node-versions) }}
     timeout-minutes: 20
 name: Reusable CI
 on:
@@ -87,6 +102,16 @@ on:
         type: string
       coverage-node-version:
         default: lts/*
+        required: false
+        type: string
+      # Quoted entries only, and the check job enforces it: `22.20` is
+      # JSON for the number 22.2, so it would install the 22.2 line and
+      # be compared as `"22.2"` — a wrong runtime and a skipped
+      # coverage leg from one missing pair of quotes. Every entry names
+      # a required status check (`Test (Node <entry>)`), so changing
+      # this list means updating the caller's ruleset in the same move.
+      node-versions:
+        default: '["22", "latest", "lts/*"]'
         required: false
         type: string
       run-docs:

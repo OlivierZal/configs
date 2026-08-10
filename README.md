@@ -185,8 +185,19 @@ jobs:
       run-lint-package: true # libs
 ```
 
-Available: `reusable-ci.yml` (check + three-leg test matrix, caller
-picks the coverage leg and the library gates), `reusable-audit.yml`,
+`node-versions` names the test legs as a JSON array of quoted strings
+(default `["22", "latest", "lts/*"]`) — a repo whose runtime floor is a
+specific minor pins that minor here rather than floating with `lts/*`.
+`coverage-node-version` must name one of them: it is compared against
+each leg, so a version outside the list selects nothing and coverage
+plus the Sonar upload it feeds would never run, behind legs that stay
+green. The `Verify the coverage leg` step proves the two agree before
+any of it starts. Each entry also names a required status check
+(`Test (Node <entry>)`), so a caller changing the list updates its
+ruleset in the same move.
+
+Available: `reusable-ci.yml` (check + caller-defined test matrix, caller
+picks the legs, the coverage leg and the library gates), `reusable-audit.yml`,
 `reusable-claude-dependabot-fix.yml` (caller keeps the `workflow_run`
 trigger and passes its verify commands). The single-file workflows
 (`pr-title`, `zizmor`, `claude*`, `dependabot`) also accept
