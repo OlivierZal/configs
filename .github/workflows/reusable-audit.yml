@@ -17,11 +17,46 @@ jobs:
       - uses: ./.github/actions/setup-node-and-install
         with:
           install: 'false'
-      - env:
+      # `--omit=dev` is the whole point: only what reaches the device
+      # counts. The report is written rather than piped because npm exits
+      # non-zero exactly when it finds something — a pipeline would
+      # conflate "found advisories" with "could not run", and the check
+      # must never read a clean verdict out of a failed run. Hence
+      # `|| true` here and every honesty test inside the script.
+      - name: Collect the production audit
+        env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm audit --audit-level=high --omit=dev
+        run: npm audit --omit=dev --json > audit.json || true
+      - name: Verify the production audit
+        env:
+          AUDIT_EXCEPTIONS: ${{ inputs.audit-exceptions }}
+          AUDIT_LEVEL: ${{ inputs.audit-level }}
+        run: |
+          script=node_modules/@olivierzal/configs/scripts/check-production-audit.sh
+          [ -f "$script" ] || script=scripts/check-production-audit.sh
+          bash "$script" audit.json "$AUDIT_LEVEL" "$AUDIT_EXCEPTIONS"
     timeout-minutes: 15
 name: Reusable Audit
 on:
-  workflow_call: {}
+  workflow_call:
+    inputs:
+      # One `GHSA-…` id per line followed by the reason it is tolerated,
+      # e.g. `GHSA-xxxx-xxxx-xxxx — reached only through <path>; upstream
+      # <package> pins the vulnerable major`. A reason is mandatory, an
+      # id that no longer appears in the report fails as loudly as an
+      # unnamed advisory, and the ids are per-advisory rather than
+      # per-package so a new finding in the same dependency still fails.
+      audit-exceptions:
+        default: ''
+        required: false
+        type: string
+      # Every advisory at or above this floor must be fixed or recorded
+      # in `audit-exceptions`. `low` rather than `high` because the
+      # exception list, not the threshold, is what keeps the signal
+      # quiet — a raised floor hides findings without recording that
+      # anyone looked at them.
+      audit-level:
+        default: low
+        required: false
+        type: string
 permissions: {}
