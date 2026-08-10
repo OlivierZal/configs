@@ -28,7 +28,8 @@ readonly level=${2-}
 readonly exceptions=${3-}
 
 fail() {
-  printf 'error: %s\n' "$1" >&2
+  local message=$1
+  printf 'error: %s\n' "$message" >&2
   exit 1
 }
 
