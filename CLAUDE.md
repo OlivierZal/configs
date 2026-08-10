@@ -73,22 +73,22 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
 
 ## CI matrix doctrine
 
-- A comment asserting an invariant is not a mechanism. `reusable-ci`
-  claimed its coverage leg "stays blocking so the quality gate cannot
-  be skipped silently" while nothing held the claim up: the leg is
-  selected by comparing `coverage-node-version` against each
-  `matrix.node-version`, and a value no leg carries matches nothing —
-  no coverage, no Sonar upload, three green legs, and nothing missing
-  to notice, since `Test (Node latest)` and SonarCloud are outside
-  every repo's required set. `scripts/check-coverage-leg.sh` now
-  re-derives the agreement on every run, in the check job, which IS a
-  required context everywhere. Read every other workflow comment the
-  same way: what enforces this?
-- `node-versions` entries are quoted strings, and the check refuses
-  anything else rather than tolerating it. `22.20` unquoted is JSON for
-  the number 22.2: it installs the 22.2 line and is compared as
-  `"22.2"`, so one missing pair of quotes buys both a wrong runtime and
-  a skipped quality gate.
+- Removing a defect class beats guarding it. Two independent inputs
+  that must agree — a matrix of versions, and a separate
+  `coverage-node-version` compared against it — can always disagree, and
+  that disagreement was silent: no coverage, no Sonar upload, three
+  green legs, nothing missing to notice, since `Test (Node latest)` and
+  SonarCloud are outside every repo's required set. Carrying the flag
+  inside the leg (`matrix.include`, `coverage: true`) leaves nothing to
+  misspell, and shrank the guard that watched for it from 285 lines to
+  a count. Prefer this move wherever two inputs are required to match.
+- A comment asserting an invariant is not a mechanism. Read every
+  workflow comment the same way: what enforces this?
+- `node-versions` versions are quoted. `22.20` unquoted is JSON for the
+  number 22.2, which installs the 22.2 line — but it now also renames
+  the leg to `Test (Node 22.2)`, so the required context of the right
+  name never reports and the merge blocks. Loud, so unguarded: a second
+  diagnosis of an already-noisy failure is upkeep with no reader.
 - Each entry names a required status check (`Test (Node <entry>)`) in
   every consumer's ruleset. Changing the list renames contexts that
   then never report, and a required context that never reports blocks

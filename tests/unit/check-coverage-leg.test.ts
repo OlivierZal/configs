@@ -9,7 +9,9 @@ import { parse } from 'yaml'
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
 const script = path.join(repoRoot, 'scripts/check-coverage-leg.sh')
 
-const DEFAULT_MATRIX = '["22", "latest", "lts/*"]'
+const leg = (version: string): string => `{"node-version": "${version}"}`
+const coverageLeg = (version: string): string =>
+  `{"node-version": "${version}", "coverage": true}`
 
 interface CheckResult {
   readonly output: string
@@ -22,10 +24,10 @@ const isSpawnError = (error: unknown): error is SpawnSyncReturns<string> =>
   'status' in error &&
   'stderr' in error
 
-const check = (versions: string, coverage: string): CheckResult => {
+const check = (versions: string): CheckResult => {
   try {
     return {
-      output: execFileSync(script, [versions, coverage], { encoding: 'utf8' }),
+      output: execFileSync(script, [versions], { encoding: 'utf8' }),
       status: 0,
     }
   } catch (error) {
@@ -80,96 +82,88 @@ const inputs = asRecord(
 const defaultOf = (name: string): string =>
   asString(asRecord(inputs[name], name).default, `${name}.default`)
 
+const testJob = asRecord(jobs.test, 'test')
 const checkSteps = asArray(asRecord(jobs.check, 'check').steps, 'steps')
+const testSteps = asArray(testJob.steps, 'test steps')
+
+const ifsOf = (steps: readonly unknown[]): readonly string[] =>
+  steps
+    .map((step) => asRecord(step, 'step').if)
+    .filter((condition) => typeof condition === 'string')
 
 describe('the coverage-leg check', () => {
-  it.each([
-    { coverage: 'lts/*', versions: DEFAULT_MATRIX },
-    // The reason the input exists: a repo whose runtime floor is a
-    // specific minor names that minor, and coverage follows it there.
-    { coverage: '22.20', versions: '["22.20", "latest", "lts/*"]' },
-  ])('accepts $coverage against $versions', ({ coverage, versions }) => {
-    const { output, status } = check(versions, coverage)
+  it('accepts exactly one flagged leg', () => {
+    const { output, status } = check(
+      `[${coverageLeg('22.20')}, ${leg('latest')}]`,
+    )
 
     expect(status).toBe(0)
-    expect(output).toContain(`coverage runs on the Node ${coverage} leg`)
+    expect(output).toContain('coverage runs on the Node 22.20 leg')
   })
 
-  // The mutation this whole check exists for: today the workflow would
-  // run three green legs, no coverage and no Sonar upload, and say
-  // nothing. `Test (Node latest)` and SonarCloud are outside every
-  // repo's required set, so nothing downstream would notice either.
-  it('rejects a coverage version the matrix does not carry', () => {
-    const { output, status } = check(DEFAULT_MATRIX, '22.20')
+  // The one failure the new shape cannot make noisy: three green legs,
+  // no coverage, no Sonar upload, and no missing context to notice.
+  it('rejects a matrix where no leg is flagged', () => {
+    const { output, status } = check(`[${leg('22')}, ${leg('latest')}]`)
 
     expect(status).toBe(1)
-    expect(output).toContain('names no leg of node-versions')
+    expect(output).toContain('0 of 2 legs carry')
   })
 
-  it.each([
-    // A typo is the likeliest form of the same mistake.
-    {
-      coverage: 'lst/*',
-      expected: 'names no leg of node-versions',
-      versions: DEFAULT_MATRIX,
-    },
-    // `22.20` unquoted is the number 22.2: it would install the 22.2
-    // line — a real Node release, three years older — and be compared
-    // as a string that names no leg. Both failures from one pair of
-    // missing quotes, so unquoted entries are refused outright.
-    {
-      coverage: '22.20',
-      expected: 'installs and is compared as "22.2"',
-      versions: '[22.20, "latest", "lts/*"]',
-    },
-    { coverage: '22', expected: 'not valid JSON', versions: 'lts/*' },
-    {
-      coverage: '22',
-      expected: 'must be a non-empty JSON array',
-      versions: '"22"',
-    },
-    {
-      coverage: '22',
-      expected: 'must be a non-empty JSON array',
-      versions: '[]',
-    },
-    {
-      coverage: '22',
-      expected: 'holds an empty entry',
-      versions: '["22", ""]',
-    },
-    {
-      coverage: '',
-      expected: 'coverage-node-version is empty',
-      versions: DEFAULT_MATRIX,
-    },
-    { coverage: '22', expected: 'usage: check-coverage-leg.sh', versions: '' },
-  ])(
-    'rejects $versions against $coverage',
-    ({ coverage, expected, versions }) => {
-      const { output, status } = check(versions, coverage)
+  it('rejects a matrix where two legs are flagged', () => {
+    const { output, status } = check(
+      `[${coverageLeg('22')}, ${coverageLeg('latest')}]`,
+    )
 
-      expect(status).toBe(1)
-      expect(output).toContain(expected)
-    },
-  )
+    expect(status).toBe(1)
+    expect(output).toContain('2 of 2 legs carry')
+  })
+
+  // `coverage: "true"` is not `coverage: true`, and GitHub would read
+  // the string as truthy — so the check has to agree with the workflow
+  // on what marks a leg, not merely on the key being present.
+  it('rejects a flag that is not the boolean true', () => {
+    const { status } = check('[{"node-version": "22", "coverage": "true"}]')
+
+    expect(status).toBe(1)
+  })
 })
 
 describe('the reusable CI workflow', () => {
-  it('builds its matrix from the node-versions input', () => {
-    const { strategy } = asRecord(jobs.test, 'test')
-    const matrix = asRecord(asRecord(strategy, 'strategy').matrix, 'matrix')
+  // The whole point of the change: the flag lives inside the leg, so
+  // there is no second input left to disagree with the matrix.
+  it('builds its matrix from the node-versions input alone', () => {
+    const matrix = asRecord(
+      asRecord(testJob.strategy, 'strategy').matrix,
+      'matrix',
+    )
 
-    expect(Object.keys(matrix)).toStrictEqual(['node-version'])
-    expect(asString(matrix['node-version'], 'node-version')).toMatch(
+    expect(Object.keys(matrix)).toStrictEqual(['include'])
+    expect(asString(matrix.include, 'include')).toMatch(
       /^\$\{\{\s*fromJSON\(inputs\.node-versions\)\s*\}\}$/v,
     )
   })
 
+  it('declares no coverage-node-version input', () => {
+    expect(Object.keys(inputs)).not.toContain('coverage-node-version')
+  })
+
+  // Selecting on the flag rather than on a comparison is what removes
+  // the class; a step that went back to comparing two inputs would
+  // reinstate it, whatever the rest of the condition says.
+  it('selects coverage on the flag the leg carries', () => {
+    const conditions = ifsOf(testSteps)
+
+    expect(
+      conditions.filter((condition) => condition.includes('matrix.coverage')),
+    ).toHaveLength(3)
+    expect(
+      conditions.filter((condition) => condition.includes('node-version')),
+    ).toStrictEqual([])
+  })
+
   // Shipping the script without wiring it would leave the invariant
   // exactly as unguarded as before, and every other test here green.
-  // The check job is the one that is a required context in all seven
-  // repos, which is what makes the failure unmissable.
   // Naming the script is not running it: the resolution assigns a path
   // and a separate line invokes it, so both halves are pinned or a
   // dropped invocation reads as wired.
@@ -180,31 +174,26 @@ describe('the reusable CI workflow', () => {
       .join('\n')
 
     expect(runs).toContain('check-coverage-leg.sh')
-    expect(runs).toMatch(
-      /^\s*bash "\$script" "\$NODE_VERSIONS" "\$COVERAGE_NODE_VERSION"$/mv,
-    )
+    expect(runs).toMatch(/^\s*bash "\$script" "\$NODE_VERSIONS"$/mv)
   })
 
-  // A caller that passes neither input still has to get coverage, so
-  // the two defaults are fed through the real check rather than eyeballed.
-  it('declares defaults that agree with each other', () => {
-    const { status } = check(
-      defaultOf('node-versions'),
-      defaultOf('coverage-node-version'),
-    )
+  // A caller that passes nothing still has to get coverage, so the
+  // default is fed through the real check rather than eyeballed.
+  it('declares a default that carries its own coverage leg', () => {
+    const { status } = check(defaultOf('node-versions'))
 
     expect(status).toBe(0)
   })
 
-  // Each entry names a required status check (`Test (Node <entry>)`) in
-  // seven rulesets: changing this list renames contexts that then never
-  // report, and a required context that never reports blocks every
-  // merge. Editing it here is legitimate — doing so unaware is not.
+  // Each entry names a required status check (`Test (Node <version>)`)
+  // in seven rulesets: changing this list renames contexts that then
+  // never report, and a required context that never reports blocks
+  // every merge. Editing it here is legitimate — doing so unaware is not.
   it('keeps the leg names its callers require', () => {
-    expect(JSON.parse(defaultOf('node-versions'))).toStrictEqual([
-      '22',
-      'latest',
-      'lts/*',
-    ])
+    expect(
+      asArray(JSON.parse(defaultOf('node-versions')), 'node-versions').map(
+        (entry) => asRecord(entry, 'leg')['node-version'],
+      ),
+    ).toStrictEqual(['22', 'latest', 'lts/*'])
   })
 })

@@ -181,20 +181,21 @@ jobs:
     secrets: inherit
     uses: OlivierZal/configs/.github/workflows/reusable-ci.yml@v1.0.0
     with:
-      coverage-node-version: '22' # apps: the Homey runtime leg
       run-lint-package: true # libs
 ```
 
-`node-versions` names the test legs as a JSON array of quoted strings
-(default `["22", "latest", "lts/*"]`) — a repo whose runtime floor is a
-specific minor pins that minor here rather than floating with `lts/*`.
-`coverage-node-version` must name one of them: it is compared against
-each leg, so a version outside the list selects nothing and coverage
-plus the Sonar upload it feeds would never run, behind legs that stay
-green. The `Verify the coverage leg` step proves the two agree before
-any of it starts. Each entry also names a required status check
-(`Test (Node <entry>)`), so a caller changing the list updates its
-ruleset in the same move.
+`node-versions` describes the test legs, one JSON object each (default
+`[{"node-version": "22", "coverage": true}, {"node-version": "latest"},
+{"node-version": "lts/*"}]`) — a repo whose runtime floor is a specific
+minor pins that minor here rather than floating with `lts/*`. Exactly
+one leg carries `coverage: true`, and that leg runs coverage and uploads
+to Sonar. The flag travels inside the leg it marks, so it cannot name a
+leg that does not exist; the `Verify the coverage leg` step only counts
+them, since a matrix with no flagged leg is the one mistake that would
+otherwise stay silent. Quote every version: `22.20` unquoted is JSON for
+the number 22.2, which installs the 22.2 line. Each entry also names a
+required status check (`Test (Node <version>)`), so a caller changing
+the list updates its ruleset in the same move.
 
 The `Sonar` job holds the house bar on what that leg uploaded: zero
 issues, zero security hotspots, zero duplication and full coverage, on
