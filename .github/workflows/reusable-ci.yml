@@ -63,14 +63,20 @@ jobs:
     name: Sonar
     # The analysis this verifies is uploaded by the coverage leg.
     needs: test
+    # No more than the callers grant: a called job asking for a
+    # permission its caller withholds fails the whole run at startup,
+    # so the two lists below come from git rather than from the pulls
+    # API, which would have cost every caller a `pull-requests: read`.
     permissions:
       contents: read
       packages: read
-      pull-requests: read
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # Both sides of the merge commit, which is what the two lists
+          # below are read from.
+          fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup-node-and-install
         with:
@@ -80,7 +86,6 @@ jobs:
         env:
           BRANCH: ${{ github.ref_name }}
           EVENT_NAME: ${{ github.event_name }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           MERGE_SHA: ${{ github.sha }}
@@ -88,12 +93,13 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           THIS_REPO: ${{ github.repository }}
         # The two lists are what makes the unanalysed-pull-request branch
-        # a verification instead of an assumption, so they are read from
-        # the API rather than inferred from the actor.
+        # a verification instead of an assumption. Read from the merge
+        # commit's two sides: the authorship that actually lands in
+        # history, not a label attached to the pull request.
         run: |
-          if [ "$EVENT_NAME" = pull_request ] && [ -n "$PR_NUMBER" ]; then
-            COMMIT_AUTHORS=$(gh api "repos/$THIS_REPO/pulls/$PR_NUMBER/commits" --paginate --jq '.[].author.login // .commit.author.name')
-            CHANGED_FILES=$(gh api "repos/$THIS_REPO/pulls/$PR_NUMBER/files" --paginate --jq '.[].filename')
+          if git rev-parse -q --verify HEAD^2 >/dev/null; then
+            COMMIT_AUTHORS=$(git log --format='%an' HEAD^2 --not HEAD^1)
+            CHANGED_FILES=$(git diff --name-only HEAD^1 HEAD^2)
             export COMMIT_AUTHORS CHANGED_FILES
           fi
           script=node_modules/@olivierzal/configs/scripts/check-sonar-gate.sh

@@ -406,15 +406,36 @@ describe('the reusable CI workflow', () => {
     expect(asString(sonarJob.name, 'sonar.name')).toBe('Sonar')
   })
 
-  // Both lists are read from the API rather than inferred, which is
-  // what makes the unanalysed branch a verification and not a guess.
+  // Both lists are read rather than inferred, which is what makes the
+  // unanalysed branch a verification and not a guess. From git, not the
+  // pulls API: a called job may not ask for a permission its caller
+  // withholds, and requesting one fails the run before any step starts.
   it('reads the commit authors and the changed files', () => {
     const script = asArray(sonarJob.steps, 'steps')
       .map((step) => asRecord(step, 'step').run)
       .filter((step) => typeof step === 'string')
       .join('\n')
 
-    expect(script).toContain('/commits')
-    expect(script).toContain('/files')
+    expect(script).toContain('git log')
+    expect(script).toContain('git diff')
+  })
+
+  // The lists come from the two sides of the merge commit, which are
+  // only present with the full history.
+  it('checks out both sides of the merge commit', () => {
+    const depths = asArray(sonarJob.steps, 'steps')
+      .map((step) => asRecord(asRecord(step, 'step').with ?? {}, 'with'))
+      .map((entry) => entry['fetch-depth'])
+
+    expect(depths).toContain(0)
+  })
+
+  // A caller grants `contents` and `packages`; anything beyond that is
+  // an escalation GitHub refuses at startup, and it would refuse it for
+  // all seven callers at once.
+  it('asks for no permission its callers withhold', () => {
+    expect(
+      Object.keys(asRecord(sonarJob.permissions, 'permissions')),
+    ).toStrictEqual(['contents', 'packages'])
   })
 })
