@@ -124,6 +124,43 @@ the three below fails it: all are active under eslint-community.
   route-guard kernels, `detect-non-literal-fs-filename` the manifest
   reader). Re-evaluate only if the CodeQL/Sonar gates ever drop.
 
+## The HTML formatting handover
+
+The family rule everywhere else — the formatter formats, the linter
+lints — reaches HTML too, and reaches it BY HAND.
+`eslint-config-prettier` is what normally performs the handover;
+measured against the installed plugin, it disables 358 rules and
+**zero** `html/` ones. So the `html/` split lives in `homey-app`'s
+ledger, entry by entry, each naming which of two reasons retires it:
+
+- **redundant** — Prettier's output already satisfies the rule
+  (`class-spacing`, `element-newline`, `lowercase`,
+  `no-extra-spacing-text`, `no-multiple-empty-lines`,
+  `no-trailing-spaces`, `quotes`);
+- **conflicting** — Prettier's output VIOLATES the rule, so keeping it
+  would fail every formatted file (`attrs-newline`; `indent`, Prettier
+  indents two where the rule wants four; `no-extra-spacing-tags` and
+  `require-closing-tags`, both tripped by the ` />` Prettier writes on
+  void elements).
+
+The conflicting half is the load-bearing discovery: one Prettier pass
+over a settings page that lints clean today raised 78 errors, from
+those four rules and nothing else. Three rules that LOOK like
+formatting are kept for the mirror reason — Prettier does not do them,
+so dropping them would drop the convention itself: `head-order` (never
+reorders `<head>`), `sort-attrs` (preserves the attribute order it is
+given) and `no-whitespace-only-children`. `require-closing-tags` is the
+one that deserved an argument rather than a reflex: its name suggests
+validity, but the spec makes a trailing slash on a void element
+meaningless, not invalid — both spellings parse to the same DOM, so it
+is style, and style is Prettier's.
+
+`tests/unit/presets.test.ts` locks it with a real `format` call, both
+ways: Prettier's own output must lint clean, a misformatted page must
+raise nothing, and an invalid ARIA role must still be reported. Adding
+an `html/` rule means classifying it the same way — and one that
+Prettier neither guarantees nor contradicts belongs at `error`.
+
 ## Consumers & adoption
 
 Exact pins only (family doctrine): a release lands through one

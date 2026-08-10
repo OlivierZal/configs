@@ -117,6 +117,11 @@ resolves against it).
 { "prettier": "@olivierzal/configs/prettier" }
 ```
 
+Prettier formats HTML too: the `homey-app` preset turns off the
+`html/` rules that would duplicate or contradict it, and keeps the
+quality ones. Do not exclude `*.html` from prettier — nothing lints
+its formatting any more.
+
 ### tsconfig
 
 ```jsonc title="tsconfig.json"
