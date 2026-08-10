@@ -19,6 +19,15 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
   tsconfig bases: paths in an extended tsconfig resolve relative to the
   BASE file (inside `node_modules` for consumers), so a base carrying
   them resolves an empty file list. Pinned by a test.
+- This package's `engines` is NOT the device floor the three runtime
+  packages declare — nothing here reaches a Homey, so it answers a
+  different question: what does the toolchain need in order to install
+  and run? That makes it derived from the dependency tree, never copied
+  from a sibling. Measured 2026-08: `eslint-plugin-package-json` requires
+  `^22.22.2 || >=24.15.0`, so the long-standing `>=22.19.0` declared a
+  floor this package could not actually install on, and `.nvmrc` sent
+  every fresh clone there. Both now name the derived value; re-derive it
+  when the tree moves rather than nudging it by hand.
 
 ## Naming doctrine
 
@@ -107,10 +116,19 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
 
 - The free-tier quality gate is NOT the house bar and cannot be made
   into it: it tolerates 3 % duplication on new code, lets code smells
-  through, and is not customizable. So the `Sonar` job reads the
-  metrics themselves — `violations`, `security_hotspots`,
-  `duplicated_lines_density`, `coverage` and their `new_*` twins — on
-  BOTH windows. `qualityGateStatus` is never consulted.
+  through, and is not customizable — custom gates are a paid plan, and
+  `Sonar way` is read-only with every condition on new code. So the
+  `Sonar` job reads the metrics themselves — `violations`,
+  `security_hotspots`, `duplicated_lines_density`, `coverage` and their
+  `new_*` twins. `qualityGateStatus` is never consulted.
+- ONE window per event, each answering for what it can cause — the same
+  split by TIME as the dependency doctrine below. A pull request answers
+  for the code it introduces, which is Clean as You Code and is enough
+  alone: every change lands through a gated pull request, so an overall
+  at zero stays at zero by induction. The single drift that escapes the
+  induction is an analyser update raising issues on untouched code; no
+  pull request causes it, so it is read on `main`, where it is loud and
+  blocks no review it has nothing to do with.
 - Anything the gate could not read is a failure, never a pass. An
   absent metric, an unreachable API, an analysis that never appeared:
   each fails with its own diagnosis, because a gate that greens what it
@@ -122,6 +140,14 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
   window of workflow YAML and shell carries new lines and no coverable
   one; demanding a ratio there would fail on the analyser's language
   support rather than on the code.
+- An EMPTY window is not an UNVERIFIED one. Sonar analyses no Markdown,
+  so a documentation-only pull request comes back with its counters and
+  without a single line-derived figure — a measure with no subject, not
+  a measure that failed. The counters are what prove the analysis
+  answered, so they stay unconditional and their absence still fails;
+  only the figures with nothing to describe are skipped. Measured
+  2026-08: the strict reading blocked two `CHANGELOG.md`-only pull
+  requests while the bar was fully held.
 - SonarCloud never runs on a Dependabot pull request, and this house
   does not undo that: Dependabot-triggered workflows get no repository
   secrets by GitHub's design, and the job that would hold the token is
@@ -305,7 +331,7 @@ PR red when a bump crosses such a release.
 
 Same family doctrine as every repo: Conventional-Commits PR titles
 (the squash commit IS the title), suites green before push, zero-issue
-zero-duplication Sonar bar if wired (verified on BOTH windows before
+zero-duplication Sonar bar if wired (the new-code window verified before
 merge, not after), docs updated in the same PR, and every substantive
 wave ends with a targeted cleanup/simplification pass over its own
 diff. README speaks to the package CONSUMER (install, wiring,

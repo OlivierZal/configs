@@ -6,14 +6,17 @@
 # is not customizable. So `qualityGateStatus` being OK proves nothing
 # this house cares about, and the bar is checked metric by metric here:
 # zero issues of every kind, zero security hotspots, zero duplication,
-# full coverage — on BOTH windows, new code and overall.
+# full coverage. One window per call, named by the caller — which window
+# an event answers for is the gate's decision, not this script's.
 #
 # Missing metrics fail rather than pass. A metric this script cannot find
 # is a metric it did not verify, and a gate that reports success on what
 # it could not read is worse than no gate: it converts an unchecked merge
-# into a documented one. The only tolerated absence is a new-code ratio
-# on a window that added no new line, which the payload states itself
-# through `new_lines`.
+# into a documented one. The exception is a metric with no SUBJECT, which
+# the payload states itself: a window that added no coverable line owes
+# no ratio, and a window Sonar found nothing analysable in — a
+# documentation-only change — owes no line-derived figure at all. An
+# empty window is not an unverified one.
 #
 # Usage: check-sonar-bar.sh <overall|new> <measures-json-file>
 set -euo pipefail
@@ -127,21 +130,34 @@ node -e '
     require0("duplicated_lines_density", "duplicated lines")
     requireFullCoverage("coverage", "coverage", "lines_to_cover")
   } else {
+    // The counters first, and unconditionally: they are what proves the
+    // analysis answered for this window at all, which is what separates
+    // every case below from an analysis that never arrived.
     require0("new_violations", "issues on new code")
     require0("new_security_hotspots", "security hotspots on new code")
-    // A window that added no line has no ratio to report, and that is
-    // the payload saying so rather than this script assuming it.
     const newLines = read("new_lines")
-    if (newLines === undefined) {
+    const newToCover = read("new_lines_to_cover")
+    // An EMPTY window is not an UNVERIFIED one. Sonar analyses no
+    // Markdown, so a documentation-only change is analysed, answers with
+    // its counters, and omits every line-derived figure — there is no
+    // subject to measure. Failing there would report "could not verify"
+    // for something fully verified, which is the confusion the three
+    // outcomes exist to prevent.
+    const emptyWindow = newLines === undefined && newToCover === undefined
+    if (!emptyWindow && newLines === undefined) {
       problems.push(
-        "`new_lines` is absent, so an absent new-code ratio cannot be told " +
-          "apart from an unverified one",
+        "`new_lines` is absent while the window reports lines to cover, so " +
+          "an empty window cannot be told apart from an unverified one",
       )
     }
-    if (newLines !== 0) {
+    // A window that added lines but no coverable one still owes no
+    // ratio, and the payload states that itself through the counts.
+    if (newLines !== undefined && newLines !== 0) {
       require0("new_duplicated_lines_density", "duplicated lines on new code")
     }
-    requireFullCoverage("new_coverage", "coverage of new code", "new_lines_to_cover")
+    if (!emptyWindow) {
+      requireFullCoverage("new_coverage", "coverage of new code", "new_lines_to_cover")
+    }
   }
 
   if (problems.length > 0) {

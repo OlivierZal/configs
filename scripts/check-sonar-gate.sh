@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Turns the house Sonar bar from a rule held in review into a status
 # check, and refuses to report success on anything it did not verify.
+# Which window it holds depends on the event, for the reason stated at
+# the decision itself.
 #
 # Three outcomes, never blurred:
 #   verified compliant   -> success, printing the measures it read
@@ -175,9 +177,6 @@ wait_for_analysis() {
   fail "no SonarCloud analysis for this commit appeared within $((attempts * delay))s; it may still be queued — re-run this job rather than merging on an unverified bar"
 }
 
-readonly overall_metrics='violations,security_hotspots,duplicated_lines_density,coverage,lines_to_cover'
-readonly new_metrics='new_violations,new_security_hotspots,new_duplicated_lines_density,new_coverage,new_lines,new_lines_to_cover'
-
 analysis_expected || accept_unanalysed
 
 # Only the analysed path needs the token, which is why this sits below
@@ -185,15 +184,32 @@ analysis_expected || accept_unanalysed
 [[ -n ${SONAR_TOKEN-} ]] ||
   fail "an analysis is expected for this \`$event\` but SONAR_TOKEN is absent; the bar cannot be verified"
 
+# One window per event, because each answers for what it can cause.
+#
+# A pull request answers for the code it introduces, and that is enough
+# on its own: every change lands through a gated pull request, so an
+# overall that is at zero stays at zero by induction. Holding the whole
+# project against a review that touched ten lines re-verifies the other
+# side of that induction on every merge.
+#
+# One drift escapes the induction: an analyser update raising issues on
+# code nobody touched. No pull request causes it, so blocking one over
+# it would fail a review for something it has nothing to do with — the
+# same reason `Test (Node latest)` is not a required check. It surfaces
+# on the default branch instead, where it is loud and blocks nothing.
+if [[ $event == pull_request ]]; then
+  readonly mode=new
+  readonly metrics='new_violations,new_security_hotspots,new_duplicated_lines_density,new_coverage,new_lines,new_lines_to_cover'
+  readonly window="measures/component?component=$project_key&metricKeys=$metrics&pullRequest=$pr_number"
+else
+  readonly mode=overall
+  readonly metrics='violations,security_hotspots,duplicated_lines_density,coverage,lines_to_cover'
+  readonly window="measures/component?component=$project_key&metricKeys=$metrics"
+fi
+
 wait_for_analysis
 
-api_get "measures/component?component=$project_key&metricKeys=$overall_metrics" overall.json ||
-  fail 'SonarCloud could not be read for the overall window; the bar was not verified — re-run this job'
+api_get "$window" measures.json ||
+  fail "SonarCloud could not be read for the $mode window; the bar was not verified — re-run this job"
 
-window="measures/component?component=$project_key&metricKeys=$new_metrics"
-[[ $event != pull_request ]] || window="$window&pullRequest=$pr_number"
-api_get "$window" new.json ||
-  fail 'SonarCloud could not be read for the new-code window; the bar was not verified — re-run this job'
-
-bash "$here/check-sonar-bar.sh" overall overall.json
-bash "$here/check-sonar-bar.sh" new new.json
+bash "$here/check-sonar-bar.sh" "$mode" measures.json
