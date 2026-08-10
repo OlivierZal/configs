@@ -3,7 +3,7 @@
 // ledgers) and the globs below that genuinely differ per app.
 import { type Config, defineConfig } from 'eslint/config'
 import { flatConfigs as importXConfigs } from 'eslint-plugin-import-x'
-import { configs as tsConfigs } from 'typescript-eslint'
+import { configs as tsConfigs, globs as tsGlobs } from 'typescript-eslint'
 import css from '@eslint/css'
 import js from '@eslint/js'
 import html from '@html-eslint/eslint-plugin'
@@ -344,7 +344,7 @@ const appMainBlock = ({
         // above.
         prettier,
       ],
-      files: ['**/*.{ts,mts}', '*.config.js'],
+      files: [tsGlobs.ts, '*.config.js'],
       languageOptions: mainLanguageOptions,
       plugins: { '@stylistic': stylistic, perfectionist },
       rules: {

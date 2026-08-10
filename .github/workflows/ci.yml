@@ -4,7 +4,12 @@ jobs:
     permissions:
       contents: read
       packages: read
-    secrets: inherit
+    # Named rather than inherited: this repo hosts the reusable
+    # workflows the six others call, so a blanket `inherit` here would
+    # hand every repository secret to a called workflow — the shape a
+    # supply-chain attack needs. The reusable CI declares exactly one.
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     uses: ./.github/workflows/reusable-ci.yml
     with:
       run-lint-package: true

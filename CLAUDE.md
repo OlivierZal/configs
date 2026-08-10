@@ -329,6 +329,33 @@ opposite: every diff is a deliberate, per-repo-classified change —
 and the dependabot-fix guidance tells the fixer to stop and leave the
 PR red when a bump crosses such a release.
 
+## Governance files
+
+`SECURITY.md` and `CONTRIBUTING.md` exist here because this package is a
+public npm artifact whose workflows run with repository credentials — the
+reporting path and the local workflow have to be written down, not
+inferred from a sibling repo.
+
+There is deliberately **no `CHANGELOG.md`**: the changelog channel is the
+GitHub release notes. That is a verdict, not an omission. A package whose
+every release obliges six repositories to act needs its notes to read as
+adoption instructions, and a second file-based history would duplicate
+that content and let the two drift. The obligation the verdict carries is
+that the notes stay substantial — a channel nobody keeps is not a channel.
+
+`claude-dependabot-fix.yml` calls this repo's own reusable workflow
+through a local `./` reference, exactly as `ci.yml` does. Self-calling was
+assumed circular; it is not — the caller fires once per completed build
+and the callee resolves from the same commit. `./` is also the honest form
+here: a SHA pin to itself would need rewriting at every release, and
+`check-pins.sh` would police a reference that has no second channel to
+disagree with.
+
+`ci.yml` passes `SONAR_TOKEN` by name rather than `secrets: inherit`.
+`inherit` hands every repository secret to the called workflow; in the
+repo that hosts the workflows six others call, that is the shape a
+supply-chain attack needs. The five sibling callers already name it.
+
 ## Process
 
 Same family doctrine as every repo: Conventional-Commits PR titles
