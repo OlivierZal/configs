@@ -90,43 +90,39 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
 
 Whole-plugin verdicts, held to the same bar as rules: strict adoption
 (everything adopted runs at `error`), refusals recorded with their
-reason, re-evaluated when the reason expires. Maintenance is a gate:
-an unmaintained plugin is refused regardless of coverage.
+reason, re-evaluated when the reason expires. Maintenance is a gate —
+an unmaintained plugin is refused regardless of coverage — but none of
+the three below fails it: all are active under eslint-community.
 
-- **eslint-plugin-n — ADOPTED** (active upstream, eslint-10 peer). Its
-  `no-unsupported-features/*` rules ARE the device node floor: shipped
-  node code runs on the device's Node, and the Homey Pro 2016-2019
-  crash (es2024 `v` regex flag at parse time, 2026-08) is exactly the
-  class they catch mechanically. The floor version is a preset
-  parameter (`deviceNodeVersion`, default the 2019 runtime) — the knob
-  is the product decision on hardware support, not a style choice.
-  Namespaced `node/` (flat config allows it; the `n` key violates
-  id-length). Rule-by-rule triage lives beside the rules in
-  `src/eslint/shared.ts`: callback-era and CommonJS rules are refused
-  as absent domain (pure ESM, promisified SDK boundaries), resolution
-  and published-surface rules as owned by import-x and publint,
-  `no-process-env` as the documented Homey `env.json` pattern,
-  `prefer-node-protocol` as owned by unicorn, and
-  `prefer-process-get-builtin-module` because that API itself sits
-  above the device floor.
-- **eslint-plugin-promise — REFUSED** (maintained; refused on
-  ownership). Its coverage is already owned: `catch-or-return` /
+- **eslint-plugin-n — REFUSED, owned by the CI matrix and real
+  coverage.** The fleet measurement put every device on the same Node
+  class the CI matrix already tests (the `Test (Node 22)` leg), and the
+  100 % real-coverage bar makes every shipped line EXECUTE under that
+  Node in CI — a dynamic, exhaustive check the plugin's static
+  approximation cannot beat; what it would add reduces to earlier
+  editor feedback. Adopted once (1.5.0, stillborn: zero consumers ever
+  pinned it) and reverted in 1.6.0. Two bounded gaps are named rather
+  than hidden, as re-evaluation triggers: the CI leg floats to the
+  newest 22.x while devices sit on a specific minor (close it by
+  pinning the coverage leg to the fleet minor — a CI change, not a
+  plugin), and the dynamic argument completes only when the
+  real-coverage campaign reaches all three apps. Re-adopt if the
+  fleet's Node ever drops below the tested matrix, or if the coverage
+  bar recedes.
+- **eslint-plugin-promise — REFUSED, owned.** `catch-or-return` /
   `always-return` by the type-aware `no-floating-promises`,
   callback-misuse by `no-misused-promises`, `prefer-await-to-then` by
-  `unicorn/prefer-await`, executor style by convention. The one rule
-  with unique value, `no-multiple-resolved` (double-resolve bugs),
-  polices hand-written executors — the family has two, both in the
-  kit and pinned by its tests; a dependency for one rule over two
-  audited sites is not a trade. Re-evaluate if hand-written executors
+  `unicorn/prefer-await`. Its one unique rule, `no-multiple-resolved`,
+  polices hand-written executors — the family has two, both in the kit
+  and pinned by its tests. Re-evaluate if hand-written executors
   multiply.
-- **eslint-plugin-security — REFUSED** (revived under eslint-community,
-  so NOT on maintenance — on ownership and noise). Taint-style
-  analysis is owned by CodeQL and SonarCloud, both active and BLOCKING
-  on all seven repos and flow-aware where this plugin is syntactic.
-  What remains is its noise set: `detect-object-injection` flags every
-  computed access, `detect-non-literal-regexp` would condemn the
+- **eslint-plugin-security — REFUSED, owned and noisy.** Taint-style
+  analysis is owned by CodeQL and SonarCloud, active and BLOCKING on
+  all seven repos, flow-aware where this plugin is syntactic. Its
+  unique remainder is the noise set (`detect-object-injection` flags
+  every computed access; `detect-non-literal-regexp` would condemn the
   route-guard kernels, `detect-non-literal-fs-filename` the manifest
-  reader. Re-evaluate only if the CodeQL/Sonar gates ever drop.
+  reader). Re-evaluate only if the CodeQL/Sonar gates ever drop.
 
 ## Consumers & adoption
 

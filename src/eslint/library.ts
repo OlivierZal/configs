@@ -15,7 +15,6 @@ import {
   changelogBlock,
   configJsBlock,
   configTsBlock,
-  deviceNodeBlocks,
   jsdocBlock,
   jsonBlock,
   linterOptionsBlock,
@@ -33,12 +32,6 @@ import {
 } from './shared.ts'
 
 export interface LibraryOptions {
-  // Globs the device node floor must not police: webview-bundled
-  // sources (browser engine, webview floor) and dev-only harnesses.
-  readonly deviceNodeFloorIgnores?: readonly string[]
-  // The oldest Node the shipped code must run on; see
-  // `deviceNodeBlocks`.
-  readonly deviceNodeVersion?: string
   // The wire-protocol naming entry (e.g. a `__brand` sentinel or split
   // register names) spliced into the naming convention.
   readonly wireNamingEntries?: readonly unknown[]
@@ -162,8 +155,6 @@ const libraryYamlStepOrder = [
 ]
 
 export const library = ({
-  deviceNodeFloorIgnores = [],
-  deviceNodeVersion,
   wireNamingEntries = [],
   wireNamingFiles = [],
 }: LibraryOptions = {}): Config[] => {
@@ -178,10 +169,6 @@ export const library = ({
     }),
     // After the main block, so the scoped files win the override.
     ...(isScoped ? [wireNamingBlock(wireNamingFiles, naming)] : []),
-    ...deviceNodeBlocks({
-      floorIgnores: deviceNodeFloorIgnores,
-      nodeVersion: deviceNodeVersion,
-    }),
     configTsBlock(['*.config.{js,ts}']),
     configJsBlock,
     jsonBlock(),
