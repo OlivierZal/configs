@@ -372,3 +372,11 @@ diff. README speaks to the package CONSUMER (install, wiring,
 reference); this file speaks to the MAINTAINER (rules, their reasons,
 the incidents behind them) — a rule stated in both must say the same
 thing, and doctrine evolves HERE first.
+
+Dependabot's commit prefixes are pinned to `build(deps)` /
+`build(deps-dev)` rather than inferred. The **subject** casing cannot
+be pinned: `commit-message` accepts only `prefix`,
+`prefix-development` and `include`, so Dependabot keeps matching each
+repo's own history. Left alone by decision — a Dependabot commit
+subject is not a contract, the PR title is, and the `PR title` check
+already holds that one.
