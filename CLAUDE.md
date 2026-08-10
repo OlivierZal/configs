@@ -71,6 +71,36 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
   `OlivierZal/configs`, because two separate ecosystem PRs would each
   fail the two-channel check and deadlock.
 
+## CI matrix doctrine
+
+- A comment asserting an invariant is not a mechanism. `reusable-ci`
+  claimed its coverage leg "stays blocking so the quality gate cannot
+  be skipped silently" while nothing held the claim up: the leg is
+  selected by comparing `coverage-node-version` against each
+  `matrix.node-version`, and a value no leg carries matches nothing —
+  no coverage, no Sonar upload, three green legs, and nothing missing
+  to notice, since `Test (Node latest)` and SonarCloud are outside
+  every repo's required set. `scripts/check-coverage-leg.sh` now
+  re-derives the agreement on every run, in the check job, which IS a
+  required context everywhere. Read every other workflow comment the
+  same way: what enforces this?
+- `node-versions` entries are quoted strings, and the check refuses
+  anything else rather than tolerating it. `22.20` unquoted is JSON for
+  the number 22.2: it installs the 22.2 line and is compared as
+  `"22.2"`, so one missing pair of quotes buys both a wrong runtime and
+  a skipped quality gate.
+- Each entry names a required status check (`Test (Node <entry>)`) in
+  every consumer's ruleset. Changing the list renames contexts that
+  then never report, and a required context that never reports blocks
+  every merge — a caller changing it updates its ruleset in the same
+  move. The default list is test-pinned for that reason.
+- `Test (Node latest)` must stay OUT of the required contexts: its
+  `continue-on-error` keeps the RUN green, not the check run. Verified
+  holding on all seven repos (2026-08); deliberately NOT automated —
+  reading rulesets needs an `administration: read` token on every CI
+  run of every repo, which is a standing credential for a setting that
+  changes once a decade.
+
 ## Commands
 
 - `npm run format` / `format:fix` — prettier (self-hosted config).
@@ -101,14 +131,13 @@ the three below fails it: all are active under eslint-community.
   Node in CI — a dynamic, exhaustive check the plugin's static
   approximation cannot beat; what it would add reduces to earlier
   editor feedback. Adopted once (1.5.0, stillborn: zero consumers ever
-  pinned it) and reverted in 1.6.0. Two bounded gaps are named rather
-  than hidden, as re-evaluation triggers: the CI leg floats to the
-  newest 22.x while devices sit on a specific minor (close it by
-  pinning the coverage leg to the fleet minor — a CI change, not a
-  plugin), and the dynamic argument completes only when the
-  real-coverage campaign reaches all three apps. Re-adopt if the
-  fleet's Node ever drops below the tested matrix, or if the coverage
-  bar recedes.
+  pinned it) and reverted in 1.6.0. The first of its two named gaps —
+  a CI leg floating to the newest 22.x while devices sit on a specific
+  minor — is closed by the `node-versions` input (1.8.0): the CI change
+  the verdict called for, available to every caller that pins its fleet
+  minor. The second closes as the real-coverage campaign reaches all
+  three apps. Re-adopt if the fleet's Node ever drops below the tested
+  matrix, or if the coverage bar recedes.
 - **eslint-plugin-promise — REFUSED, owned.** `catch-or-return` /
   `always-return` by the type-aware `no-floating-promises`,
   callback-misuse by `no-misused-promises`, `prefer-await-to-then` by
