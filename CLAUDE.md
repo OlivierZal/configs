@@ -229,6 +229,11 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
 
 ## Commands
 
+- `npm run build` — purges `dist` before emitting, because `tsc` overwrites
+  but never deletes: a module renamed or removed in `src` would otherwise
+  survive in `dist`, and `files` ships that directory, so `prepare` would
+  pack the fossil. The purge is inline rather than a `prebuild` hook so it
+  cannot be skipped with `--ignore-scripts`.
 - `npm run format` / `format:fix` — prettier (self-hosted config).
 - `npm run lint` / `lint:fix` — eslint, self-hosted on this package's
   own `library` preset (dogfooding). The overlay documents this repo's

@@ -62,7 +62,7 @@
     "tsconfig-bases"
   ],
   "scripts": {
-    "build": "node ./node_modules/typescript/bin/tsc --project tsconfig.build.json",
+    "build": "rm -rf dist && node ./node_modules/typescript/bin/tsc --project tsconfig.build.json",
     "format": "prettier . --check",
     "format:fix": "prettier . --write",
     "lint": "node --max-old-space-size=8192 ./node_modules/eslint/bin/eslint.js .",
