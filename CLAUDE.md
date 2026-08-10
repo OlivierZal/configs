@@ -99,7 +99,49 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
   holding on all seven repos (2026-08); deliberately NOT automated —
   reading rulesets needs an `administration: read` token on every CI
   run of every repo, which is a standing credential for a setting that
-  changes once a decade.
+  changes once a decade. `latest` is a moving target, so requiring it
+  would hand every Node release the power to block every merge in the
+  family for a break that is not ours. An early-warning leg, not a gate.
+
+## Sonar gate doctrine
+
+- The free-tier quality gate is NOT the house bar and cannot be made
+  into it: it tolerates 3 % duplication on new code, lets code smells
+  through, and is not customizable. So the `Sonar` job reads the
+  metrics themselves — `violations`, `security_hotspots`,
+  `duplicated_lines_density`, `coverage` and their `new_*` twins — on
+  BOTH windows. `qualityGateStatus` is never consulted.
+- Anything the gate could not read is a failure, never a pass. An
+  absent metric, an unreachable API, an analysis that never appeared:
+  each fails with its own diagnosis, because a gate that greens what it
+  did not verify is worse than none — it converts an unchecked merge
+  into a documented one. It also means a wrong metric name surfaces
+  loudly on the first run instead of passing forever.
+- Coverage is owed only where there is something to cover, which the
+  payload states through `lines_to_cover` / `new_lines_to_cover`. A
+  window of workflow YAML and shell carries new lines and no coverable
+  one; demanding a ratio there would fail on the analyser's language
+  support rather than on the code.
+- SonarCloud never runs on a Dependabot pull request, and this house
+  does not undo that: Dependabot-triggered workflows get no repository
+  secrets by GitHub's design, and the job that would hold the token is
+  the job that installs the very dependency version under review. So
+  the gate ACCEPTS such a pull request only after establishing that
+  every commit on it is Dependabot's own and that it touches nothing
+  but manifests and pinned references. That clause is not decorative:
+  the family's dependabot-fix workflow pushes Claude's fixes onto
+  exactly these branches, and such a commit would otherwise reach
+  `main` having been read by no analysis at all. Whatever the clause
+  lets through is analysed anyway by the push build on `main`, where
+  the gate runs unconditionally.
+- A fork pull request cannot be verified either, and there the gate
+  FAILS rather than waving it through — a fork carries source.
+- The context is `ci / Sonar` and the name must not move: it lands in
+  seven rulesets, and a required context that never reports blocks
+  every merge. Adopt in two steps — ship the version, watch the job
+  report correctly on real pull requests, THEN add the context to the
+  rulesets. Adding it first would gate merges on a job whose API
+  assumptions have never run.
 
 ## Commands
 

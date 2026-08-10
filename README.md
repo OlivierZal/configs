@@ -196,8 +196,24 @@ any of it starts. Each entry also names a required status check
 (`Test (Node <entry>)`), so a caller changing the list updates its
 ruleset in the same move.
 
+The `Sonar` job holds the house bar on what that leg uploaded: zero
+issues, zero security hotspots, zero duplication and full coverage, on
+both the new-code and the overall window, read metric by metric from the
+SonarCloud API rather than from the free-tier quality gate (which
+tolerates 3 % duplication on new code and cannot be customized).
+Anything it could not read — an absent metric, an unreachable API, an
+analysis that never appeared — fails with its own diagnosis instead of
+passing. A Dependabot pull request, which SonarCloud never analyses
+because such workflows receive no secrets, is accepted only once the job
+has checked that every commit on it is Dependabot's own and that it
+touches nothing but manifests and pinned references; a fork pull request
+fails, since it carries source nobody analysed. The context is
+`ci / Sonar` — add it to the ruleset only after watching it report
+correctly, and never rename it.
+
 Available: `reusable-ci.yml` (check + caller-defined test matrix, caller
-picks the legs, the coverage leg and the library gates), `reusable-audit.yml`,
+picks the legs, the coverage leg and the library gates, plus the Sonar
+gate), `reusable-audit.yml`,
 `reusable-claude-dependabot-fix.yml` (caller keeps the `workflow_run`
 trigger and passes its verify commands). The single-file workflows
 (`pr-title`, `zizmor`, `claude*`, `dependabot`) also accept

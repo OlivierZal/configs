@@ -1,8 +1,9 @@
 # The family CI shape, callable: check job (typecheck/lint/format plus
-# the optional library gates) and a test matrix whose legs and whose
+# the optional library gates), a test matrix whose legs and whose
 # coverage/Sonar leg are both chosen by the caller — a repo whose
 # runtime floor is a specific minor pins that minor here rather than
-# floating with `lts/*`. Permissions are the family superset —
+# floating with `lts/*` — and the Sonar job that holds the house bar on
+# what that leg uploaded. Permissions are the family superset —
 # packages:read is inert for repos without scoped dependencies.
 concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -50,6 +51,54 @@ jobs:
         run: npm run docs
       - if: inputs.run-lint-package
         run: npm run lint:package
+    timeout-minutes: 15
+  sonar:
+    # The house bar is stricter than the free-tier quality gate, which
+    # tolerates 3 % duplication on new code, lets code smells through
+    # and cannot be customized. So this reads the metrics themselves,
+    # both windows, and treats anything it could not read as a failure —
+    # a gate that greens what it did not verify is worse than none.
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    name: Sonar
+    # The analysis this verifies is uploaded by the coverage leg.
+    needs: test
+    permissions:
+      contents: read
+      packages: read
+      pull-requests: read
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-and-install
+        with:
+          node-version: ${{ inputs.check-node-version }}
+          npm-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify the Sonar bar
+        env:
+          BRANCH: ${{ github.ref_name }}
+          EVENT_NAME: ${{ github.event_name }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MERGE_SHA: ${{ github.sha }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          THIS_REPO: ${{ github.repository }}
+        # The two lists are what makes the unanalysed-pull-request branch
+        # a verification instead of an assumption, so they are read from
+        # the API rather than inferred from the actor.
+        run: |
+          if [ "$EVENT_NAME" = pull_request ] && [ -n "$PR_NUMBER" ]; then
+            COMMIT_AUTHORS=$(gh api "repos/$THIS_REPO/pulls/$PR_NUMBER/commits" --paginate --jq '.[].author.login // .commit.author.name')
+            CHANGED_FILES=$(gh api "repos/$THIS_REPO/pulls/$PR_NUMBER/files" --paginate --jq '.[].filename')
+            export COMMIT_AUTHORS CHANGED_FILES
+          fi
+          script=node_modules/@olivierzal/configs/scripts/check-sonar-gate.sh
+          [ -f "$script" ] || script=scripts/check-sonar-gate.sh
+          bash "$script"
     timeout-minutes: 15
   test:
     # `latest` tracks brand-new Node releases; continue-on-error keeps
