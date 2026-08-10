@@ -13,20 +13,17 @@ const workflowDir = path.join(repoRoot, '.github/workflows')
 // A caller finds these scripts inside the installed package. The
 // `scripts/` fallback beside that lookup resolves only in this repo,
 // which has no dependency on itself — so a job that reads the package
-// path without installing passes here and cannot run anywhere else. That
-// is not hypothetical: it shipped, and the audit gate was unable to run
-// in any caller while this repo's own audit reported green.
+// path without installing passes here and cannot run anywhere else. This
+// repo exercises the fallback while every caller exercises the primary
+// path, so the invariant is asserted statically rather than left to a
+// run that could never fail here.
 const PACKAGE_SCRIPT_PATH = 'node_modules/@olivierzal/configs/scripts/'
 const INSTALL_ACTION = 'setup-node-and-install'
 
 // Every job that reads a script out of the package. Kept explicit rather
 // than derived: a new entry is rare, and appearing here is the moment to
 // confirm the job installs.
-const RESOLVING_JOBS = [
-  'reusable-audit.yml#audit',
-  'reusable-ci.yml#check',
-  'reusable-ci.yml#sonar',
-]
+const RESOLVING_JOBS = ['reusable-ci.yml#check', 'reusable-ci.yml#sonar']
 
 const asRecord = (value: unknown, what: string): Record<string, unknown> => {
   if (typeof value !== 'object' || value === null) {

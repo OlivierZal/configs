@@ -143,53 +143,63 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
   rulesets. Adding it first would gate merges on a job whose API
   assumptions have never run.
 
-## Audit doctrine
+## Dependency doctrine
 
-- `--omit=dev` is the whole scope: only what reaches the device counts.
-  Measured 2026-08 — four of the five consumers carry zero production
-  advisories, so a strict floor costs one exception line family-wide.
-- The floor is `low`, not `high`. `--audit-level=high` was honest about
-  its own contract and still shipped vulnerable code:
-  `com.melcloud.extension` carries four `moderate` advisories on the
-  device and audited green. Raising a threshold hides findings without
-  recording that anyone looked.
-- A permanent red is not a signal either — it gets ignored, then it
-  masks the real one. So the floor drops AND every survivor is named:
-  `audit-exceptions` takes one `GHSA-…` id per line with the reason it
-  is tolerated. Same doctrine as the lint triage ledger — a recorded
-  verdict, never a suppression.
-- Three properties make it a verdict rather than a mute. The id is the
-  ADVISORY, never the package, so a new finding in an already-excepted
-  dependency still fails. A reason is mandatory. And an entry whose
-  advisory no longer appears FAILS: an exception that outlives its cause
-  misrepresents what was reviewed, and upstream fixes are exactly when
-  nobody thinks to look.
-- `npm audit` exits non-zero precisely when it finds something, so the
-  report is written to a file, never piped: a pipeline conflates "found
-  advisories" with "could not run". Every unreadable report — npm error
-  object, empty, non-JSON, foreign document, absent file — fails. A gate
-  must never report a clean run it did not perform.
-- The audit job INSTALLS, and the reason generalizes. `npm audit` reads
-  only the lockfile, but the verifier ships inside the package, and the
-  job that skipped the install fell through to `scripts/…` — a path that
-  resolves only here. The gate audited green in this repo and died at
-  exit 127 in every caller. A reusable workflow whose only proof is its
-  own repository is untested where it actually runs: the two-path lookup
-  means THIS repo exercises the fallback while every caller exercises the
-  primary, so a defect on the primary path is invisible from here.
-  `tests/unit/workflow-script-resolution.test.ts` holds both halves —
-  every job reading the package path installs, the set of such jobs is
-  named so the assertion cannot pass over an empty set, and `files`
-  carries the directory callers read. What it does NOT cover is a caller
-  that never copied `.github/actions/setup-node-and-install`; that stays
-  a known blind spot, cheap to detect (the run fails immediately) and not
-  worth a cross-repo probe.
+- The split is by TIME, not by tool. A pull request answers for the
+  dependencies it introduces — `dependency-review.yml`, diff-shaped,
+  blocking. Everything already there is Dependabot's, continuously. An
+  advisory that predates a pull request is not that pull request's doing,
+  and gating on it would block innocent work for an event outside it —
+  the same reason `Test (Node latest)` is not a required context.
+- `fail-on-scopes: runtime` is the whole scope: only what reaches the
+  device counts. The scope comes from the dependency graph, so nothing
+  here maintains a prod/dev split — and Dependabot applies the same one
+  natively, auto-dismissing development findings including `high` ones.
+- `fail-on-severity: low`, never a raised floor. A threshold hides
+  findings without recording that anyone looked. Measured 2026-08:
+  `com.melcloud.extension` shipped four `moderate` advisories to the
+  device while `--audit-level=high` reported green.
+- A tolerated advisory is dismissed ON THE ALERT, with one of GitHub's
+  reasons and a written justification. That beats the list this repo used
+  to keep, for a structural reason worth stating: a dismissal has no
+  existence apart from its advisory, so it CANNOT outlive its cause. The
+  expiry machinery a separate list needs is machinery the separate list
+  created. Verified 2026-08 — `com.melcloud.extension` already carried
+  such a dismissal for `GHSA-6fx8-h7jm-663j`, predating the script that
+  reimplemented it.
 - Upstream advisories are NOT worked around in our code. No `overrides`,
   no defensive branch: a workaround is a permanent certain cost against
   a rare risk that is not ours, and it outlives its cause — upstream
-  fixes, the workaround stays as invisible debt. The verdict lives in
-  the audit config alone. If exposure ever looks serious, that is a
-  decision to escalate, not to code around.
+  fixes, the workaround stays as invisible debt. If exposure ever looks
+  serious, that is a decision to escalate, not to code around.
+- `npm audit` is not the reference and never was: it counts one entry per
+  package along a transit chain, reporting four advisories where the
+  platform sees the one that exists.
+- The general lesson, which cost ~600 lines: before building a mechanism,
+  establish what the platform already does. Every property this repo
+  built and defended — scope filtering, named exceptions, mandatory
+  reasons, expiry — existed natively, and one of them had already been
+  used here.
+
+## Reusable-workflow blind spot
+
+- A reusable workflow whose only proof is this repository is untested
+  where it actually runs. The scripts resolve from
+  `node_modules/@olivierzal/configs/scripts/…` with a `scripts/` fallback
+  beside it, and this repo has no dependency on itself — so THIS repo
+  exercises the fallback while every caller exercises the primary path.
+  A defect on the primary path is invisible from here, and one shipped:
+  a job that skipped the install passed here and died at exit 127 in
+  every caller.
+- `tests/unit/workflow-script-resolution.test.ts` holds both halves —
+  every job reading the package path installs, the set of such jobs is
+  named so the assertion cannot pass over an empty set, and `files`
+  carries the directory callers read. Static, because no run from here
+  could ever fail.
+- What it does NOT cover is a caller that never copied
+  `.github/actions/setup-node-and-install`; that stays a known blind
+  spot, cheap to detect (the run fails immediately) and not worth a
+  cross-repo probe.
 
 ## Commands
 

@@ -212,35 +212,33 @@ fails, since it carries source nobody analysed. The context is
 `ci / Sonar` — add it to the ruleset only after watching it report
 correctly, and never rename it.
 
-`reusable-audit.yml` audits production dependencies only (`--omit=dev`):
-what does not reach the device is not its business. Every advisory at or
-above `audit-level` (default `low`) must be fixed or recorded in
-`audit-exceptions`, one `GHSA-…` id per line followed by the reason it is
-tolerated:
+`dependency-review.yml` blocks a pull request that introduces a
+vulnerable runtime dependency, at any severity: `fail-on-scopes: runtime`
+keeps what never reaches the device out of the way, and the scope comes
+from the dependency graph rather than from a flag anyone maintains. It
+judges the diff, which is the whole of its job — an advisory that landed
+before the pull request is not that pull request's doing, and belongs to
+Dependabot's continuous alerting instead.
 
-```yaml title=".github/workflows/audit.yml"
-uses: OlivierZal/configs/.github/workflows/reusable-audit.yml@v1.10.0
-with:
-  audit-exceptions: |
-    GHSA-xxxx-xxxx-xxxx — reached only through <path>; upstream <pkg> pins the vulnerable major
-```
-
-The id names the advisory, never the package, so a new finding in the
-same dependency still fails; a reason is mandatory; and an entry whose
-advisory no longer appears fails too, because an exception that outlives
-its cause misrepresents what was reviewed. Upstream advisories are
-recorded here rather than worked around in consumer code — a workaround
-is a permanent cost against a risk that is not ours, and it outlives the
-fix that makes it pointless.
+Standing advisories are triaged where GitHub raises them: the alert
+carries the
+production/development scope natively, development findings are
+auto-dismissed by the preset rule, and a finding kept on purpose is
+dismissed with a reason against the advisory itself. Such a dismissal
+cannot outlive its cause the way a list in a repository can, because it
+has no existence apart from the alert. Upstream advisories are never
+worked around in consumer code — a workaround is a permanent cost
+against a risk that is not ours, and it outlives the fix that makes it
+pointless.
 
 Available: `reusable-ci.yml` (check + caller-defined test matrix, caller
 picks the legs, the coverage leg and the library gates, plus the Sonar
-gate), `reusable-audit.yml`,
-`reusable-claude-dependabot-fix.yml` (caller keeps the `workflow_run`
-trigger and passes its verify commands). The single-file workflows
-(`pr-title`, `zizmor`, `claude*`, `dependabot`) also accept
-`workflow_call` so callers can become stubs. `templates/zizmor-apps.yml`
-is the apps' zizmor config variant; this repo ships the libs' form.
+gate), `reusable-claude-dependabot-fix.yml` (caller keeps the
+`workflow_run` trigger and passes its verify commands). The single-file
+workflows (`dependency-review`, `pr-title`, `zizmor`, `claude*`,
+`dependabot`) also accept `workflow_call` so callers can become stubs.
+`templates/zizmor-apps.yml` is the apps' zizmor config variant; this repo
+ships the libs' form.
 
 ## Action pins
 
