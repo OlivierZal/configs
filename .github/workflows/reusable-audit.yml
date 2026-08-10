@@ -14,9 +14,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # `npm audit` itself reads only the lockfile, but the verifier below
+      # ships inside the package — so this job installs. Skipping the
+      # install left the primary path missing and silently fell through to
+      # the `scripts/` copy, which exists only in this repo: the gate ran
+      # green here and could not run at all in any caller.
       - uses: ./.github/actions/setup-node-and-install
         with:
-          install: 'false'
+          npm-token: ${{ secrets.GITHUB_TOKEN }}
       # `--omit=dev` is the whole point: only what reaches the device
       # counts. The report is written rather than piped because npm exits
       # non-zero exactly when it finds something — a pipeline would
