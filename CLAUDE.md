@@ -169,6 +169,21 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
   advisories" with "could not run". Every unreadable report — npm error
   object, empty, non-JSON, foreign document, absent file — fails. A gate
   must never report a clean run it did not perform.
+- The audit job INSTALLS, and the reason generalizes. `npm audit` reads
+  only the lockfile, but the verifier ships inside the package, and the
+  job that skipped the install fell through to `scripts/…` — a path that
+  resolves only here. The gate audited green in this repo and died at
+  exit 127 in every caller. A reusable workflow whose only proof is its
+  own repository is untested where it actually runs: the two-path lookup
+  means THIS repo exercises the fallback while every caller exercises the
+  primary, so a defect on the primary path is invisible from here.
+  `tests/unit/workflow-script-resolution.test.ts` holds both halves —
+  every job reading the package path installs, the set of such jobs is
+  named so the assertion cannot pass over an empty set, and `files`
+  carries the directory callers read. What it does NOT cover is a caller
+  that never copied `.github/actions/setup-node-and-install`; that stays
+  a known blind spot, cheap to detect (the run fails immediately) and not
+  worth a cross-repo probe.
 - Upstream advisories are NOT worked around in our code. No `overrides`,
   no defensive branch: a workaround is a permanent certain cost against
   a rare risk that is not ours, and it outlives its cause — upstream
