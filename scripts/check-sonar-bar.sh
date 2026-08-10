@@ -6,7 +6,8 @@
 # is not customizable. So `qualityGateStatus` being OK proves nothing
 # this house cares about, and the bar is checked metric by metric here:
 # zero issues of every kind, zero security hotspots, zero duplication,
-# full coverage — on BOTH windows, new code and overall.
+# full coverage. One window per call, named by the caller — which window
+# an event answers for is the gate's decision, not this script's.
 #
 # Missing metrics fail rather than pass. A metric this script cannot find
 # is a metric it did not verify, and a gate that reports success on what

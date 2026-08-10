@@ -1,6 +1,11 @@
-import { type SpawnSyncReturns, execFileSync } from 'node:child_process'
+import {
+  type SpawnSyncReturns,
+  execFile,
+  execFileSync,
+} from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { type Server, createServer } from 'node:http'
 import { fileURLToPath } from 'node:url'
 import os from 'node:os'
 import path from 'node:path'
@@ -374,6 +379,133 @@ describe('the unanalysed-pull-request branch', () => {
 
     expect(status).toBe(1)
     expect(output).toContain('EVENT_NAME is empty')
+  })
+})
+
+// Which window an event answers for is a decision no source assertion
+// can prove: only a run shows which measures the gate actually asked
+// SonarCloud for. So the API is stood up locally and its requests are
+// recorded. `execFileSync` would deadlock against an in-process server,
+// hence the async form.
+const HEAD = 'c0ffee1c0ffee1c0ffee1c0ffee1c0ffee1c0ffee'
+
+// Hand-wrapped rather than promisified: `execFile`'s callback is typed
+// as value-returning, which the void-return rule rejects at the
+// `promisify` call site.
+const runAsync = async (
+  script: string,
+  env: Readonly<Record<string, string>>,
+): Promise<string> =>
+  new Promise((resolve, reject) => {
+    execFile(
+      script,
+      [],
+      { cwd: scratch, encoding: 'utf8', env },
+      (error, stdout) => {
+        if (error !== null) {
+          reject(new Error(`${error.message}\n${stdout}`))
+          return
+        }
+        resolve(stdout)
+      },
+    )
+  })
+
+const bodyFor = (url: string): string => {
+  if (url.startsWith('/project_pull_requests/list')) {
+    return JSON.stringify({
+      pullRequests: [{ commit: { sha: HEAD }, key: '7' }],
+    })
+  }
+  if (url.startsWith('/project_analyses/search')) {
+    return JSON.stringify({ analyses: [{ revision: HEAD }] })
+  }
+  return JSON.stringify({
+    component: {
+      measures: url.includes('metricKeys=new_') ? NEW_CLEAN : OVERALL_CLEAN,
+    },
+  })
+}
+
+const serve = async (): Promise<{
+  origin: string
+  urls: string[]
+  close: () => Promise<void>
+}> => {
+  const urls: string[] = []
+  const server: Server = createServer((request, response) => {
+    urls.push(request.url ?? '')
+    response.writeHead(200, { 'content-type': 'application/json' })
+    response.end(bodyFor(request.url ?? ''))
+  })
+  await new Promise<void>((resolve) => {
+    server.listen(0, '127.0.0.1', () => {
+      resolve()
+    })
+  })
+  const address = server.address()
+  const port =
+    typeof address === 'object' && address !== null ? address.port : 0
+  return {
+    origin: `http://127.0.0.1:${String(port)}`,
+    urls,
+    close: async () =>
+      new Promise<void>((resolve) => {
+        server.close(() => {
+          resolve()
+        })
+      }),
+  }
+}
+
+// A scratch cwd: the gate writes its payloads beside itself, and the
+// repository is not a scratch directory.
+const gateEnv = (origin: string): Record<string, string> => ({
+  PATH: inheritedPath,
+  SONAR_API_BASE: origin,
+  SONAR_POLL_ATTEMPTS: '1',
+  SONAR_PROJECT_KEY: 'OlivierZal_configs',
+  SONAR_TOKEN: 'test-token',
+})
+
+const measuresUrl = (urls: readonly string[]): string =>
+  urls.find((url) => url.startsWith('/measures/component')) ?? ''
+
+describe('the window each event answers for', () => {
+  it('holds a pull request to the new-code window alone', async () => {
+    const { close, origin, urls } = await serve()
+    const stdout = await runAsync(gateScript, {
+      ...gateEnv(origin),
+      EVENT_NAME: 'pull_request',
+      HEAD_REPO: 'OlivierZal/configs',
+      HEAD_SHA: HEAD,
+      PR_AUTHOR: 'OlivierZal',
+      PR_NUMBER: '7',
+      THIS_REPO: 'OlivierZal/configs',
+    })
+    await close()
+
+    expect(stdout).toContain('the new window holds the house bar')
+    expect(stdout).not.toContain('the overall window')
+    expect(measuresUrl(urls)).toContain('metricKeys=new_violations')
+    expect(measuresUrl(urls)).toContain('pullRequest=7')
+  })
+
+  it('holds a push to the overall window, where drift surfaces', async () => {
+    const { close, origin, urls } = await serve()
+    const stdout = await runAsync(gateScript, {
+      ...gateEnv(origin),
+      BRANCH: 'main',
+      EVENT_NAME: 'push',
+      MERGE_SHA: HEAD,
+      THIS_REPO: 'OlivierZal/configs',
+    })
+    await close()
+
+    expect(stdout).toContain('the overall window holds the house bar')
+    expect(stdout).not.toContain('the new window')
+    expect(measuresUrl(urls)).toContain('metricKeys=violations')
+    expect(measuresUrl(urls)).not.toContain('pullRequest=')
   })
 })
 
