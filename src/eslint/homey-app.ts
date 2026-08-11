@@ -103,12 +103,22 @@ const lifecycleGroupName = (hook: string): string =>
   `homey-lifecycle-${hook.slice(2).toLowerCase()}`
 
 /**
- * The webview runtime floor as a standalone block: es2023 array methods
- * are the ceiling — no `Object.groupBy`/`Map.groupBy`, no iterator
- * helpers, no `v` regex flag. The tsconfig `lib` cannot express this
- * (one project, two runtimes), so the constraint lives here. Exported
- * for consumers that need the floor without the full app preset (e.g. a
- * library shipping webview-bundled sources).
+ * The webview runtime floor as a standalone block: es2023 is the
+ * ceiling — no `Object.groupBy`/`Map.groupBy`, no iterator helpers, no
+ * `v` regex flag. Derived, not preventive: the Homey mobile app
+ * requires iOS 16.4 or later (App Store, read 2026-08-11) and a Homey
+ * app only ever gets the system WebKit, so the worst legitimate engine
+ * is iOS 16.4's — es2023-complete, short of every es2024 gain
+ * (`Object.groupBy` and `Promise.withResolvers` need Safari 17.4, the
+ * `v` flag 17). es2024 becomes derivable when that App Store minimum
+ * reaches 17.4; Android never binds the floor, its System WebView being
+ * evergreen. Under a sub-es2024 esbuild target a `v` literal ships as a
+ * `new RegExp` call, so an escapee throws at runtime inside the feature
+ * that runs it rather than at parse — narrower blast radius, same ban.
+ * The tsconfig `lib` cannot express this (one project, two runtimes),
+ * so the constraint lives here. Exported for consumers that need the
+ * floor without the full app preset (e.g. a library shipping
+ * webview-bundled sources).
  * @param files - Globs of the sources that run in the phone webview.
  * @returns The config block carrying the floor.
  */
@@ -119,13 +129,13 @@ export const webviewFloorBlock = (files: readonly string[]): Config => ({
       'error',
       {
         message:
-          'es2024+: old iOS webview engines lack it (CLAUDE.md webview floor).',
+          'es2024, above the derived floor: the iOS 16.4 WebKit lacks it (CLAUDE.md webview floor).',
         object: 'Object',
         property: 'groupBy',
       },
       {
         message:
-          'es2024+: old iOS webview engines lack it (CLAUDE.md webview floor).',
+          'es2024, above the derived floor: the iOS 16.4 WebKit lacks it (CLAUDE.md webview floor).',
         object: 'Map',
         property: 'groupBy',
       },
@@ -134,20 +144,19 @@ export const webviewFloorBlock = (files: readonly string[]): Config => ({
       'error',
       {
         message:
-          'The `v` regex flag is es2024: old iOS webview engines throw at parse time (CLAUDE.md webview floor). Use `u`.',
+          'The `v` regex flag is es2024, above the derived floor: the iOS 16.4 WebKit throws on it (CLAUDE.md webview floor). Use `u`.',
         selector: 'Literal[regex.flags=/v/]',
       },
       {
         message:
-          'Iterator helpers are 2025-era: old iOS webview engines lack them (CLAUDE.md webview floor). Spread into an array first.',
+          'Iterator helpers are es2025, above the derived floor: the iOS 16.4 WebKit lacks them (CLAUDE.md webview floor). Spread into an array first.',
         selector:
           "CallExpression[callee.type='MemberExpression'][callee.property.name=/^(drop|every|filter|find|flatMap|forEach|map|reduce|some|take|toArray)$/][callee.object.type='CallExpression'][callee.object.callee.type='MemberExpression'][callee.object.callee.property.name=/^(entries|keys|matchAll|values)$/][callee.object.callee.object.name!='Object']",
       },
     ],
     // The global config requires the `v` regex flag; the floor caps
-    // webview code at `u` (es2024 `v` throws at parse time on old
-    // engines), so the requirement steps down here, it does not
-    // disappear.
+    // webview code at `u` (es2024, above the derived floor), so the
+    // requirement steps down here, it does not disappear.
     'require-unicode-regexp': ['error', { requireFlag: 'u' }],
   },
 })
