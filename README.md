@@ -200,23 +200,26 @@ the list updates its ruleset in the same move.
 The house bar — zero issues, every security hotspot reviewed, zero
 duplication and full coverage, on both the new-code and the overall
 window — is stated once in the `Olivierzal way` quality gate, the
-organisation default. The `Sonar` job reads that gate's verdict for the
-commit under review rather than restating the bar in CI. Which window
-applies is SonarCloud's own split: a pull request analysis is held to
-the new-code conditions and a branch to both, which lands exactly where
-the house reasoning did — a pull request answers for the code it
-introduces, while an analyser update raising issues on untouched code
-surfaces on the default branch without blocking a review that did not
-cause it.
-Anything it could not read — an absent verdict, an unreachable API, an
-analysis that never appeared — fails with its own diagnosis instead of
-passing. A Dependabot pull request, which SonarCloud never analyses
-because such workflows receive no secrets, is accepted only once the job
-has checked that every commit on it is Dependabot's own and that it
-touches nothing but manifests and pinned references; a fork pull request
-fails, since it carries source nobody analysed. The context is
-`ci / Sonar` — add it to the ruleset only after watching it report
-correctly, and never rename it.
+organisation default. The scan step waits on it
+(`-Dsonar.qualitygate.wait=true`), so a violation fails the coverage leg
+itself and no CI code restates or re-reads the bar. Which window applies
+is SonarCloud's own split: a pull request analysis is held to the
+new-code conditions and a branch to both, which lands exactly where the
+house reasoning did — a pull request answers for the code it introduces,
+while an analyser update raising issues on untouched code surfaces on
+the default branch without blocking a review that did not cause it.
+
+The `Sonar` job reports the one thing a waiting scanner cannot: a scan
+that never ran, whose skipped step fails nothing. It accepts exactly two
+silences, each verified rather than assumed — a repo that declared
+neither project nor token has opted out in writing, and a Dependabot
+pull request, which SonarCloud never analyses because such workflows
+receive no secrets, is accepted once the job has checked that every
+commit on it is Dependabot's own. A fork pull request fails, since it
+carries source nobody analysed, and so does a project whose token went
+missing, since the upload self-arms on the secret and would otherwise
+skip in silence. The context is `ci / Sonar` — add it to the ruleset
+only after watching it report correctly, and never rename it.
 
 `dependency-review.yml` blocks a pull request that introduces a
 vulnerable runtime dependency, at any severity: `fail-on-scopes: runtime`

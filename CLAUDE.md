@@ -119,8 +119,7 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
   restated in each consumer's CI: `violations`,
   `duplicated_lines_density` and their `new_*` twins at 0,
   `coverage`/`new_coverage` at 100, `security_hotspots_reviewed` and its
-  `new_*` twin at 100. The `Sonar` job reads that gate's verdict, never
-  the measures behind it.
+  `new_*` twin at 100.
   - Hotspots are the one axis the platform will not take literally:
     SonarCloud refuses `security_hotspots` as a gate condition
     («cannot be used to define a condition») because it models hotspots
@@ -129,9 +128,17 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
     recorded human verdict rather than forbidding a flagged pattern.
     With zero hotspots the measure reads 100, so the condition is
     vacuously satisfied.
+- The SCANNER holds the bar, not a script. The scan step passes
+  `-Dsonar.qualitygate.wait=true`, so it blocks on the analysis task it
+  just submitted and exits non-zero when the gate rejects it. A
+  violation therefore fails the coverage leg — already a required
+  context — naming the commit that caused it, and no CI code re-reads a
+  verdict the platform has already published. Waiting on its OWN task is
+  also what makes that verdict unmistakably this commit's, which a poll
+  over recent analyses had to reconstruct.
 - ONE window per event, each answering for what it can cause — the same
-  split by TIME as the dependency doctrine below. This is no longer a
-  decision the gate script makes: SonarCloud holds a pull request
+  split by TIME as the dependency doctrine below. It is the platform's
+  own split, not a decision made here: SonarCloud holds a pull request
   analysis to the new-code conditions and a branch to both. It lands
   where the house reasoning did. A pull request answers for the code it
   introduces, which is Clean as You Code and is enough alone: every
@@ -139,26 +146,17 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
   at zero by induction. The single drift that escapes the induction is
   an analyser update raising issues on untouched code; no pull request
   causes it, so it surfaces on `main`, where it is loud and blocks no
-  review it has nothing to do with.
-- Anything the gate could not read is a failure, never a pass. An
-  absent metric, an unreachable API, an analysis that never appeared:
-  each fails with its own diagnosis, because a gate that greens what it
-  did not verify is worse than none — it converts an unchecked merge
-  into a documented one. It also means a wrong metric name surfaces
-  loudly on the first run instead of passing forever.
-- Coverage is owed only where there is something to cover, which the
-  payload states through `lines_to_cover` / `new_lines_to_cover`. A
-  window of workflow YAML and shell carries new lines and no coverable
-  one; demanding a ratio there would fail on the analyser's language
-  support rather than on the code.
-- An EMPTY window is not an UNVERIFIED one. Sonar analyses no Markdown,
-  so a documentation-only pull request comes back with its counters and
-  without a single line-derived figure — a measure with no subject, not
-  a measure that failed. The counters are what prove the analysis
-  answered, so they stay unconditional and their absence still fails;
-  only the figures with nothing to describe are skipped. Measured
-  2026-08: the strict reading blocked two `CHANGELOG.md`-only pull
-  requests while the bar was fully held.
+  review it has nothing to do with. No scheduled sweep re-asks the
+  question: every push to `main` already evaluates both windows, so a
+  weekly one would only re-read what the last merge measured.
+- An EMPTY window is not an UNVERIFIED one, and that is now the
+  PLATFORM's distinction rather than ours. Sonar analyses no Markdown,
+  so a documentation-only pull request comes back without a single
+  line-derived figure — a measure with no subject, not a measure that
+  failed — and a condition with no measure cannot reject. Measured
+  2026-08: a `CHANGELOG.md`-only pull request returns `new_coverage`
+  absent and the gate `OK`. Reading those payloads by hand cost this
+  house a correction; the gate needs none.
 - SonarCloud never runs on a Dependabot pull request, and this house
   keeps it that way BY CHOICE: a path exists — on Dependabot-triggered
   runs `secrets.*` resolves from the Dependabot secrets store, so
@@ -169,15 +167,23 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
   the scan step does not close that (an install script can poison
   `$GITHUB_ENV` and read a later step's environment), on top of a
   second secrets store to rotate across the family. Re-evaluate if
-  that model changes. So
+  that model changes. Nor is the `workflow_run` split worth it — an
+  unprivileged job producing a coverage artefact and a privileged one
+  scanning it — since it adds a second workflow to seven repos and
+  check-run plumbing back to the pull request, strictly more machinery
+  than the exemption it would retire. So
   the gate ACCEPTS such a pull request only after establishing that
-  every commit on it is Dependabot's own and that it touches nothing
-  but manifests and pinned references. That clause is not decorative:
-  the family's dependabot-fix workflow pushes Claude's fixes onto
-  exactly these branches, and such a commit would otherwise reach
-  `main` having been read by no analysis at all. Whatever the clause
-  lets through is analysed anyway by the push build on `main`, where
-  the gate runs unconditionally.
+  every commit on it is Dependabot's own. That clause is not
+  decorative: the family's dependabot-fix workflow pushes Claude's
+  fixes onto exactly these branches, and such a commit would otherwise
+  reach `main` having been read by no analysis at all.
+  - AUTHORSHIP is the whole check, and the file allowlist that used to
+    accompany it is gone. Dependabot authors manifests, lockfiles and
+    pinned references — never source — so its own commits cannot move a
+    metric; the list restated that and let a grouped pull request
+    rewrite a whole workflow anyway, which is false comfort rather than
+    depth. Whatever the clause lets through is analysed by the push
+    build on `main` regardless.
 - A fork pull request cannot be verified either, and there the gate
   FAILS rather than waving it through — a fork carries source.
 - The context is `ci / Sonar` and the name must not move: it lands in

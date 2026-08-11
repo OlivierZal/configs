@@ -51,14 +51,18 @@ jobs:
         run: npm run lint:package
     timeout-minutes: 15
   sonar:
-    # The bar is stated once in the `Olivierzal way` quality gate, the
-    # organisation default; this reads its verdict for the commit under
-    # review and treats anything it could not read as a failure — a gate
-    # that greens what it did not verify is worse than none.
+    # The bar itself is held by the `Olivierzal way` quality gate, which
+    # the scan step waits on. This job reports the one thing a waiting
+    # scanner cannot: a scan that never ran, whose skipped step fails
+    # nothing and would let an unanalysed change through with every
+    # check green.
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     name: Sonar
-    # The analysis this verifies is uploaded by the coverage leg.
+    # Load-bearing, not ordering hygiene: a rejected gate fails the
+    # coverage leg, and this job must not answer for a run whose
+    # analysis never passed. Skipped-because-needs-failed blocks the
+    # merge through the test contexts, which are required too.
     needs: test
     # No more than the callers grant: a called job asking for a
     # permission its caller withholds fails the whole run at startup,
@@ -71,8 +75,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # Both sides of the merge commit, which is what the two lists
-          # below are read from.
+          # Both sides of the merge commit, which is where the authorship
+          # below is read from.
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup-node-and-install
@@ -84,20 +88,17 @@ jobs:
           BRANCH: ${{ github.ref_name }}
           EVENT_NAME: ${{ github.event_name }}
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          MERGE_SHA: ${{ github.sha }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           THIS_REPO: ${{ github.repository }}
-        # The two lists are what makes the unanalysed-pull-request branch
-        # a verification instead of an assumption. Read from the merge
+        # Authorship is what makes the unanalysed-pull-request branch a
+        # verification instead of an assumption. Read from the merge
         # commit's two sides: the authorship that actually lands in
         # history, not a label attached to the pull request.
         run: |
           if git rev-parse -q --verify HEAD^2 >/dev/null; then
             COMMIT_AUTHORS=$(git log --format='%an' HEAD^2 --not HEAD^1)
-            CHANGED_FILES=$(git diff --name-only HEAD^1 HEAD^2)
-            export COMMIT_AUTHORS CHANGED_FILES
+            export COMMIT_AUTHORS
           fi
           script=node_modules/@olivierzal/configs/scripts/check-sonar-gate.sh
           [ -f "$script" ] || script=scripts/check-sonar-gate.sh
@@ -136,8 +137,17 @@ jobs:
         run: npm test
       # Self-armed on the secret: until SONAR_TOKEN is provisioned the
       # upload skips instead of failing the leg.
+      #
+      # `qualitygate.wait` is what makes the bar a check rather than a
+      # dashboard: the scanner blocks on its own analysis task and exits
+      # non-zero when the `Olivierzal way` gate rejects it, so a
+      # violation fails this leg — already a required context — on the
+      # exact commit that caused it. It waits for the task it just
+      # submitted, so the verdict cannot be the previous commit's.
       - if: matrix.coverage && env.SONAR_TOKEN != '' && (github.event_name == 'push' || (github.event.pull_request.user.login != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository))
         uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
+        with:
+          args: -Dsonar.qualitygate.wait=true
     strategy:
       fail-fast: false
       # `include` alone defines the matrix: with no base variable to
