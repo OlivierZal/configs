@@ -114,21 +114,32 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
 
 ## Sonar gate doctrine
 
-- The free-tier quality gate is NOT the house bar and cannot be made
-  into it: it tolerates 3 % duplication on new code, lets code smells
-  through, and is not customizable — custom gates are a paid plan, and
-  `Sonar way` is read-only with every condition on new code. So the
-  `Sonar` job reads the metrics themselves — `violations`,
-  `security_hotspots`, `duplicated_lines_density`, `coverage` and their
-  `new_*` twins. `qualityGateStatus` is never consulted.
+- The bar lives in the `Olivierzal way` quality gate, the organisation
+  default on the Team plan, stated ONCE for every project instead of
+  restated in each consumer's CI: `violations`,
+  `duplicated_lines_density` and their `new_*` twins at 0,
+  `coverage`/`new_coverage` at 100, `security_hotspots_reviewed` and its
+  `new_*` twin at 100. The `Sonar` job reads that gate's verdict, never
+  the measures behind it.
+  - Hotspots are the one axis the platform will not take literally:
+    SonarCloud refuses `security_hotspots` as a gate condition
+    («cannot be used to define a condition») because it models hotspots
+    as a review workflow, not a defect count. `*_reviewed` at 100 % is
+    the expressible form — and the stronger one, since it demands a
+    recorded human verdict rather than forbidding a flagged pattern.
+    With zero hotspots the measure reads 100, so the condition is
+    vacuously satisfied.
 - ONE window per event, each answering for what it can cause — the same
-  split by TIME as the dependency doctrine below. A pull request answers
-  for the code it introduces, which is Clean as You Code and is enough
-  alone: every change lands through a gated pull request, so an overall
-  at zero stays at zero by induction. The single drift that escapes the
-  induction is an analyser update raising issues on untouched code; no
-  pull request causes it, so it is read on `main`, where it is loud and
-  blocks no review it has nothing to do with.
+  split by TIME as the dependency doctrine below. This is no longer a
+  decision the gate script makes: SonarCloud holds a pull request
+  analysis to the new-code conditions and a branch to both. It lands
+  where the house reasoning did. A pull request answers for the code it
+  introduces, which is Clean as You Code and is enough alone: every
+  change lands through a gated pull request, so an overall at zero stays
+  at zero by induction. The single drift that escapes the induction is
+  an analyser update raising issues on untouched code; no pull request
+  causes it, so it surfaces on `main`, where it is loud and blocks no
+  review it has nothing to do with.
 - Anything the gate could not read is a failure, never a pass. An
   absent metric, an unreachable API, an analysis that never appeared:
   each fails with its own diagnosis, because a gate that greens what it

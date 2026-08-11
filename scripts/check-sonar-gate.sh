@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Turns the house Sonar bar from a rule held in review into a status
-# check, and refuses to report success on anything it did not verify.
-# Which window it holds depends on the event, for the reason stated at
-# the decision itself.
+# Turns the `Olivierzal way` quality gate into a status check, and
+# refuses to report success on anything it did not verify. The bar is
+# stated once in the gate, for the whole organisation; this reads its
+# verdict for the commit under review.
 #
 # Three outcomes, never blurred:
 #   verified compliant   -> success, printing the measures it read
@@ -33,7 +33,6 @@
 # GitHub expressions and this keeps the decisions.
 set -euo pipefail
 
-readonly here=${BASH_SOURCE[0]%/*}
 readonly api=${SONAR_API_BASE:-https://sonarcloud.io/api}
 readonly bot='dependabot[bot]'
 readonly attempts=${SONAR_POLL_ATTEMPTS:-30}
@@ -186,32 +185,53 @@ analysis_expected || accept_unanalysed
 [[ -n ${SONAR_TOKEN-} ]] ||
   fail "an analysis is expected for this \`$event\` but SONAR_TOKEN is absent; the bar cannot be verified"
 
-# One window per event, because each answers for what it can cause.
-#
-# A pull request answers for the code it introduces, and that is enough
-# on its own: every change lands through a gated pull request, so an
-# overall that is at zero stays at zero by induction. Holding the whole
-# project against a review that touched ten lines re-verifies the other
-# side of that induction on every merge.
-#
-# One drift escapes the induction: an analyser update raising issues on
-# code nobody touched. No pull request causes it, so blocking one over
-# it would fail a review for something it has nothing to do with — the
-# same reason `Test (Node latest)` is not a required check. It surfaces
-# on the default branch instead, where it is loud and blocks nothing.
-if [[ $event == pull_request ]]; then
-  readonly mode=new
-  readonly metrics='new_violations,new_security_hotspots,new_duplicated_lines_density,new_coverage,new_lines,new_lines_to_cover'
-  readonly window="measures/component?component=$project_key&metricKeys=$metrics&pullRequest=$pr_number"
-else
-  readonly mode=overall
-  readonly metrics='violations,security_hotspots,duplicated_lines_density,coverage,lines_to_cover'
-  readonly window="measures/component?component=$project_key&metricKeys=$metrics"
-fi
-
 wait_for_analysis
 
-api_get "$window" measures.json ||
-  fail "SonarCloud could not be read for the $mode window; the bar was not verified — re-run this job"
+# The bar itself lives in the `Olivierzal way` quality gate, which
+# states it once for the whole organisation instead of restating it in
+# every consumer's CI. This reads that gate's verdict rather than the
+# measures behind it.
+#
+# Which window applies is the platform's own split, not a choice made
+# here: SonarCloud applies a gate's new-code conditions to a pull
+# request analysis and leaves its overall ones aside, then applies both
+# on a branch. That lands exactly where the house reasoning did — a pull
+# request answers for the code it introduces, and an overall at zero
+# stays at zero by induction — while an analyser update raising issues
+# on untouched code surfaces on the default branch, loud and blocking
+# nobody's review.
+if [[ $event == pull_request ]]; then
+  readonly status_path="qualitygates/project_status?projectKey=$project_key&pullRequest=$pr_number"
+else
+  readonly status_path="qualitygates/project_status?projectKey=$project_key&branch=$branch"
+fi
 
-bash "$here/check-sonar-bar.sh" "$mode" measures.json
+api_get "$status_path" status.json ||
+  fail 'SonarCloud could not be read for the quality gate; the bar was not verified — re-run this job'
+
+# An absent verdict is the third outcome, never a pass: a gate that
+# greens what it could not read is worse than none.
+node -e '
+  const { readFileSync } = require("node:fs")
+  const status = JSON.parse(readFileSync(process.argv[1], "utf8"))?.projectStatus
+  const verdict = status?.status
+  if (verdict !== "OK" && verdict !== "ERROR") {
+    console.error(
+      `error: SonarCloud reported no quality-gate verdict (${verdict ?? "absent"}); the bar was not verified`,
+    )
+    process.exit(1)
+  }
+  const conditions = status.conditions ?? []
+  const describe = ({ actualValue, comparator, errorThreshold, metricKey }) =>
+    `${metricKey}=${actualValue ?? "absent"} (fails ${comparator} ${errorThreshold})`
+  if (verdict === "ERROR") {
+    const failed = conditions.filter((one) => one?.status === "ERROR")
+    console.error(
+      `error: the quality gate rejects this analysis — ${failed.map(describe).join(", ")}`,
+    )
+    process.exit(1)
+  }
+  console.log(
+    `the quality gate holds: ${conditions.map(({ actualValue, metricKey }) => `${metricKey}=${actualValue ?? "n/a"}`).join(", ")}`,
+  )
+' status.json
