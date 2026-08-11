@@ -358,6 +358,20 @@ opposite: every diff is a deliberate, per-repo-classified change —
 and the dependabot-fix guidance tells the fixer to stop and leave the
 PR red when a bump crosses such a release.
 
+## The iOS floor watch
+
+`ios-floor-watch.yml` re-reads, monthly and on dispatch, the fact the
+`homey-app` preset derives its webview floor from: the Homey mobile
+app's App Store iOS minimum (iTunes Lookup API, track id 1435800024 —
+JSON, no scraping). The recorded value lives in the workflow beside the
+docstring's (16.4, read 2026-08-11) and the two move only together. Any
+other answer opens ONE issue naming the verdict — below 17 the
+derivation only needs restating, at 17 the `v` ban stops being
+derivable, at 17.4 the whole es2023 floor does — and an empty or
+unreadable answer fails the run: an unread floor must not read as a
+holding one. Re-deriving is a doctrine change (a policy-crossing
+release per the adoption doctrine), never a mechanical bump.
+
 ## Governance files
 
 `SECURITY.md` and `CONTRIBUTING.md` exist here because this package is a
