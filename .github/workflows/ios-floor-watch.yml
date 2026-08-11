@@ -83,5 +83,5 @@ name: iOS floor watch
 on:
   schedule:
     - cron: '17 6 3 * *'
-  workflow_dispatch:
+  workflow_dispatch: {}
 permissions: {}
