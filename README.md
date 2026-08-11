@@ -197,15 +197,18 @@ the number 22.2, which installs the 22.2 line. Each entry also names a
 required status check (`Test (Node <version>)`), so a caller changing
 the list updates its ruleset in the same move.
 
-The `Sonar` job holds the house bar on what that leg uploaded: zero
-issues, zero security hotspots, zero duplication and full coverage, read
-metric by metric from the SonarCloud API rather than from the free-tier
-quality gate (which tolerates 3 % duplication on new code and cannot be
-customized). It holds one window per event: a pull request answers for
-the code it introduces, and the overall window is read on the default
-branch, where an analyser update raising issues on untouched code
-surfaces without blocking a review that did not cause it.
-Anything it could not read — an absent metric, an unreachable API, an
+The house bar — zero issues, every security hotspot reviewed, zero
+duplication and full coverage, on both the new-code and the overall
+window — is stated once in the `Olivierzal way` quality gate, the
+organisation default. The `Sonar` job reads that gate's verdict for the
+commit under review rather than restating the bar in CI. Which window
+applies is SonarCloud's own split: a pull request analysis is held to
+the new-code conditions and a branch to both, which lands exactly where
+the house reasoning did — a pull request answers for the code it
+introduces, while an analyser update raising issues on untouched code
+surfaces on the default branch without blocking a review that did not
+cause it.
+Anything it could not read — an absent verdict, an unreachable API, an
 analysis that never appeared — fails with its own diagnosis instead of
 passing. A Dependabot pull request, which SonarCloud never analyses
 because such workflows receive no secrets, is accepted only once the job

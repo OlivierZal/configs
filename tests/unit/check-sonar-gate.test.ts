@@ -3,8 +3,7 @@ import {
   execFile,
   execFileSync,
 } from 'node:child_process'
-import { createHash } from 'node:crypto'
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync } from 'node:fs'
 import { type Server, createServer } from 'node:http'
 import { fileURLToPath } from 'node:url'
 import os from 'node:os'
@@ -14,7 +13,6 @@ import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
-const barScript = path.join(repoRoot, 'scripts/check-sonar-bar.sh')
 const gateScript = path.join(repoRoot, 'scripts/check-sonar-gate.sh')
 const scratch = mkdtempSync(path.join(os.tmpdir(), 'sonar-gate-'))
 const inheritedPath = process.env.PATH ?? ''
@@ -58,79 +56,6 @@ const run = (
 
 // Named after its own content: identical payloads share a file and no
 // counter has to be carried between calls.
-const measuresFile = (
-  measures: readonly Readonly<Record<string, unknown>>[],
-): string => {
-  const body = JSON.stringify({ component: { measures } })
-  const file = path.join(
-    scratch,
-    `measures-${createHash('sha256').update(body).digest('hex').slice(0, 16)}.json`,
-  )
-  writeFileSync(file, body)
-  return file
-}
-
-const measure = (metric: string, value: string): Record<string, unknown> => ({
-  metric,
-  value,
-})
-
-const OVERALL_CLEAN = [
-  measure('violations', '0'),
-  measure('security_hotspots', '0'),
-  measure('duplicated_lines_density', '0.0'),
-  measure('coverage', '100.0'),
-  measure('lines_to_cover', '85'),
-]
-
-const NEW_CLEAN = [
-  measure('new_violations', '0'),
-  measure('new_security_hotspots', '0'),
-  measure('new_duplicated_lines_density', '0.0'),
-  measure('new_coverage', '100.0'),
-  measure('new_lines', '42'),
-  measure('new_lines_to_cover', '12'),
-]
-
-const withMetric = (
-  measures: readonly Readonly<Record<string, unknown>>[],
-  metric: string,
-  value: string,
-): Readonly<Record<string, unknown>>[] =>
-  measures.map((entry) =>
-    entry.metric === metric ? measure(metric, value) : entry,
-  )
-
-const without = (
-  measures: readonly Readonly<Record<string, unknown>>[],
-  metric: string,
-): Readonly<Record<string, unknown>>[] =>
-  measures.filter((entry) => entry.metric !== metric)
-
-const bar = (
-  mode: string,
-  measures: readonly Readonly<Record<string, unknown>>[],
-): RunResult => run(barScript, [mode, measuresFile(measures)])
-
-// A window that touched nothing: no line, hence neither ratio.
-const NEW_NO_LINES = withMetric(
-  withMetric(NEW_CLEAN, 'new_lines', '0'),
-  'new_lines_to_cover',
-  '0',
-)
-const NEW_EMPTY_WINDOW = without(
-  without(NEW_NO_LINES, 'new_coverage'),
-  'new_duplicated_lines_density',
-)
-
-// What SonarCloud answers for a documentation-only change: it analyses
-// no Markdown, so the counters come back and every line-derived figure
-// is simply absent. The window is empty, not unverified.
-const NEW_NOTHING_ANALYSABLE = [
-  measure('new_violations', '0'),
-  measure('new_security_hotspots', '0'),
-]
-
 // Throws instead of narrowing conditionally: the vitest rules ban
 // conditional logic inside tests.
 const asRecord = (value: unknown, what: string): Record<string, unknown> => {
@@ -164,177 +89,6 @@ const workflow = asRecord(
   'reusable-ci.yml',
 )
 const sonarJob = asRecord(asRecord(workflow.jobs, 'jobs').sonar, 'sonar')
-
-describe('the Sonar bar', () => {
-  it.each([
-    { measures: OVERALL_CLEAN, mode: 'overall' },
-    { measures: NEW_CLEAN, mode: 'new' },
-    // A window that added no line reports no ratio, and says so itself
-    // through `new_lines` rather than leaving the gate to guess.
-    { measures: NEW_EMPTY_WINDOW, mode: 'new' },
-    // Workflow YAML and shell carry new lines but nothing coverable, so
-    // no ratio is owed. Demanding one there fails on the analyser's
-    // language support rather than on the code — the false failure this
-    // clause exists to prevent.
-    {
-      measures: without(
-        withMetric(NEW_CLEAN, 'new_lines_to_cover', '0'),
-        'new_coverage',
-      ),
-      mode: 'new',
-    },
-    // A documentation-only pull request: analysed, counters returned,
-    // every line-derived figure absent because there was no subject to
-    // measure. Failing here would report "could not verify" for a window
-    // that is fully verified — and it blocked two real pull requests.
-    { measures: NEW_NOTHING_ANALYSABLE, mode: 'new' },
-  ])('accepts a clean $mode window', ({ measures, mode }) => {
-    const { output, status } = bar(mode, measures)
-
-    expect(status).toBe(0)
-    expect(output).toContain(`the ${mode} window holds the house bar`)
-  })
-
-  // One mutation per clause of the house bar. The free-tier quality
-  // gate passes several of these, which is the whole reason the gate
-  // reads the metrics instead of the gate status.
-  it.each([
-    {
-      expected: 'open issues: 1',
-      metric: 'violations',
-      mode: 'overall',
-      value: '1',
-    },
-    {
-      expected: 'security hotspots: 2',
-      metric: 'security_hotspots',
-      mode: 'overall',
-      value: '2',
-    },
-    // Under the free gate this is a pass: it tolerates 3 % on new code.
-    {
-      expected: 'duplicated lines: 2.5',
-      metric: 'duplicated_lines_density',
-      mode: 'overall',
-      value: '2.5',
-    },
-    {
-      expected: 'coverage: 99.4 %',
-      metric: 'coverage',
-      mode: 'overall',
-      value: '99.4',
-    },
-    {
-      expected: 'issues on new code: 1',
-      metric: 'new_violations',
-      mode: 'new',
-      value: '1',
-    },
-    {
-      expected: 'security hotspots on new code: 1',
-      metric: 'new_security_hotspots',
-      mode: 'new',
-      value: '1',
-    },
-    {
-      expected: 'duplicated lines on new code: 1.2',
-      metric: 'new_duplicated_lines_density',
-      mode: 'new',
-      value: '1.2',
-    },
-    {
-      expected: 'coverage of new code: 87 %',
-      metric: 'new_coverage',
-      mode: 'new',
-      value: '87',
-    },
-  ])('rejects $metric at $value', ({ expected, metric, mode, value }) => {
-    const clean = mode === 'overall' ? OVERALL_CLEAN : NEW_CLEAN
-    const { output, status } = bar(mode, withMetric(clean, metric, value))
-
-    expect(status).toBe(1)
-    expect(output).toContain(expected)
-  })
-
-  // The trap this gate exists to avoid: a metric it cannot read is a
-  // metric it did not verify, so absence fails rather than passes. It
-  // is also what turns a wrong metric name into a loud failure on the
-  // first real run instead of a permanent false green.
-  it.each([
-    { metric: 'violations', mode: 'overall' },
-    { metric: 'security_hotspots', mode: 'overall' },
-    { metric: 'duplicated_lines_density', mode: 'overall' },
-    { metric: 'coverage', mode: 'overall' },
-    { metric: 'new_violations', mode: 'new' },
-    { metric: 'new_security_hotspots', mode: 'new' },
-    { metric: 'new_lines', mode: 'new' },
-    // Absent while the payload says there ARE lines to cover: that is
-    // an unverified ratio, not an inapplicable one.
-    { metric: 'new_coverage', mode: 'new' },
-  ])('rejects an absent $metric', ({ metric, mode }) => {
-    const clean = mode === 'overall' ? OVERALL_CLEAN : NEW_CLEAN
-    const { output, status } = bar(mode, without(clean, metric))
-
-    expect(status).toBe(1)
-    expect(output).toContain(`\`${metric}\` is absent`)
-  })
-
-  it('rejects a payload with no measures at all', () => {
-    const { output, status } = bar('overall', [])
-
-    expect(status).toBe(1)
-    expect(output).toContain('carries no measures')
-  })
-
-  // The tolerance is for figures with no subject, never for the counters
-  // that prove the analysis answered: an empty window still holds them.
-  it('holds the counters on a window with nothing analysable', () => {
-    const { output, status } = bar(
-      'new',
-      withMetric(NEW_NOTHING_ANALYSABLE, 'new_violations', '1'),
-    )
-
-    expect(status).toBe(1)
-    expect(output).toContain('issues on new code: 1')
-  })
-
-  // Counters gone as well: nothing establishes that an analysis answered
-  // at all, so this is the unverified case and not the empty one.
-  it('rejects a window that reports no counter either', () => {
-    const { output, status } = bar(
-      'new',
-      without(NEW_NOTHING_ANALYSABLE, 'new_violations'),
-    )
-
-    expect(status).toBe(1)
-    expect(output).toContain('`new_violations` is absent')
-  })
-
-  // SonarCloud answers an unauthorized read with a body, not only a
-  // status, so the payload itself has to be treated as untrusted.
-  it('rejects an API error body', () => {
-    const file = path.join(scratch, 'errors.json')
-    writeFileSync(
-      file,
-      JSON.stringify({ errors: [{ msg: 'Insufficient privileges' }] }),
-    )
-    const { output, status } = run(barScript, ['overall', file])
-
-    expect(status).toBe(1)
-    expect(output).toContain('SonarCloud refused the request')
-  })
-
-  it.each([
-    { args: [], expected: 'usage: check-sonar-bar.sh' },
-    { args: ['sideways', 'x'], expected: 'mode must be' },
-    { args: ['overall', 'absent.json'], expected: 'no such measures file' },
-  ])('rejects the call $args', ({ args, expected }) => {
-    const { output, status } = run(barScript, args)
-
-    expect(status).toBe(1)
-    expect(output).toContain(expected)
-  })
-})
 
 describe('the unanalysed-pull-request branch', () => {
   const prEnv = {
@@ -438,7 +192,31 @@ const runAsync = async (
     )
   })
 
-const bodyFor = (url: string): string => {
+const condition = (
+  metricKey: string,
+  actualValue: string,
+  status: string,
+): Readonly<Record<string, string>> => ({
+  actualValue,
+  comparator: 'GT',
+  errorThreshold: '0',
+  metricKey,
+  status,
+})
+
+// The three answers SonarCloud can give, which are the three outcomes
+// this gate must never blur.
+const GATE_OK = {
+  conditions: [condition('new_violations', '0', 'OK')],
+  status: 'OK',
+}
+const GATE_ERROR = {
+  conditions: [condition('new_violations', '3', 'ERROR')],
+  status: 'ERROR',
+}
+const GATE_NO_VERDICT = {}
+
+const bodyFor = (url: string, projectStatus: unknown): string => {
   if (url.startsWith('/project_pull_requests/list')) {
     return JSON.stringify({
       pullRequests: [{ commit: { sha: HEAD }, key: '7' }],
@@ -447,23 +225,17 @@ const bodyFor = (url: string): string => {
   if (url.startsWith('/project_analyses/search')) {
     return JSON.stringify({ analyses: [{ revision: HEAD }] })
   }
-  return JSON.stringify({
-    component: {
-      measures: url.includes('metricKeys=new_') ? NEW_CLEAN : OVERALL_CLEAN,
-    },
-  })
+  return JSON.stringify({ projectStatus })
 }
 
-const serve = async (): Promise<{
-  origin: string
-  urls: string[]
-  close: () => Promise<void>
-}> => {
+const serve = async (
+  projectStatus: unknown = GATE_OK,
+): Promise<{ origin: string; urls: string[]; close: () => Promise<void> }> => {
   const urls: string[] = []
   const server: Server = createServer((request, response) => {
     urls.push(request.url ?? '')
     response.writeHead(200, { 'content-type': 'application/json' })
-    response.end(bodyFor(request.url ?? ''))
+    response.end(bodyFor(request.url ?? '', projectStatus))
   })
   await new Promise<void>((resolve) => {
     server.listen(0, '127.0.0.1', () => {
@@ -495,30 +267,51 @@ const gateEnv = (origin: string): Record<string, string> => ({
   SONAR_TOKEN: 'test-token',
 })
 
-const measuresUrl = (urls: readonly string[]): string =>
-  urls.find((url) => url.startsWith('/measures/component')) ?? ''
+const statusUrl = (urls: readonly string[]): string =>
+  urls.find((url) => url.startsWith('/qualitygates/project_status')) ?? ''
 
-describe('the window each event answers for', () => {
-  it('holds a pull request to the new-code window alone', async () => {
-    const { close, origin, urls } = await serve()
-    const stdout = await runAsync(gateScript, {
-      ...gateEnv(origin),
-      EVENT_NAME: 'pull_request',
-      HEAD_REPO: 'OlivierZal/configs',
-      HEAD_SHA: HEAD,
-      PR_AUTHOR: 'OlivierZal',
-      PR_NUMBER: '7',
-      THIS_REPO: 'OlivierZal/configs',
-    })
-    await close()
-
-    expect(stdout).toContain('the new window holds the house bar')
-    expect(stdout).not.toContain('the overall window')
-    expect(measuresUrl(urls)).toContain('metricKeys=new_violations')
-    expect(measuresUrl(urls)).toContain('pullRequest=7')
+// Resolves on failure too: this gate's rejections are as much of a
+// contract as its acceptances, and the synchronous form would deadlock
+// against the in-process server.
+const attempt = async (
+  env: Readonly<Record<string, string>>,
+): Promise<RunResult> =>
+  new Promise((resolve) => {
+    execFile(
+      gateScript,
+      [],
+      { cwd: scratch, encoding: 'utf8', env },
+      (error, stdout, stderr) => {
+        resolve({
+          output: `${stdout}${stderr}`,
+          status: error === null ? 0 : 1,
+        })
+      },
+    )
   })
 
-  it('holds a push to the overall window, where drift surfaces', async () => {
+const prEnv = (origin: string): Record<string, string> => ({
+  ...gateEnv(origin),
+  EVENT_NAME: 'pull_request',
+  HEAD_REPO: 'OlivierZal/configs',
+  HEAD_SHA: HEAD,
+  PR_AUTHOR: 'OlivierZal',
+  PR_NUMBER: '7',
+  THIS_REPO: 'OlivierZal/configs',
+})
+
+describe('the quality gate verdict', () => {
+  it('asks SonarCloud for the pull request under review', async () => {
+    const { close, origin, urls } = await serve()
+    const stdout = await runAsync(gateScript, prEnv(origin))
+    await close()
+
+    expect(stdout).toContain('the quality gate holds')
+    expect(statusUrl(urls)).toContain('pullRequest=7')
+    expect(statusUrl(urls)).not.toContain('branch=')
+  })
+
+  it('asks for the branch on a push, where drift surfaces', async () => {
     const { close, origin, urls } = await serve()
     const stdout = await runAsync(gateScript, {
       ...gateEnv(origin),
@@ -529,10 +322,28 @@ describe('the window each event answers for', () => {
     })
     await close()
 
-    expect(stdout).toContain('the overall window holds the house bar')
-    expect(stdout).not.toContain('the new window')
-    expect(measuresUrl(urls)).toContain('metricKeys=violations')
-    expect(measuresUrl(urls)).not.toContain('pullRequest=')
+    expect(stdout).toContain('the quality gate holds')
+    expect(statusUrl(urls)).toContain('branch=main')
+    expect(statusUrl(urls)).not.toContain('pullRequest=')
+  })
+
+  it('rejects a failing gate, naming the condition that failed', async () => {
+    const { close, origin } = await serve(GATE_ERROR)
+    const { output, status } = await attempt(prEnv(origin))
+    await close()
+
+    expect(status).toBe(1)
+    expect(output).toContain('the quality gate rejects this analysis')
+    expect(output).toContain('new_violations=3')
+  })
+
+  it('rejects a verdict it could not read rather than greening it', async () => {
+    const { close, origin } = await serve(GATE_NO_VERDICT)
+    const { output, status } = await attempt(prEnv(origin))
+    await close()
+
+    expect(status).toBe(1)
+    expect(output).toContain('no quality-gate verdict')
   })
 })
 

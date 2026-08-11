@@ -51,11 +51,10 @@ jobs:
         run: npm run lint:package
     timeout-minutes: 15
   sonar:
-    # The house bar is stricter than the free-tier quality gate, which
-    # tolerates 3 % duplication on new code, lets code smells through
-    # and cannot be customized. So this reads the metrics themselves,
-    # both windows, and treats anything it could not read as a failure —
-    # a gate that greens what it did not verify is worse than none.
+    # The bar is stated once in the `Olivierzal way` quality gate, the
+    # organisation default; this reads its verdict for the commit under
+    # review and treats anything it could not read as a failure — a gate
+    # that greens what it did not verify is worse than none.
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     name: Sonar
