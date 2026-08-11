@@ -1,0 +1,87 @@
+# Watches the fact the webview floor is derived from. The homey-app
+# preset's `webviewFloorBlock` (src/eslint/homey-app.ts) pins es2023 to
+# the Homey mobile app's iOS App Store minimum — 16.4 when derived
+# (2026-08-11) — and states its re-evaluation condition: es2024 becomes
+# derivable when that minimum reaches 17.4 (the `v` flag alone at 17).
+# A condition nobody re-reads is a comment, not a mechanism; this is the
+# mechanism. It asks the iTunes Lookup API (JSON, no scraping) and opens
+# an issue on ANY move from the recorded value, so the derivation can
+# never silently go stale: below 17 the doctrine only needs restating
+# with the new value, at 17 the `v` ban stops being derivable, at 17.4
+# the whole floor does. Fails closed when the API answers nothing — an
+# unread floor must not read as a holding one.
+concurrency:
+  cancel-in-progress: true
+  group: ios-floor-watch
+jobs:
+  watch:
+    name: iOS floor watch
+    permissions:
+      issues: write
+    runs-on: ubuntu-24.04
+    steps:
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          # The value the docstring derives from; moves ONLY together
+          # with src/eslint/homey-app.ts restating its derivation.
+          readonly recorded='16.4'
+          # Homey — A better smart home, Athom B.V. (bundle app.homey).
+          readonly track_id='1435800024'
+
+          minimum=$(curl -fsS --retry 3 \
+            "https://itunes.apple.com/lookup?id=${track_id}" |
+            jq -er '.results[0].minimumOsVersion')
+
+          # `jq -e` fails on null but lets an empty string through; an
+          # unread floor must not read as a holding one.
+          if [[ -z $minimum ]]; then
+            printf '::error::iTunes Lookup answered without a minimumOsVersion; the floor cannot be verified\n'
+            exit 1
+          fi
+
+          if [[ $minimum == "$recorded" ]]; then
+            printf 'App Store minimum still %s; the es2023 derivation holds\n' \
+              "$minimum"
+            exit 0
+          fi
+
+          # sort -V puts the smaller version first: reached <bar> iff
+          # <bar> is not strictly greater than <minimum>.
+          reached() {
+            [[ $(printf '%s\n%s\n' "$1" "$minimum" | sort -V | head -1) == "$1" ]]
+          }
+
+          if reached 17.4; then
+            verdict='es2024 is derivable'
+          elif reached 17; then
+            verdict='the `v` flag is derivable, full es2024 is not'
+          else
+            verdict='es2023 still binds; the derivation needs restating'
+          fi
+          title="iOS floor watch: App Store minimum moved to ${minimum} — ${verdict}"
+
+          # One open report per move; a second run adds nothing a reader
+          # does not already have.
+          existing=$(gh api "repos/${REPO}/issues?state=open" \
+            --jq '[.[] | select(.title | startswith("iOS floor watch:"))] | length')
+          if ((existing > 0)); then
+            printf 'an iOS floor watch issue is already open; not duplicating\n'
+            exit 0
+          fi
+
+          body=$(printf '%s\n\n%s\n\n%s' \
+            "The Homey mobile app's App Store minimum is now **${minimum}** (iTunes Lookup, track id ${track_id}); the webview floor doctrine in \`src/eslint/homey-app.ts\` derives es2023 from **${recorded}**." \
+            "Verdict at this value: ${verdict}." \
+            "Re-derivation is a doctrine change, not a mechanical bump: restate \`webviewFloorBlock\`'s docstring from the new minimum (and, at 17.4, decide the es2024 question for the family), update the recorded value in \`.github/workflows/ios-floor-watch.yml\` in the same pull request, then release and adopt — a policy-crossing release per the adoption doctrine.")
+          gh issue create --repo "$REPO" --title "$title" --body "$body"
+    timeout-minutes: 10
+name: iOS floor watch
+on:
+  schedule:
+    - cron: '17 6 3 * *'
+  workflow_dispatch: {}
+permissions: {}
