@@ -31,7 +31,7 @@ export const mainLanguageOptions: { parserOptions: Linter.ParserOptions } = {
     // Root `*.config.js` files (typedoc) live outside every tsconfig;
     // the default project types them so the type-aware rules still
     // apply. (`allowDefaultProject` accepts no `**` globs.)
-    projectService: { allowDefaultProject: ['*.config.js'] },
+    projectService: { allowDefaultProject: ['*.config.js', '*.config.mjs'] },
     warnOnUnsupportedTypeScriptVersion: false,
   },
 }
@@ -411,6 +411,9 @@ const staticMainRules: NonNullable<Config['rules']> = {
   'import-x/first': 'error',
   'import-x/newline-after-import': 'error',
   'import-x/no-absolute-path': 'error',
+  // Tighter than upstream (`allowCallExpression` defaults to true) and
+  // load-bearing for config files: see `configTsBlock` for the
+  // `isolatedDeclarations` derivation this tightening enforces.
   'import-x/no-anonymous-default-export': [
     'error',
     { allowCallExpression: false },
@@ -709,6 +712,19 @@ export const configTsBlock = (files: string[]): Config => ({
   files,
   rules: {
     '@typescript-eslint/naming-convention': 'off',
+    // The `const config = defineConfig(...)` / `export default config`
+    // spelling here is DERIVED, not stylistic, and the global
+    // `no-anonymous-default-export` tightening is what enforces it.
+    // The docs of every loader this block serves write
+    // `export default defineConfig(...)`, but both family tsconfig
+    // bases hold every included file — config files among them — to
+    // `isolatedDeclarations`, and TypeScript cannot annotate a default
+    // export: the docs form is a hard TS9037 on every tree (measured
+    // 2026-08-12 on this repo). The annotated const is that form's
+    // only compilable spelling, so the lint ban makes the compiling
+    // shape also the linted shape. Re-evaluate if TypeScript learns
+    // default-export annotations or config files leave the
+    // `isolatedDeclarations` surface.
     'import-x/no-default-export': 'off',
     // Config loaders (eslint, vitest, prettier, typedoc) consume
     // default exports.
@@ -722,7 +738,7 @@ export const configTsBlock = (files: string[]): Config => ({
 // and a JSDoc `@type` is semantic exactly because it is a block
 // comment — a line comment carries no type.
 export const configJsBlock: Config = {
-  files: ['*.config.js'],
+  files: ['*.config.{js,mjs}'],
   rules: {
     '@typescript-eslint/explicit-function-return-type': 'off',
     'unicorn/single-line-block-comment-style': 'off',
