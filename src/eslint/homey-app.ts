@@ -322,7 +322,7 @@ const appMainRuleOptions = (
 ): Parameters<typeof sharedMainRules>[0] => ({
   extraneous: {
     devDependencies: [
-      '*.config.{js,ts}',
+      '*.config.{js,mjs,mts,ts}',
       'scripts/**',
       'tests/**',
       ...bundledSourceGlobs,
@@ -353,7 +353,7 @@ const appMainBlock = ({
         // above.
         prettier,
       ],
-      files: [tsGlobs.ts, '*.config.js'],
+      files: [tsGlobs.ts, '*.config.{js,mjs}'],
       languageOptions: mainLanguageOptions,
       plugins: { '@stylistic': stylistic, perfectionist },
       rules: {
@@ -447,7 +447,7 @@ export const homeyApp = ({
         'import-x/prefer-default-export': ['error', { target: 'any' }],
       },
     },
-    configTsBlock(['*.config.{js,ts}']),
+    configTsBlock(['*.config.{js,mjs,mts,ts}']),
     configJsBlock,
     htmlBlock,
     jsonBlock(['app.json', 'locales/*.json']),

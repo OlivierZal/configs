@@ -55,7 +55,7 @@ const libraryMainRuleOptions = (
   wireNamingEntries: NonNullable<LibraryOptions['wireNamingEntries']>,
 ): Parameters<typeof sharedMainRules>[0] => ({
   extraneous: {
-    devDependencies: ['*.config.{js,ts}', 'tests/**'],
+    devDependencies: ['*.config.{js,mjs,mts,ts}', 'tests/**'],
     includeTypes: true,
   },
   naming: libraryNaming(wireNamingEntries),
@@ -76,7 +76,7 @@ const libraryMainBlock = ({
         // Last: it neutralizes formatting rules from the presets above.
         prettier,
       ],
-      files: [tsGlobs.ts, '*.config.js'],
+      files: [tsGlobs.ts, '*.config.{js,mjs}'],
       languageOptions: mainLanguageOptions,
       plugins: { '@stylistic': stylistic, perfectionist },
       rules: {
@@ -169,7 +169,7 @@ export const library = ({
     }),
     // After the main block, so the scoped files win the override.
     ...(isScoped ? [wireNamingBlock(wireNamingFiles, naming)] : []),
-    configTsBlock(['*.config.{js,ts}']),
+    configTsBlock(['*.config.{js,mjs,mts,ts}']),
     configJsBlock,
     jsonBlock(),
     markdownBlock,
