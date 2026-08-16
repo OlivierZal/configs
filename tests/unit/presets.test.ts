@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest'
 
 import { homeyApp } from '../../src/eslint/homey-app.ts'
 import { library } from '../../src/eslint/library.ts'
-import { mainLanguageOptions } from '../../src/eslint/shared.ts'
+import { jsdocBlock, mainLanguageOptions } from '../../src/eslint/shared.ts'
 
 // Throws instead of narrowing conditionally: the vitest rules ban
 // conditional logic inside tests.
@@ -123,6 +123,21 @@ const lintHtml = async (text: string): Promise<(string | null)[]> => {
     filePath: 'settings/index.html',
   })
   return result?.messages.map(({ ruleId }) => ruleId) ?? []
+}
+
+const lintJsdoc = async (
+  text: string,
+): Promise<{ output: string | undefined; ruleIds: (string | null)[] }> => {
+  const eslint = new ESLint({
+    fix: true,
+    overrideConfig: jsdocBlock(['lib/*.js']),
+    overrideConfigFile: true,
+  })
+  const [result] = await eslint.lintText(text, { filePath: 'lib/sample.js' })
+  return {
+    output: result?.output,
+    ruleIds: result?.messages.map(({ ruleId }) => ruleId) ?? [],
+  }
 }
 
 describe(homeyApp, () => {
@@ -242,6 +257,40 @@ describe('html formatting handover', () => {
     await expect(lintHtml(invalid)).resolves.toStrictEqual([
       'html/no-invalid-role',
     ])
+  })
+})
+
+// Two fixers of one rule, adopted and refused for the same reason, so
+// only a real `--fix` run can show the line holding: an out-of-order
+// block has exactly one correct arrangement, while an orphan `@param`
+// has two opposite corrections and must stay a human call.
+describe('jsdoc param fixers', () => {
+  it('should reorder param tags into signature order', async () => {
+    const { output } = await lintJsdoc(`/**
+ * Joins a building name to its device count.
+ * @param count - How many devices the building holds.
+ * @param name - The building's display name.
+ * @returns The joined label.
+ */
+export const label = (name, count) => \`\${name} (\${count})\`
+`)
+
+    expect(output).toContain(`@param name - The building's display name.
+ * @param count - How many devices the building holds.`)
+  })
+
+  it('should report an orphan param without removing it', async () => {
+    const { output, ruleIds } = await lintJsdoc(`/**
+ * Joins a building name to its device count.
+ * @param name - The building's display name.
+ * @param ghost - A parameter this function does not take.
+ * @returns The joined label.
+ */
+export const label = (name) => \`\${name}\`
+`)
+
+    expect(ruleIds).toContain('jsdoc/check-param-names')
+    expect(output).toBeUndefined()
   })
 })
 
