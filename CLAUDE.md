@@ -271,6 +271,30 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
   pins.
 - `npm run lint:package` — build + publint --strict.
 
+## Adopting a fixer
+
+A rule's fixer is adopted when the ERROR DETERMINES ITS CORRECTION, and
+refused when it does not — the same question for every opt-in fixer the
+family meets, asked once here rather than re-argued per rule.
+
+`jsdoc/check-param-names` carries both answers at once, which is why it
+is the worked example (`enableFixer` on, `extraParams` and
+`badParamNames` off, reasoned at the rule site). Out-of-order `@param`
+tags have exactly one correct arrangement — the names already match the
+signature, only their positions differ, and each description travels
+with its own tag — so automating it is the same handover as `sort-tags`
+and perfectionist. An orphan `@param` has two opposite corrections
+("delete this doc" / "you forgot the parameter"), as does a name
+mismatch ("the doc is wrong" / "the signature is"), and a fixer choosing
+between them deletes or rewrites prose a human wrote. Those stay
+reports; the plugin offers its suggestions in the editor regardless,
+which is where a judgment call belongs.
+
+`--fix` runs unattended in every consumer, so an adopted fixer is
+family policy, not a convenience: pin it behaviorally (a real `--fix`
+run, both halves mutation-checked) rather than by asserting the option
+value back.
+
 ## Plugin triage — evaluated once, here
 
 Whole-plugin verdicts, held to the same bar as rules: strict adoption

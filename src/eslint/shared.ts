@@ -44,6 +44,23 @@ export const linterOptionsBlock: Config = {
 }
 
 const jsdocRules: NonNullable<Config['rules']> = {
+  // The fixer reorders `@param` blocks into signature order and drops
+  // duplicates — the same handover as `sort-tags` and perfectionist:
+  // mechanical order belongs to the tool, not to the reader. It is safe
+  // to automate precisely because the error DETERMINES its correction —
+  // the names already match, only their positions differ, so exactly one
+  // result is right, and each description travels with its own tag.
+  //
+  // The rule's two other fixers stay off (`extraParams`, `badParamNames`),
+  // which is a verdict rather than an oversight: an orphan `@param` means
+  // either "delete this doc" or "you forgot the parameter", and a name
+  // mismatch means either the doc or the signature is wrong. Two opposite
+  // corrections explain the same symptom, so the tool cannot choose —
+  // and it would be choosing by deleting or rewriting prose a human
+  // wrote. Both keep reporting, and the plugin offers its suggestions in
+  // the editor regardless of these options, which is where a judgment
+  // call belongs.
+  'jsdoc/check-param-names': ['error', { enableFixer: true }],
   'jsdoc/check-template-names': 'error',
   'jsdoc/informative-docs': 'error',
   'jsdoc/no-bad-blocks': 'error',
