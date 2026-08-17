@@ -63,13 +63,31 @@ if [ "$1 $2" = 'label list' ]; then
   exit 0
 fi
 printf '%s\n' "$*" >> "$GH_CALLS"
+if [ "$1 $2" = 'issue comment' ]; then
+  printf -- '--- body ---\n' >> "$GH_CALLS"
+  cat "$5" >> "$GH_CALLS"
+fi
 `
 
+// The verdict the prompt demands: sentinel lines, a comment free to
+// carry newlines, backticks and fences — everything that broke the
+// JSON-in-prose protocol on its first live run. The instructions are
+// quoted ABOVE a decoy pair to pin the last-pair-wins rule.
 const VERDICT_RESULT = [
-  'Analysis of the issue.',
-  '```json',
-  String.raw`{"labels": ["bug", "invented-label"], "comment": "Likely cause: x.\n\nMissing: the timezone."}`,
+  'Following "TRIAGE COMMENT START ... TRIAGE COMMENT END" as instructed.',
+  'TRIAGE COMMENT START',
+  'a decoy the quoting paragraph opened',
+  'TRIAGE COMMENT END',
+  'TRIAGE LABELS: bug, invented-label',
+  'TRIAGE COMMENT START',
+  'Likely cause: `toWallClock` in',
+  '',
+  '```ts',
+  'const x = 1',
   '```',
+  '',
+  'Missing: the timezone.',
+  'TRIAGE COMMENT END',
 ].join('\n')
 
 const executionFixture = (result: string | null): string => {
@@ -146,11 +164,34 @@ describe('claude issue triage workflow', () => {
     expect(calls).toContain('issue edit 42 --add-label bug')
     expect(calls).not.toContain('invented-label')
     expect(calls).toContain('issue comment 42 --body-file')
+    // The LAST sentinel pair is the verdict: the decoy a quoting
+    // paragraph opened is discarded, fences and blank lines survive.
+    expect(calls).toContain('Likely cause: `toWallClock` in')
+    expect(calls).toContain('```ts')
+    expect(calls).toContain('Missing: the timezone.')
+    expect(calls).not.toContain('decoy')
+  })
+
+  it('should post a comment when the agent picked no label', () => {
+    const { calls, status } = runPostStep(
+      executionFixture(
+        [
+          'TRIAGE LABELS: none',
+          'TRIAGE COMMENT START',
+          'Nothing matched.',
+          'TRIAGE COMMENT END',
+        ].join('\n'),
+      ),
+    )
+
+    expect(status).toBe(0)
+    expect(calls).not.toContain('issue edit')
+    expect(calls).toContain('issue comment 42 --body-file')
   })
 
   it('should fail loudly when the agent produced no verdict', () => {
     const { calls, status } = runPostStep(
-      executionFixture('I analyzed the issue but forgot the fenced block.'),
+      executionFixture('I analyzed the issue but forgot the sentinels.'),
     )
 
     expect(status).not.toBe(0)

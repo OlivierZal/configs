@@ -44,13 +44,16 @@ jobs:
                fitting EXISTING labels (possibly none); never invent one.
             3. Look for duplicates with `gh search issues` and
                `gh issue list`.
-            4. End your final message with EXACTLY one fenced ```json block
-               and nothing after it, of this shape:
-               {"labels": ["<existing label>"], "comment": "<markdown>"}
-               where `comment` is ONE concise comment: likely cause (with
-               code paths when identifiable), the reproduction or
-               diagnostic details still missing, and a link to the
-               duplicate if one exists.
+            4. End your final message with EXACTLY this block and nothing
+               after it (each sentinel on its own line, verbatim):
+
+               TRIAGE LABELS: <comma-separated existing labels, or none>
+               TRIAGE COMMENT START
+               <ONE concise Markdown comment: likely cause, with code
+               paths when identifiable; the reproduction or diagnostic
+               details still missing; a link to the duplicate if one
+               exists>
+               TRIAGE COMMENT END
       # The mission's writes, deterministic: parse the agent's verdict,
       # drop any label the repository does not carry, post the one
       # comment. Any failure here fails the run — a green triage means
@@ -63,27 +66,31 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          verdict="$(jq -r -s 'flatten | map(select(.type? == "result")) | last | .result // empty' "$EXECUTION_FILE" |
-            awk '/^```json[[:space:]]*$/ {flag=1; buf=""; next}
-                 /^```[[:space:]]*$/ {if (flag) {latest=buf}; flag=0; next}
+          result="$(jq -r -s 'flatten | map(select(.type? == "result")) | last | .result // empty' "$EXECUTION_FILE")"
+          # Sentinel lines, not JSON: a Markdown comment full of newlines,
+          # quotes and fences embeds in a JSON string only if the model
+          # escapes it perfectly — the first live run proved it does not.
+          # Plain sentinels leave no escaping to get wrong, and the LAST
+          # pair wins, so the agent quoting its own instructions earlier
+          # in the message cannot confuse the parse.
+          printf '%s\n' "$result" |
+            awk '/^TRIAGE COMMENT START[[:space:]]*$/ {flag=1; buf=""; next}
+                 /^TRIAGE COMMENT END[[:space:]]*$/ {if (flag) {latest=buf}; flag=0; next}
                  flag {buf=buf $0 "\n"}
-                 END {printf "%s", latest}')"
-          if [ -z "$verdict" ]; then
-            echo '::error::No JSON verdict in the agent output'
+                 END {printf "%s", latest}' > "$RUNNER_TEMP/triage-comment.md"
+          if ! [ -s "$RUNNER_TEMP/triage-comment.md" ]; then
+            echo '::error::No triage comment between the sentinels in the agent output'
             exit 1
           fi
-          if ! printf '%s' "$verdict" |
-            jq -e '(.labels | type == "array") and (.comment | type == "string" and length > 0)' > /dev/null; then
-            echo '::error::The agent verdict failed validation'
-            exit 1
-          fi
-          labels="$(printf '%s' "$verdict" | jq -r '.labels[]?' |
+          requested="$(printf '%s\n' "$result" | grep '^TRIAGE LABELS:' | tail -1 |
+            sed 's/^TRIAGE LABELS:[[:space:]]*//' | tr ',' '\n' |
+            sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep -v '^$' | grep -vxi 'none')" || requested=''
+          labels="$(printf '%s\n' "$requested" |
             grep -Fxf <(gh label list --limit 100 --json name --jq '.[].name') |
             paste -sd, -)" || labels=''
           if [ -n "$labels" ]; then
             gh issue edit "$ISSUE_NUMBER" --add-label "$labels"
           fi
-          printf '%s' "$verdict" | jq -r '.comment' > "$RUNNER_TEMP/triage-comment.md"
           gh issue comment "$ISSUE_NUMBER" --body-file "$RUNNER_TEMP/triage-comment.md"
     timeout-minutes: 10
 name: Claude Issue Triage

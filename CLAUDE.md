@@ -401,10 +401,14 @@ release per the adoption doctrine), never a mechanical bump.
 An agent's exit code is not its outcome. The triage reusable
 (`claude-issue-triage.yml`) splits its mission on that line: a READ-ONLY
 agent decides (which existing labels fit, what the one comment should
-say) and ends with a single fenced JSON verdict; a deterministic step
-parses it, drops labels the repository does not carry, posts the
-comment, and FAILS the run when the verdict is missing, malformed or
-unpostable. A green triage means the issue was actually answered.
+say) and ends with a sentinel-delimited verdict (a `TRIAGE LABELS:`
+line and a comment between `TRIAGE COMMENT START`/`END` lines — plain
+sentinels, because a Markdown comment embeds in a JSON string only if
+the model escapes it perfectly, and the first live run proved it does
+not); a deterministic step parses it, drops labels the repository does
+not carry, posts the comment, and FAILS the run when the verdict is
+missing or unpostable. A green triage means the issue was actually
+answered.
 
 The incident behind it (2026-08-17, com.melcloud#1593): the agent held
 `gh issue edit`/`gh issue comment` in its allowlist, the pinned
