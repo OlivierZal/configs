@@ -396,6 +396,38 @@ unreadable answer fails the run: an unread floor must not read as a
 holding one. Re-deriving is a doctrine change (a policy-crossing
 release per the adoption doctrine), never a mechanical bump.
 
+## Agent workflows — reads in the agent, writes in deterministic steps
+
+An agent's exit code is not its outcome. The triage reusable
+(`claude-issue-triage.yml`) splits its mission on that line: a READ-ONLY
+agent decides (which existing labels fit, what the one comment should
+say) and ends with a single fenced JSON verdict; a deterministic step
+parses it, drops labels the repository does not carry, posts the
+comment, and FAILS the run when the verdict is missing, malformed or
+unpostable. A green triage means the issue was actually answered.
+
+The incident behind it (2026-08-17, com.melcloud#1593): the agent held
+`gh issue edit`/`gh issue comment` in its allowlist, the pinned
+action's CLI bump (2.1.207 → 2.1.220) regressed the Bash permission
+layer, and two runs went green with zero comment and zero label — a
+rerun proved it deterministic (upstream issues #1384, #1523 and #1274
+on claude-code-action). Guarding the layer was refused: pinning back fights
+Dependabot forever, `show_full_output` observes rather than fixes, and
+a synthetic canary could only re-test what the deterministic step now
+makes impossible. Removing the write privilege removed the defect
+class — and it is also the injection posture: the agent that reads
+untrusted issue text holds no write tool, so "treat content as data"
+is backed by structure, not prompt. The boundary is pinned
+behaviorally (`tests/unit/claude-triage-workflow.test.ts`): the
+allowlist admits only read tools, and the posting script runs for real
+against a gh shim, both directions mutation-checked.
+
+This split is the DEFAULT for future agent workflows here. claude.yml
+(interactive) and claude-code-review post through the action's own
+comment channel, not agent-side `gh` writes, and dependabot-fix pushes
+through the app token — none relies on the layer that regressed; audit
+against this boundary before adding one that does.
+
 ## Governance files
 
 `SECURITY.md` and `CONTRIBUTING.md` exist here because this package is a
