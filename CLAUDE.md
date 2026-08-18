@@ -264,7 +264,13 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
   two structural verdicts: peer-tool imports (a config package imports
   eslint/prettier as peers by design) and prettier's default-export
   protocol for `src/prettier`.
-- `npm run typecheck` — tsc, strict + isolatedDeclarations.
+- `npm run typecheck` — the native TypeScript 7 compiler, strict +
+  isolatedDeclarations. It and `build` reach it by path
+  (`node ./node_modules/@typescript/native/bin/tsc`): the native package
+  installs no `.bin` shim, and both `tsc` and `tsc6` run the TypeScript 6
+  compat package, which is here for typescript-eslint and typedoc to
+  import rather than to compile with. Shortening either script to a bare
+  `tsc` swaps the compiler without failing.
 - `npm test` / `test:coverage` — vitest: structural preset assertions,
   a REAL floor lint run (mutation: iterator helpers and the `v` flag
   must be flagged by `homey-app`, absent from `library`), tsconfig-base
