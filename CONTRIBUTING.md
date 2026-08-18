@@ -26,7 +26,7 @@ npm ci
 Run the same suite CI runs on every pull request:
 
 ```sh title="checks"
-npm run typecheck       # tsc --noEmit
+npm run typecheck       # native TypeScript 7, --noEmit
 npm run lint            # ESLint, self-hosted on this package's own preset
 npm run format          # prettier --check (npm run format:fix to write)
 npm test                # vitest run
@@ -36,6 +36,14 @@ npm run lint:package    # build + publint --strict
 
 `prepublishOnly` chains tests, typecheck, lint and format, so publishing
 without them passing is impossible.
+
+`typecheck` and `build` spell the compiler out as
+`node ./node_modules/@typescript/native/bin/tsc`, and must keep doing
+so: the native 7.x compiler installs no `.bin` shim, while `tsc` and
+`tsc6` both run the TypeScript 6 compat package — kept only for the
+tools that import its JS API (typescript-eslint, typedoc), never to
+compile this one. A script shortened to a bare `tsc` swaps the compiler
+without failing.
 
 ## Coverage
 
