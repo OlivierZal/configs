@@ -32,7 +32,7 @@ const showConfig = (project: string): ResolvedTsconfig =>
     execFileSync(
       process.execPath,
       [
-        path.join(repoRoot, 'node_modules/typescript/bin/tsc'),
+        path.join(repoRoot, 'node_modules/@typescript/native/bin/tsc'),
         '--showConfig',
         '--project',
         path.join(fixturesDir, project),
