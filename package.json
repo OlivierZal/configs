@@ -62,7 +62,7 @@
     "tsconfig-bases"
   ],
   "scripts": {
-    "build": "rm -rf dist && node ./node_modules/typescript/bin/tsc --project tsconfig.build.json",
+    "build": "rm -rf dist && node ./node_modules/@typescript/native/bin/tsc --project tsconfig.build.json",
     "format": "prettier . --check",
     "format:fix": "prettier . --write",
     "lint": "node --max-old-space-size=8192 ./node_modules/eslint/bin/eslint.js .",
@@ -72,7 +72,7 @@
     "prepublishOnly": "npm test && npm run typecheck && npm run lint && npm run format",
     "test": "vitest run",
     "test:coverage": "npm test -- --coverage",
-    "typecheck": "node ./node_modules/typescript/bin/tsc --noEmit"
+    "typecheck": "node ./node_modules/@typescript/native/bin/tsc --noEmit"
   },
   "dependencies": {
     "@eslint/css": "^1.4.0",
@@ -105,7 +105,7 @@
     "prettier": "^3.9.6",
     "publint": "^0.3.22",
     "typedoc": "^0.28.20",
-    "typescript": "~6.0.3",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vitest": "^4.1.7",
     "yaml": "^2.9.0"
   },
