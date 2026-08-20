@@ -24,7 +24,7 @@ jobs:
       # with no write tool is also the injection posture: "treat content
       # as data" is backed by structure, not just by the prompt.
       - id: analyze
-        uses: anthropics/claude-code-action@be7b93b1907a4abad570368f3c74b6fe3807510b # v1.0.183
+        uses: anthropics/claude-code-action@e63208cb983318a44e3f945e959ef894b707dcfa # v1.0.192
         with:
           allowed_non_write_users: '*'
           claude_args: >-
