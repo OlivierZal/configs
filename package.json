@@ -90,14 +90,14 @@
     "eslint-plugin-perfectionist": "^5.10.0",
     "eslint-plugin-unicorn": "^73.0.0",
     "eslint-plugin-yml": "^3.6.0",
-    "jsonc-eslint-parser": "^3.1.0",
+    "jsonc-eslint-parser": "^3.3.0",
     "prettier-plugin-packagejson": "^3.0.2",
     "typescript-eslint": "^8.67.0",
-    "unplugin-swc": "^1.5.9"
+    "unplugin-swc": "^1.5.11"
   },
   "devDependencies": {
     "@swc/core": "^1.15.46",
-    "@types/node": "^26.1.1",
+    "@types/node": "^26.2.0",
     "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^10.8.1",
