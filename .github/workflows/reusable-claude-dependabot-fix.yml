@@ -33,7 +33,7 @@ jobs:
         with:
           node-version: lts/*
           npm-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: anthropics/claude-code-action@c038e4dcdedfbbca18dfb17df35a17e40ded4ddc # v1.0.186
+      - uses: anthropics/claude-code-action@e63208cb983318a44e3f945e959ef894b707dcfa # v1.0.192
         with:
           additional_permissions: |
             actions: read
