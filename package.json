@@ -99,7 +99,7 @@
     "@swc/core": "^1.15.46",
     "@types/node": "^26.2.0",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^10.8.1",
     "jiti": "^2.7.0",
     "prettier": "^3.9.6",
