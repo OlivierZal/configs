@@ -103,8 +103,6 @@ const libraryMainBlock = ({
             newlinesInside: 1,
           },
         ],
-        // Unaware of `Symbol.dispose`.
-        'unicorn/no-nonstandard-builtin-properties': 'off',
       },
       settings: perfectionistSettings,
     },
