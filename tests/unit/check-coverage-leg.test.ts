@@ -1,81 +1,29 @@
-import { type SpawnSyncReturns, execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
 import { describe, expect, it } from 'vitest'
-import { parse } from 'yaml'
 
-const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
+import {
+  type RunResult,
+  asArray,
+  asRecord,
+  asString,
+  repoRoot,
+  reusableCi,
+  runScript,
+} from '../helpers.ts'
+
 const script = path.join(repoRoot, 'scripts/check-coverage-leg.sh')
 
 const leg = (version: string): string => `{"node-version": "${version}"}`
 const coverageLeg = (version: string): string =>
   `{"node-version": "${version}", "coverage": true}`
 
-interface CheckResult {
-  readonly output: string
-  readonly status: number
-}
+const check = (versions: string): RunResult =>
+  runScript(script, { args: [versions] })
 
-const isSpawnError = (error: unknown): error is SpawnSyncReturns<string> =>
-  typeof error === 'object' &&
-  error !== null &&
-  'status' in error &&
-  'stderr' in error
-
-const check = (versions: string): CheckResult => {
-  try {
-    return {
-      output: execFileSync(script, [versions], { encoding: 'utf8' }),
-      status: 0,
-    }
-  } catch (error) {
-    if (isSpawnError(error)) {
-      return { output: error.stderr, status: error.status ?? 1 }
-    }
-    throw error
-  }
-}
-
-// Throws instead of narrowing conditionally: the vitest rules ban
-// conditional logic inside tests.
-const asRecord = (value: unknown, what: string): Record<string, unknown> => {
-  if (typeof value !== 'object' || value === null) {
-    throw new TypeError(`expected ${what} to be a mapping`)
-  }
-  return { ...value }
-}
-
-const asString = (value: unknown, what: string): string => {
-  if (typeof value !== 'string') {
-    throw new TypeError(`expected ${what} to be a string`)
-  }
-  return value
-}
-
-const isSequence = (value: unknown): value is readonly unknown[] =>
-  Array.isArray(value)
-
-const asArray = (value: unknown, what: string): readonly unknown[] => {
-  if (!isSequence(value)) {
-    throw new TypeError(`expected ${what} to be a sequence`)
-  }
-  return value
-}
-
-const workflow = asRecord(
-  parse(
-    readFileSync(
-      path.join(repoRoot, '.github/workflows/reusable-ci.yml'),
-      'utf8',
-    ),
-  ),
-  'reusable-ci.yml',
-)
-const jobs = asRecord(workflow.jobs, 'jobs')
+const jobs = asRecord(reusableCi.jobs, 'jobs')
 const inputs = asRecord(
-  asRecord(asRecord(workflow.on, 'on').workflow_call, 'workflow_call').inputs,
+  asRecord(asRecord(reusableCi.on, 'on').workflow_call, 'workflow_call').inputs,
   'inputs',
 )
 
