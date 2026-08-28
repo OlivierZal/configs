@@ -1,13 +1,19 @@
-import { type SpawnSyncReturns, execFileSync } from 'node:child_process'
-import { mkdtempSync, readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { mkdtempSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
 import { describe, expect, it } from 'vitest'
-import { parse } from 'yaml'
 
-const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
+import {
+  type RunResult,
+  asArray,
+  asRecord,
+  asString,
+  repoRoot,
+  reusableCi,
+  runScript,
+} from '../helpers.ts'
+
 const gateScript = path.join(repoRoot, 'scripts/check-sonar-gate.sh')
 // The opt-out cases need a directory with no sonar-project.properties:
 // run from the repository root, the script would read this repo's own.
@@ -16,74 +22,19 @@ const inheritedPath = process.env.PATH ?? ''
 
 const BOT = 'dependabot[bot]'
 
-interface RunResult {
-  readonly output: string
-  readonly status: number
-}
-
-const isSpawnError = (error: unknown): error is SpawnSyncReturns<string> =>
-  typeof error === 'object' &&
-  error !== null &&
-  'status' in error &&
-  'stderr' in error
-
 const run = (
   script: string,
   env: Readonly<Record<string, string>> = {},
   cwd: string = repoRoot,
-): RunResult => {
-  try {
-    return {
-      output: execFileSync(script, [], {
-        cwd,
-        encoding: 'utf8',
-        // A clean slate: the ambient SONAR_TOKEN of a developer machine
-        // would otherwise decide which branch the gate takes.
-        env: { PATH: inheritedPath, ...env },
-      }),
-      status: 0,
-    }
-  } catch (error) {
-    if (isSpawnError(error)) {
-      return { output: error.stderr, status: error.status ?? 1 }
-    }
-    throw error
-  }
-}
+): RunResult =>
+  runScript(script, {
+    cwd,
+    // A clean slate: the ambient SONAR_TOKEN of a developer machine
+    // would otherwise decide which branch the gate takes.
+    env: { PATH: inheritedPath, ...env },
+  })
 
-// Throws instead of narrowing conditionally: the vitest rules ban
-// conditional logic inside tests.
-const asRecord = (value: unknown, what: string): Record<string, unknown> => {
-  if (typeof value !== 'object' || value === null) {
-    throw new TypeError(`expected ${what} to be a mapping`)
-  }
-  return { ...value }
-}
-
-const asString = (value: unknown, what: string): string => {
-  if (typeof value !== 'string') {
-    throw new TypeError(`expected ${what} to be a string`)
-  }
-  return value
-}
-
-const asArray = (value: unknown, what: string): readonly unknown[] => {
-  if (!Array.isArray(value)) {
-    throw new TypeError(`expected ${what} to be a sequence`)
-  }
-  return value
-}
-
-const workflow = asRecord(
-  parse(
-    readFileSync(
-      path.join(repoRoot, '.github/workflows/reusable-ci.yml'),
-      'utf8',
-    ),
-  ),
-  'reusable-ci.yml',
-)
-const jobs = asRecord(workflow.jobs, 'jobs')
+const jobs = asRecord(reusableCi.jobs, 'jobs')
 const sonarJob = asRecord(jobs.sonar, 'sonar')
 
 const stepsOf = (job: Readonly<Record<string, unknown>>): readonly unknown[] =>
