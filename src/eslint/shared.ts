@@ -954,6 +954,7 @@ export const packageJsonBlock = (
       extends: [packageJsonConfigs.recommended, packageJsonConfigs.stylistic],
       files: ['**/package.json'],
       rules: {
+        'package-json/prefer-rolling-workspace-spec': 'error',
         'package-json/require-author': 'error',
         'package-json/require-bugs': 'error',
         'package-json/require-engines': 'error',
