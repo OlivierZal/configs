@@ -344,7 +344,6 @@ exports[`library > should pin the main rule inventory 1`] = `
   "unicorn/no-manually-wrapped-comments",
   "unicorn/no-named-default",
   "unicorn/no-non-function-verb-prefix",
-  "unicorn/no-nonstandard-builtin-properties",
   "unicorn/no-null",
   "unicorn/no-unnecessary-boolean-comparison",
   "unicorn/no-unreadable-new-expression",
