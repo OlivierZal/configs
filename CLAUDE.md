@@ -1,7 +1,13 @@
 # CLAUDE.md
 
-Shared tooling for the OlivierZal repo family (three Homey apps, two
-API libraries), on two delivery channels: the npm package
+Shared tooling for the OlivierZal repo family — EIGHT repos as of
+2026-08-30: three Homey apps (`com.melcloud`, `com.heatzy`,
+`com.melcloud.extension`), two API SDKs (`melcloud-api`, `heatzy-api`),
+the two shared runtimes they build on (`api-core`, `homey-kit`), and
+this package. That makes SEVEN consumers — every repo but this one.
+Prefer naming the set over counting it: the numbers below went stale
+the day `api-core` joined, in every repo at once, because nothing
+machine-checkable holds them. Two delivery channels: the npm package
 `@olivierzal/configs` (eslint/prettier/tsconfig/typedoc/vitest presets,
 compiled to `dist/`) and reusable GitHub workflows referenced by git
 tag. `vX.Y.Z` tags serve both channels — bump once, release once.
@@ -9,12 +15,12 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
 ## The boundary (the reason this package exists at all)
 
 - The presets carry FAMILY policy: everything measured identical across
-  the five consumers, parameterized only by measured deltas (globs,
+  the seven consumers, parameterized only by measured deltas (globs,
   wire-naming entries, coverage leg).
 - Per-repo verdicts stay per-repo: documented `'off'` ledgers, ignores,
   and any rule adjustment with a repo-local reason live in each
   consumer's overlay, never here. Moving a verdict here silently
-  imposes it on four other repos.
+  imposes it on the six other consumers.
 - Path-bearing options (`outDir`, `rootDir`, `include`) never enter the
   tsconfig bases: paths in an extended tsconfig resolve relative to the
   BASE file (inside `node_modules` for consumers), so a base carrying
@@ -105,7 +111,8 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
   move. The default list is test-pinned for that reason.
 - `Test (Node latest)` must stay OUT of the required contexts: its
   `continue-on-error` keeps the RUN green, not the check run. Verified
-  holding on all seven repos (2026-08); deliberately NOT automated —
+  holding on all eight repos (re-read 2026-08-30, api-core included);
+  deliberately NOT automated —
   reading rulesets needs an `administration: read` token on every CI
   run of every repo, which is a standing credential for a setting that
   changes once a decade. `latest` is a moving target, so requiring it
@@ -169,7 +176,7 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
   second secrets store to rotate across the family. Re-evaluate if
   that model changes. Nor is the `workflow_run` split worth it — an
   unprivileged job producing a coverage artefact and a privileged one
-  scanning it — since it adds a second workflow to seven repos and
+  scanning it — since it adds a second workflow to eight repos and
   check-run plumbing back to the pull request, strictly more machinery
   than the exemption it would retire. So
   the gate ACCEPTS such a pull request only after establishing that
@@ -187,7 +194,8 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
 - A fork pull request cannot be verified either, and there the gate
   FAILS rather than waving it through — a fork carries source.
 - The context is `ci / Sonar` and the name must not move: it lands in
-  seven rulesets, and a required context that never reports blocks
+  eight rulesets — one per repo, all eight verified carrying it
+  2026-08-30 — and a required context that never reports blocks
   every merge. Adopt in two steps — ship the version, watch the job
   report correctly on real pull requests, THEN add the context to the
   rulesets. Adding it first would gate merges on a job whose API
@@ -332,7 +340,9 @@ the three below fails it: all are active under eslint-community.
   multiply.
 - **eslint-plugin-security — REFUSED, owned and noisy.** Taint-style
   analysis is owned by CodeQL and SonarCloud, flow-aware where this
-  plugin is syntactic. Both run on all seven repos; only `ci / Sonar`
+  plugin is syntactic. Sonar runs on all eight repos; CodeQL default
+  setup is configured on seven — `api-core` is not, measured
+  2026-08-30, and closing that gap is its own task. Only `ci / Sonar`
   is a required context — CodeQL reports without blocking, and making
   it block is its own decision, not something this entry assumes. Its
   unique remainder is the noise set (`detect-object-injection` flags
@@ -447,7 +457,7 @@ inferred from a sibling repo.
 
 There is deliberately **no `CHANGELOG.md`**: the changelog channel is the
 GitHub release notes. That is a verdict, not an omission. A package whose
-every release obliges six repositories to act needs its notes to read as
+every release obliges seven repositories to act needs its notes to read as
 adoption instructions, and a second file-based history would duplicate
 that content and let the two drift. The obligation the verdict carries is
 that the notes stay substantial — a channel nobody keeps is not a channel.
@@ -462,8 +472,9 @@ disagree with.
 
 `ci.yml` passes `SONAR_TOKEN` by name rather than `secrets: inherit`.
 `inherit` hands every repository secret to the called workflow; in the
-repo that hosts the workflows six others call, that is the shape a
-supply-chain attack needs. The five sibling callers already name it.
+repo that hosts the workflows seven others call, that is the shape a
+supply-chain attack needs. All seven sibling callers already name it
+(one `SONAR_TOKEN` occurrence per `ci.yml`, counted 2026-08-30).
 
 ## Process
 

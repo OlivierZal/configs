@@ -59,9 +59,9 @@ SHA. A single version covers both, and `scripts/check-pins.sh` fails when
 they diverge. A change that moves one must move the other in the same
 commit.
 
-## Changing a preset is changing seven repositories
+## Changing a preset is changing eight repositories
 
-Every rule, option and workflow input here is consumed by six other
+Every rule, option and workflow input here is consumed by seven other
 repositories plus this one. Two habits follow:
 
 - A rule evaluated and refused stays as a config-level `'off'` carrying a
@@ -90,7 +90,7 @@ repositories plus this one. Two habits follow:
 
 There is deliberately **no `CHANGELOG.md`** here. The changelog channel is
 the GitHub release notes, written per release and covering what consumers
-must do to adopt it — a package whose every version obliges six
+must do to adopt it — a package whose every version obliges seven
 repositories to act needs its notes to read as adoption instructions, not
 as a commit digest. Keeping a second, file-based history would mean
 maintaining the same content twice and letting the two drift.

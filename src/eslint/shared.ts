@@ -954,6 +954,15 @@ export const packageJsonBlock = (
       extends: [packageJsonConfigs.recommended, packageJsonConfigs.stylistic],
       files: ['**/package.json'],
       rules: {
+        // Adopted over an ABSENT domain: the family has no monorepo —
+        // no `workspaces` key, no pnpm-workspace.yaml, and zero
+        // `workspace:` specifiers across the eight repos (2026-08-30),
+        // which are eight independent packages pinned to each other by
+        // exact version. It can never fire today, and it is kept at
+        // `error` as a latent guard: the day a workspace appears, the
+        // rolling spec should be the default from the first commit
+        // rather than a later cleanup. Drop it if the family commits to
+        // staying multi-repo for good.
         'package-json/prefer-rolling-workspace-spec': 'error',
         'package-json/require-author': 'error',
         'package-json/require-bugs': 'error',
