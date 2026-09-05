@@ -49,6 +49,10 @@
       "types": "./dist/typedoc/index.d.ts",
       "default": "./dist/typedoc/index.js"
     },
+    "./vitest-coverage": {
+      "types": "./dist/vitest/coverage.d.ts",
+      "default": "./dist/vitest/coverage.js"
+    },
     "./vitest-swc": {
       "types": "./dist/vitest/swc.d.ts",
       "default": "./dist/vitest/swc.js"
