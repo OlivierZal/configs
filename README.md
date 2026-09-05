@@ -168,6 +168,21 @@ import { swcPlugin } from '@olivierzal/configs/vitest-swc'
 export default defineConfig({ oxc: false, plugins: [swcPlugin] })
 ```
 
+### vitest (coverage bar)
+
+```ts title="vitest.config.ts"
+import { coverageDefaults } from '@olivierzal/configs/vitest-coverage'
+
+export default defineConfig({
+  test: { coverage: { ...coverageDefaults, include: ['src/**/*.ts'] } },
+})
+```
+
+The fragment carries the family bar — `text` + `lcov` reporters and
+100% thresholds on all four axes. The `include`/`exclude` globs beside
+it stay consumer-side: which files count is per-repo identity, how high
+the bar sits is not.
+
 ## Reusable workflows
 
 Callers keep their own triggers and reference this repo by tag:

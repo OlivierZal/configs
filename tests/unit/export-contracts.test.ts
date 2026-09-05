@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
+import { type ViteUserConfig, defineConfig } from 'vitest/config'
 
 import { webviewFloorBlock } from '../../src/eslint/index.ts'
 import { typedocBase } from '../../src/typedoc/index.ts'
+import { coverageDefaults } from '../../src/vitest/coverage.ts'
 import { swcOptions, swcPlugin } from '../../src/vitest/swc.ts'
 import prettierConfig from '../../src/prettier/index.ts'
 
-// The eslint presets are exercised by real lint runs; these three
+// The eslint presets are exercised by real lint runs; the other
 // modules export plain objects whose contract is their shape — pin it
 // so a drift is a failing test, not a silent consumer break.
 describe('export contracts', () => {
@@ -67,6 +69,29 @@ describe('export contracts', () => {
       'src/index.ts',
       'src/webview/index.ts',
     ])
+  })
+
+  it('should carry the family coverage bar in the coverage fragment', () => {
+    expect(coverageDefaults).toStrictEqual({
+      reporter: ['text', 'lcov'],
+      thresholds: {
+        branches: 100,
+        functions: 100,
+        lines: 100,
+        statements: 100,
+      },
+    })
+  })
+
+  // The adoption gesture itself, typechecked: the fragment spreads into
+  // `test.coverage` beside a repo's own globs, so an option-surface
+  // drift in vitest fails here rather than in seven adoption PRs.
+  it('should spread into a coverage block as consumers write it', () => {
+    const config: ViteUserConfig = defineConfig({
+      test: { coverage: { ...coverageDefaults, include: ['src/**/*.ts'] } },
+    })
+
+    expect(config.test?.coverage).toMatchObject(coverageDefaults)
   })
 
   it('should carry the decorator transform in the swc fragment', () => {
