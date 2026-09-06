@@ -1,13 +1,12 @@
-import { type SpawnSyncReturns, execFileSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 
-const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
+import { asArray, asRecord, asString, repoRoot, runScript } from '../helpers.ts'
+
 const workflow: unknown = parse(
   readFileSync(
     path.join(repoRoot, '.github/workflows/claude-issue-triage.yml'),
@@ -15,30 +14,12 @@ const workflow: unknown = parse(
   ),
 )
 
-// Throws instead of narrowing conditionally: the vitest rules ban
-// conditional logic inside tests.
-const asRecord = (value: unknown): Record<string, unknown> => {
-  if (typeof value !== 'object' || value === null) {
-    throw new TypeError('expected an object')
-  }
-  return { ...value }
-}
-
-const asString = (value: unknown): string => {
-  if (typeof value !== 'string') {
-    throw new TypeError('expected a string')
-  }
-  return value
-}
-
 const stepList = (): Record<string, unknown>[] => {
-  const { jobs } = asRecord(workflow)
-  const { triage } = asRecord(jobs)
-  const { steps: rawSteps } = asRecord(triage)
-  if (!Array.isArray(rawSteps)) {
-    throw new TypeError('expected a steps array')
-  }
-  return rawSteps.map((step) => asRecord(step))
+  const { jobs } = asRecord(workflow, 'workflow')
+  const { triage } = asRecord(jobs, 'jobs')
+  return asArray(asRecord(triage, 'triage').steps, 'triage steps').map((step) =>
+    asRecord(step, 'triage step'),
+  )
 }
 
 const stepBy = (key: string, value: string): Record<string, unknown> => {
@@ -48,12 +29,6 @@ const stepBy = (key: string, value: string): Record<string, unknown> => {
   }
   return found
 }
-
-const isSpawnError = (error: unknown): error is SpawnSyncReturns<string> =>
-  typeof error === 'object' &&
-  error !== null &&
-  'status' in error &&
-  'stderr' in error
 
 // A gh shim that serves `label list` and records every write, so the
 // posting script runs for real without a network or a repository.
@@ -109,7 +84,10 @@ const runPostStep = (
   writeFileSync(ghCalls, '')
   writeFileSync(path.join(workDir, 'gh'), GH_SHIM, { mode: 0o755 })
   const scriptPath = path.join(workDir, 'post.sh')
-  writeFileSync(scriptPath, asString(stepBy('name', 'Post the verdict').run))
+  writeFileSync(
+    scriptPath,
+    asString(stepBy('name', 'Post the verdict').run, 'post step run'),
+  )
   const environment = {
     EXECUTION_FILE: executionFile,
     GH_CALLS: ghCalls,
@@ -119,18 +97,13 @@ const runPostStep = (
     PATH: `${workDir}:${process.env.PATH ?? ''}`,
     RUNNER_TEMP: workDir,
   }
-  try {
-    execFileSync('bash', ['-e', scriptPath], {
-      encoding: 'utf8',
-      env: environment,
-    })
-    return { calls: readFileSync(ghCalls, 'utf8'), status: 0 }
-  } catch (error) {
-    if (!isSpawnError(error)) {
-      throw error
-    }
-    return { calls: readFileSync(ghCalls, 'utf8'), status: error.status ?? 1 }
-  }
+  // The outcome is the gh-calls log rather than the script's output:
+  // the shim records every write the posting script attempted.
+  const { status } = runScript('bash', {
+    args: ['-e', scriptPath],
+    env: environment,
+  })
+  return { calls: readFileSync(ghCalls, 'utf8'), status }
 }
 
 describe('claude issue triage workflow', () => {
@@ -140,7 +113,8 @@ describe('claude issue triage workflow', () => {
   // agent-side write to a permission layer that silently denied it.
   it('should give the agent exactly the read-only allowlist', () => {
     const claudeArgs = asString(
-      asRecord(stepBy('id', 'analyze').with).claude_args,
+      asRecord(stepBy('id', 'analyze').with, 'analyze inputs').claude_args,
+      'claude_args',
     )
     const [, allowed = ''] = /--allowedTools "(?<tools>[^"]+)"/v.exec(
       claudeArgs,
@@ -152,9 +126,9 @@ describe('claude issue triage workflow', () => {
   })
 
   it('should keep the posting script free of template injection', () => {
-    expect(asString(stepBy('name', 'Post the verdict').run)).not.toContain(
-      '${{',
-    )
+    expect(
+      asString(stepBy('name', 'Post the verdict').run, 'post step run'),
+    ).not.toContain('${{')
   })
 
   it('should post the comment and only the labels the repo carries', () => {

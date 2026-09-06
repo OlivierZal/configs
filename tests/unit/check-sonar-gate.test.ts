@@ -196,8 +196,9 @@ describe('the reusable CI workflow', () => {
     expect(sonarJob.needs).toBe('test')
   })
 
-  // The context name lands in seven rulesets; a rename makes a required
-  // check that never reports, which blocks every merge in the family.
+  // The context name lands in every ruleset in the family, this repo's
+  // included; a rename makes a required check that never reports, which
+  // blocks every merge in the family.
   it('keeps the context name its callers will require', () => {
     expect(asString(sonarJob.name, 'sonar.name')).toBe('Sonar')
   })
@@ -227,7 +228,8 @@ describe('the reusable CI workflow', () => {
 
   // A caller grants `contents` and `packages`; anything beyond that is
   // an escalation GitHub refuses at startup, and it would refuse it for
-  // all seven callers at once.
+  // every caller at once — each family repo's `ci.yml` stub and this
+  // repo's own.
   it('asks for no permission its callers withhold', () => {
     expect(
       Object.keys(asRecord(sonarJob.permissions, 'permissions')),

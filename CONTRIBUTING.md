@@ -39,11 +39,13 @@ without them passing is impossible.
 
 `typecheck` and `build` spell the compiler out as
 `node ./node_modules/@typescript/native/bin/tsc`, and must keep doing
-so: the native 7.x compiler installs no `.bin` shim, while `tsc` and
-`tsc6` both run the TypeScript 6 compat package — kept only for the
-tools that import its JS API (typescript-eslint, typedoc), never to
-compile this one. A script shortened to a bare `tsc` swaps the compiler
-without failing.
+so. Not because a bare `tsc` runs the wrong compiler today — measured
+2026-09-06, `.bin/tsc` is the native 7.x compiler and `tsc6` the only
+shim of the TypeScript 6 compat package, kept for the tools that import
+its JS API (typescript-eslint, typedoc), never to compile this one —
+but because the explicit path names the package the scripts mean: a
+layout change fails loudly instead of swapping the compiler behind a
+shim whose owner is whichever package claims the name.
 
 ## Coverage
 

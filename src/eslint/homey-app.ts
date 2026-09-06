@@ -275,8 +275,14 @@ const cssBlock: Config[] = defineConfig([
       'css/prefer-logical-properties': 'error',
       'css/relative-font-units': 'error',
       'css/selector-complexity': 'error',
-      // Newly-baseline properties are fine: the Homey webview Chromium
-      // supports them.
+      // `newly` sits ABOVE the derived floor, not on it: Baseline "newly
+      // available" admits CSS that became interoperable after the iOS
+      // 16.4 WebKit shipped (2023-03) — `text-wrap` and `@starting-style`
+      // pass here and that engine lacks them. The engine is the system
+      // WebKit `webviewFloorBlock` derives from, never a Chromium.
+      // Binding `available` to the floor's year is a policy-crossing
+      // release (adoption doctrine), owed; once bound, it moves with the
+      // minimum `ios-floor-watch.yml` records.
       'css/use-baseline': ['error', { available: 'newly' }],
       'unicorn/expiring-todo-comments': 'error',
       'unicorn/no-empty-file': 'error',

@@ -1,15 +1,13 @@
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, rmSync, symlinkSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
 import { beforeAll, describe, expect, it } from 'vitest'
 
-const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
-const fixturesDir = fileURLToPath(
-  new URL('../fixtures/tsconfig-build/', import.meta.url),
-)
+import { repoRoot } from '../helpers.ts'
+
+const fixturesDir = path.join(repoRoot, 'tests/fixtures/tsconfig-build')
 
 interface ResolvedTsconfig {
   readonly compilerOptions?: { readonly strict?: boolean }

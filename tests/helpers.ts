@@ -19,7 +19,10 @@ const isSpawnError = (error: unknown): error is SpawnSyncReturns<string> =>
   'stderr' in error
 
 // A rejecting script surfaces as a throw: fold both outcomes into one
-// result so the suites assert on status and stderr alike.
+// result so the suites assert on status and output alike — `output` is
+// stdout when the script exits 0 and stderr when it does not. `env` is
+// the script's WHOLE environment, not an overlay: a suite that wants
+// the runner's variables spreads `process.env` in itself.
 export const runScript = (
   script: string,
   {
@@ -29,7 +32,7 @@ export const runScript = (
   }: {
     readonly args?: readonly string[]
     readonly cwd?: string
-    readonly env?: Readonly<Record<string, string>>
+    readonly env?: NodeJS.ProcessEnv
   } = {},
 ): RunResult => {
   try {
