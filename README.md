@@ -2,8 +2,9 @@
 
 Shared tooling for the OlivierZal repo family, on two delivery
 channels: an npm package (eslint/prettier/tsconfig/typedoc/vitest
-presets) and reusable GitHub workflows referenced by git tag. One
-version covers both — `vX.Y.Z` tags serve npm and `uses:` refs alike.
+presets) and reusable GitHub workflows pinned by commit SHA, the
+release tag as the pin's version comment. One version covers both —
+`vX.Y.Z` tags serve npm and `uses:` refs alike.
 
 [![License](https://img.shields.io/github/license/OlivierZal/configs)](LICENSE)
 [![Node](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FOlivierZal%2Fconfigs%2Fmain%2Fpackage.json&query=%24.engines.node&label=node&color=brightgreen)](package.json)
@@ -185,7 +186,12 @@ the bar sits is not.
 
 ## Reusable workflows
 
-Callers keep their own triggers and reference this repo by tag:
+Callers keep their own triggers and pin this repo by commit SHA, with
+the release tag as the version comment the `Verify action pins` step
+proves — never `@main`, and never a bare tag (zizmor's `unpinned-uses`
+flags it). Secrets are named, never inherited: the reusable declares
+exactly the one it needs, and `inherit` would hand it every repository
+secret.
 
 ```yaml title=".github/workflows/ci.yml"
 jobs:
@@ -193,8 +199,9 @@ jobs:
     permissions:
       contents: read
       packages: read
-    secrets: inherit
-    uses: OlivierZal/configs/.github/workflows/reusable-ci.yml@v1.0.0
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    uses: OlivierZal/configs/.github/workflows/reusable-ci.yml@<commit sha> # vX.Y.Z
     with:
       run-lint-package: true # libs
 ```

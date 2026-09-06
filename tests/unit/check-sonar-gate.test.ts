@@ -196,8 +196,9 @@ describe('the reusable CI workflow', () => {
     expect(sonarJob.needs).toBe('test')
   })
 
-  // The context name lands in seven rulesets; a rename makes a required
-  // check that never reports, which blocks every merge in the family.
+  // The context name lands in every ruleset in the family, this repo's
+  // included; a rename makes a required check that never reports, which
+  // blocks every merge in the family.
   it('keeps the context name its callers will require', () => {
     expect(asString(sonarJob.name, 'sonar.name')).toBe('Sonar')
   })

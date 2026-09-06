@@ -25,9 +25,10 @@ jobs:
     uses: ./.github/workflows/reusable-claude-dependabot-fix.yml
     with:
       repo-guidance: >-
-        This repository is the tooling six others consume, so a fix here
-        is a fix everywhere: prefer the change that keeps every consumer
-        working over the one that is locally tidiest.
+        This repository is the tooling every other repo in the family
+        consumes, so a fix here is a fix everywhere: prefer the change
+        that keeps every consumer working over the one that is locally
+        tidiest.
 
         Two channels, one version: the npm package and the reusable
         workflows consumers pin by SHA must never disagree, and
@@ -37,7 +38,7 @@ jobs:
         Stop and leave the pull request failing for human review when the
         bump changes lint policy — new or stricter rules, a changed
         default, a runtime floor. Adopting such a release is a
-        per-repository judgement across seven repositories, and no
+        per-repository judgement across the whole family, and no
         automated fix can make it.
       verify-commands: '`npm run format`, `npm run lint`, `npm run typecheck`, `npm test`, and `npm run lint:package`'
 name: Claude Dependabot Fix

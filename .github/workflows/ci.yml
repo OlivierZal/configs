@@ -5,9 +5,10 @@ jobs:
       contents: read
       packages: read
     # Named rather than inherited: this repo hosts the reusable
-    # workflows the six others call, so a blanket `inherit` here would
-    # hand every repository secret to a called workflow — the shape a
-    # supply-chain attack needs. The reusable CI declares exactly one.
+    # workflows every other repo in the family calls, so a blanket
+    # `inherit` here would hand every repository secret to a called
+    # workflow — the shape a supply-chain attack needs. The reusable CI
+    # declares exactly one.
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     uses: ./.github/workflows/reusable-ci.yml

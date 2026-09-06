@@ -9,8 +9,9 @@ Prefer naming the set over counting it: the numbers below went stale
 the day `api-core` joined, in every repo at once, because nothing
 machine-checkable holds them. Two delivery channels: the npm package
 `@olivierzal/configs` (eslint/prettier/tsconfig/typedoc/vitest presets,
-compiled to `dist/`) and reusable GitHub workflows referenced by git
-tag. `vX.Y.Z` tags serve both channels — bump once, release once.
+compiled to `dist/`) and reusable GitHub workflows pinned by commit
+SHA, the release tag as the pin's version comment. `vX.Y.Z` tags serve
+both channels — bump once, release once.
 
 ## The boundary (the reason this package exists at all)
 
@@ -20,7 +21,7 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
 - Per-repo verdicts stay per-repo: documented `'off'` ledgers, ignores,
   and any rule adjustment with a repo-local reason live in each
   consumer's overlay, never here. Moving a verdict here silently
-  imposes it on the six other consumers.
+  imposes it on every other consumer.
 - Path-bearing options (`outDir`, `rootDir`, `include`) never enter the
   tsconfig bases: paths in an extended tsconfig resolve relative to the
   BASE file (inside `node_modules` for consumers), so a base carrying
@@ -274,11 +275,16 @@ tag. `vX.Y.Z` tags serve both channels — bump once, release once.
   protocol for `src/prettier`.
 - `npm run typecheck` — the native TypeScript 7 compiler, strict +
   isolatedDeclarations. It and `build` reach it by path
-  (`node ./node_modules/@typescript/native/bin/tsc`): the native package
-  installs no `.bin` shim, and both `tsc` and `tsc6` run the TypeScript 6
-  compat package, which is here for typescript-eslint and typedoc to
-  import rather than to compile with. Shortening either script to a bare
-  `tsc` swaps the compiler without failing.
+  (`node ./node_modules/@typescript/native/bin/tsc`) rather than through
+  the `tsc` shim, and keep doing so. Measured 2026-09-06 (typescript
+  7.0.2 / @typescript/typescript6 6.0.2, lockfile and installed tree
+  agreeing): `.bin/tsc` IS the native compiler, and `tsc6` is the only
+  shim the compat package installs — that package is here for
+  typescript-eslint and typedoc to import, never to compile with. The
+  explicit path names the package the scripts mean, so a layout change
+  (the alias moving, a package claiming the `tsc` name) fails loudly
+  instead of swapping the compiler; a bare `tsc` compiles with whichever
+  package owns the shim that day.
 - `npm test` / `test:coverage` — vitest: structural preset assertions,
   a REAL floor lint run (mutation: iterator helpers and the `v` flag
   must be flagged by `homey-app`, absent from `library`), tsconfig-base
@@ -335,9 +341,18 @@ the three below fails it: all are active under eslint-community.
   `always-return` by the type-aware `no-floating-promises`,
   callback-misuse by `no-misused-promises`, `prefer-await-to-then` by
   `unicorn/prefer-await`. Its one unique rule, `no-multiple-resolved`,
-  polices hand-written executors — the family has two, both in the kit
-  and pinned by its tests. Re-evaluate if hand-written executors
-  multiply.
+  polices hand-written executors. The verdict was written (2026-08-10)
+  against two, both in the kit; the set measured 2026-09-06 over shipped
+  non-test source is seven — `api-core/src/resilience/retry-backoff.ts`
+  (two abortable sleeps, resolve in a timer and reject in an abort
+  listener: the very shape the rule polices), the kit's
+  `settings/callback-api.ts`, `webview/boot.ts` and
+  `testing/helpers.ts`, `com.melcloud`'s
+  `widgets/ata-group-setting/public/animation.mts` and `com.heatzy`'s
+  `settings/index.mts`. The "multiply" trigger has therefore fired and
+  the re-evaluation is owed: adopting a plugin for one rule is a
+  dependency decision taken in its own pull request, against that set
+  rather than a count.
 - **eslint-plugin-security — REFUSED, owned and noisy.** Taint-style
   analysis is owned by CodeQL and SonarCloud, flow-aware where this
   plugin is syntactic. Sonar runs on all eight repos; CodeQL default
@@ -392,11 +407,12 @@ Prettier neither guarantees nor contradicts belongs at `error`.
 Exact pins only (family doctrine): a release lands through one
 adoption PR per consumer, which proves iso-behavior with
 `eslint --print-config` diffs before/after on representative files.
-Reusable-workflow callers reference tags, never `@main`. A release
-that CHANGES policy (a naming tightening, a new floor) is the
-opposite: every diff is a deliberate, per-repo-classified change —
-and the dependabot-fix guidance tells the fixer to stop and leave the
-PR red when a bump crosses such a release.
+Reusable-workflow callers pin a commit SHA with the release tag as its
+version comment — never `@main`, and never a bare tag, which zizmor's
+`unpinned-uses` flags. A release that CHANGES policy (a naming
+tightening, a new floor) is the opposite: every diff is a deliberate,
+per-repo-classified change — and the dependabot-fix guidance tells the
+fixer to stop and leave the PR red when a bump crosses such a release.
 
 ## The iOS floor watch
 
@@ -444,9 +460,20 @@ against a gh shim, both directions mutation-checked.
 
 This split is the DEFAULT for future agent workflows here. claude.yml
 (interactive) and claude-code-review post through the action's own
-comment channel, not agent-side `gh` writes, and dependabot-fix pushes
-through the app token — none relies on the layer that regressed; audit
-against this boundary before adding one that does.
+comment channel, not agent-side `gh` writes. dependabot-fix does NOT
+yet meet the boundary: both of its writes — the push (step 4 of its
+prompt) and the out-of-scope fallback, "post one comment on the PR"
+(step 5) — are agent-side Bash on the App token the action mints, no
+`--allowedTools` names them, and no deterministic step verifies that
+either happened, so a denied write would go green exactly as the triage
+incident did. Never exercised so far: every family run that reached the
+action died at its actor gate ("Workflow initiated by non-human actor:
+dependabot … Add bot to allowed_bots", com.melcloud run 33241273956,
+2026-08-29), so the agent step has never run. Bringing it to the
+boundary is a sentinel verdict plus a deterministic post/verify step
+under `pull-requests: write` — a change to what callers grant, so a
+release. Audit against this boundary before adding a workflow that
+relies on agent-side writes.
 
 ## Governance files
 
@@ -495,7 +522,16 @@ No workflow declares that trigger and the Sonar gate has no rule for
 it: an event that cannot arrive needs no handling, and "inert but
 harmless" is not a reason to keep configuration. Verified 2026-08
 against the docs source; revisit only if a repo moves under an
-organisation.
+organisation. That rule retires HANDLERS — configuration whose only
+subject is an event nobody can raise, and whose removal leaves nothing
+unrecorded. It does not retire an ADOPTED lint rule over a domain the
+family lacks: `package-json/prefer-rolling-workspace-spec` runs at
+`error` with zero `workspace:` specifiers across the eight repos, its
+reason and drop condition at the rule site (`src/eslint/shared.ts`,
+recorded 2026-08-30). The plugin-triage doctrine adopts strictly and
+records refusals, so dropping that rule is a refusal: it either stays
+adopted or lands in a ledger as `'off'` with its reason — a policy
+verdict for a release, never a silent deletion under this paragraph.
 
 Dependabot's commit prefixes are pinned to `build(deps)` /
 `build(deps-dev)` rather than inferred. The **subject** casing cannot

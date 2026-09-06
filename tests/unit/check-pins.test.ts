@@ -1,43 +1,21 @@
-import { type SpawnSyncReturns, execFileSync } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
+import { type RunResult, repoRoot, runScript } from '../helpers.ts'
+
 const fixturesDir = path.join(repoRoot, 'tests/fixtures/pins')
 const script = path.join(repoRoot, 'scripts/check-pins.sh')
-
-interface CheckResult {
-  readonly output: string
-  readonly status: number
-}
-
-const isSpawnError = (error: unknown): error is SpawnSyncReturns<string> =>
-  typeof error === 'object' &&
-  error !== null &&
-  'status' in error &&
-  'stderr' in error
+const inheritedPath = process.env.PATH ?? ''
 
 // The fixtures drive the script through its `PIN_CHECK_REFS` seam, so
 // the suite never reaches the network: the fake ref table names both an
 // annotated tag (commit under `^{}`) and a lightweight one.
-const check = (fixture: string, refs = 'refs.tsv'): CheckResult => {
-  try {
-    return {
-      output: execFileSync(script, [path.join(fixturesDir, fixture)], {
-        encoding: 'utf8',
-        env: { ...process.env, PIN_CHECK_REFS: path.join(fixturesDir, refs) },
-      }),
-      status: 0,
-    }
-  } catch (error) {
-    if (isSpawnError(error)) {
-      return { output: error.stderr, status: error.status ?? 1 }
-    }
-    throw error
-  }
-}
+const check = (fixture: string, refs = 'refs.tsv'): RunResult =>
+  runScript(script, {
+    args: [path.join(fixturesDir, fixture)],
+    env: { PATH: inheritedPath, PIN_CHECK_REFS: path.join(fixturesDir, refs) },
+  })
 
 describe('the pin check', () => {
   it('accepts pins whose comment resolves to the pinned commit', () => {

@@ -134,9 +134,10 @@ describe('the reusable CI workflow', () => {
   })
 
   // Each entry names a required status check (`Test (Node <version>)`)
-  // in seven rulesets: changing this list renames contexts that then
-  // never report, and a required context that never reports blocks
-  // every merge. Editing it here is legitimate — doing so unaware is not.
+  // in every ruleset in the family, this repo's included: changing this
+  // list renames contexts that then never report, and a required
+  // context that never reports blocks every merge. Editing it here is
+  // legitimate — doing so unaware is not.
   it('keeps the leg names its callers require', () => {
     expect(
       asArray(JSON.parse(defaultOf('node-versions')), 'node-versions').map(

@@ -1,13 +1,12 @@
 import { readdirSync, readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 
+import { asArray, asRecord, repoRoot } from '../helpers.ts'
 import packageJson from '../../package.json' with { type: 'json' }
 
-const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
 const workflowDir = path.join(repoRoot, '.github/workflows')
 
 // A caller finds these scripts inside the installed package. The
@@ -24,23 +23,6 @@ const INSTALL_ACTION = 'setup-node-and-install'
 // than derived: a new entry is rare, and appearing here is the moment to
 // confirm the job installs.
 const RESOLVING_JOBS = ['reusable-ci.yml#check', 'reusable-ci.yml#sonar']
-
-const asRecord = (value: unknown, what: string): Record<string, unknown> => {
-  if (typeof value !== 'object' || value === null) {
-    throw new TypeError(`expected ${what} to be a mapping`)
-  }
-  return { ...value }
-}
-
-const isSequence = (value: unknown): value is readonly unknown[] =>
-  Array.isArray(value)
-
-const asArray = (value: unknown, what: string): readonly unknown[] => {
-  if (!isSequence(value)) {
-    throw new TypeError(`expected ${what} to be a sequence`)
-  }
-  return value
-}
 
 interface Job {
   readonly id: string
