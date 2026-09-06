@@ -26,8 +26,10 @@ both channels — bump once, release once.
   tsconfig bases: paths in an extended tsconfig resolve relative to the
   BASE file (inside `node_modules` for consumers), so a base carrying
   them resolves an empty file list. Pinned by a test.
-- This package's `engines` is NOT the device floor the three runtime
-  packages declare — nothing here reaches a Homey, so it answers a
+- This package's `engines` is NOT the device floor the four runtime
+  libraries declare (the three apps derive theirs the way this package
+  does, and state the device floor in `compatibility`) — nothing here
+  reaches a Homey, so it answers a
   different question: what does the toolchain need in order to install
   and run? That makes it derived from the dependency tree, never copied
   from a sibling. Measured 2026-08: `eslint-plugin-package-json` requires

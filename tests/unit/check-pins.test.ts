@@ -6,7 +6,6 @@ import { type RunResult, repoRoot, runScript } from '../helpers.ts'
 
 const fixturesDir = path.join(repoRoot, 'tests/fixtures/pins')
 const script = path.join(repoRoot, 'scripts/check-pins.sh')
-const inheritedPath = process.env.PATH ?? ''
 
 // The fixtures drive the script through its `PIN_CHECK_REFS` seam, so
 // the suite never reaches the network: the fake ref table names both an
@@ -14,7 +13,7 @@ const inheritedPath = process.env.PATH ?? ''
 const check = (fixture: string, refs = 'refs.tsv'): RunResult =>
   runScript(script, {
     args: [path.join(fixturesDir, fixture)],
-    env: { PATH: inheritedPath, PIN_CHECK_REFS: path.join(fixturesDir, refs) },
+    env: { ...process.env, PIN_CHECK_REFS: path.join(fixturesDir, refs) },
   })
 
 describe('the pin check', () => {
