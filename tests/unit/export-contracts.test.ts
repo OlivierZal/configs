@@ -76,11 +76,16 @@ describe('export contracts', () => {
   })
 
   // typedoc loads each plugin by name from the consumer's tree, so the
-  // list the preset emits is a dependency claim on every consumer, and
-  // it is declared where a claim on a consumer belongs: as an optional
-  // peer beside typedoc itself. Never a plain dependency — the plugins
-  // peer on typedoc, and npm would then install typedoc into the three
-  // apps, which document nothing.
+  // list the preset emits is a dependency claim on the four consumers
+  // that document — and it is declared in NO field the installer
+  // reads. The optional peer that would be the textbook place is not
+  // one through the registry this package publishes to: GitHub
+  // Packages strips `peerDependenciesMeta` from the packument, so an
+  // optional peer reaches every consumer as a mandatory one, and
+  // typedoc declared that way sat in the three apps' locks from their
+  // first adoption (CLAUDE.md, "Dependencies nothing imports"). The
+  // claim lives in the README's typedoc section; the real run in
+  // `typedoc-preset.test.ts` proves it against the devDependencies.
   it('should name the typedoc plugins it loads', () => {
     expect(
       typedocBase({
@@ -92,17 +97,31 @@ describe('export contracts', () => {
     ).toStrictEqual(typedocPlugins)
   })
 
-  it.each(typedocPlugins)(
-    'should declare %s as an optional peer, never a dependency',
-    (plugin) => {
-      expect(packageJson.peerDependencies).toHaveProperty(plugin)
-      expect(packageJson.peerDependenciesMeta).toHaveProperty(
-        [plugin, 'optional'],
-        true,
-      )
-      expect(packageJson.dependencies).not.toHaveProperty(plugin)
+  it.each(['typedoc', ...typedocPlugins])(
+    'should keep %s out of every field the installer reads',
+    (name) => {
+      expect(packageJson.dependencies).not.toHaveProperty(name)
+      expect(packageJson.peerDependencies).not.toHaveProperty(name)
+      expect(packageJson).not.toHaveProperty('optionalDependencies')
+      // The proof run needs it here, and nowhere else.
+      expect(packageJson.devDependencies).toHaveProperty(name)
     },
   )
+
+  // The peers are the tools every consumer runs, and none is marked
+  // optional: the registry erases the mark, so a manifest carrying it
+  // says one thing through `npm pack` and another through
+  // `npm install` — a dry adoption against the tarball LOST typedoc
+  // where the registry re-pin would have added it and both plugins.
+  // With no such field the two channels cannot disagree.
+  it('should declare the family tools as plain peers, none optional', () => {
+    expect(Object.keys(packageJson.peerDependencies)).toStrictEqual([
+      'eslint',
+      'prettier',
+      'vitest',
+    ])
+    expect(packageJson).not.toHaveProperty('peerDependenciesMeta')
+  })
 
   it('should forward custom entry points for multi-entry packages', () => {
     const config = typedocBase({

@@ -309,15 +309,37 @@ longer turns it off with a reason that was false twice over.
   grep.
 - `typedoc-plugin-mdn-links` and `typedoc-plugin-coverage` are the
   mirror case: the typedoc preset names them and typedoc loads them by
-  name from the CONSUMER's tree, so the claim is on the consumer and is
-  declared as such — optional peers beside `typedoc` (5.0.0), never
-  `dependencies`: both peer on typedoc, and npm would then install
-  typedoc into the three apps, which document nothing. Consumers keep
-  installing them (npm does not auto-install optional peers) and
-  Dependabot keeps bumping them there; the peer range states the
-  supported majors once. Proven by a real typedoc run over a fixture:
-  both plugins load and leave their trace (the coverage badge, the MDN
-  links on an `Error` subclass's inherited members).
+  name from the CONSUMER's tree, so the claim is on the consumer — and
+  it is declared in NO field the installer reads, not even the optional
+  peer that would be the textbook place. 5.0.0 first declared them so,
+  beside `typedoc`, and the consumers' dry adoptions caught the flaw
+  before release: GitHub Packages strips `peerDependenciesMeta` from
+  the packument. Measured 2026-09-07 on 4.5.0 — `npm view` of its
+  `peerDependencies --json` lists the four peers and of its
+  `peerDependenciesMeta --json` prints nothing, while
+  `npm pack` of the same version carries the map and an npmjs control
+  (`eslint-plugin-import-x@4.17.1`) keeps its own. So every optional
+  peer reaches a consumer as a mandatory one: `node_modules/typedoc`
+  (`dev: true, peer: true`) and fourteen packages under it sat in the
+  three apps' locks on that day's `main`, since their first adoption,
+  and the 5.0.0 draft would have added both plugins beside it. A
+  `file:` install of the tarball honours the flag the registry drops,
+  which is why a dry adoption against a pack LOSES typedoc where the
+  registry re-pin adds it — the two channels answer differently, and
+  only the registry's answer ships. Removing the field removes the
+  class: `peerDependencies` names the tools every consumer runs
+  (eslint, prettier, vitest) as plain peers, there is no
+  `peerDependenciesMeta` to strip, and the tarball says what the
+  packument says. typedoc and its plugins stay devDependencies here for
+  the proof — a real typedoc run over a fixture, both plugins loading
+  and leaving their trace (the coverage badge, the MDN links on an
+  `Error` subclass's inherited members) — and the README's typedoc
+  section carries the install line and the majors proven. Pinned in
+  `export-contracts.test.ts`: the three names in no installer field,
+  the peer set exact, no meta. Re-verify through the registry, never
+  the tarball, once 5.0.0 is published: `npm view` of 5.0.0's
+  `peerDependencies --json` must name exactly those three, and the
+  apps' re-pin locks must lose `node_modules/typedoc`.
 
 ## Reusable-workflow blind spot
 
@@ -504,7 +526,12 @@ adoption PR per consumer, which proves iso-behavior with
 `eslint --print-config` diffs before/after on representative files.
 Reusable-workflow callers pin a commit SHA with the release tag as its
 version comment — never `@main`, and never a bare tag, which zizmor's
-`unpinned-uses` flags. A release that CHANGES policy (a naming
+`unpinned-uses` flags. A DRY adoption installs the pack by `file:`,
+which reads the tarball's manifest; the real re-pin reads the packument,
+and the two differ by exactly the fields GitHub Packages strips (see
+"Dependencies nothing imports"). What a release installs is therefore
+verified through the registry once published, never inferred from the
+pack — the pack proves the code, the packument proves the install. A release that CHANGES policy (a naming
 tightening, a new floor) is the opposite: every diff is a deliberate,
 per-repo-classified change — and the dependabot-fix guidance tells the
 fixer to stop and leave the PR red when a bump crosses such a release.

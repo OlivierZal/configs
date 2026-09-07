@@ -111,27 +111,7 @@
   "peerDependencies": {
     "eslint": ">=10",
     "prettier": ">=3.5",
-    "typedoc": ">=0.28",
-    "typedoc-plugin-coverage": ">=4",
-    "typedoc-plugin-mdn-links": ">=5",
     "vitest": ">=4"
-  },
-  "peerDependenciesMeta": {
-    "prettier": {
-      "optional": true
-    },
-    "typedoc": {
-      "optional": true
-    },
-    "typedoc-plugin-coverage": {
-      "optional": true
-    },
-    "typedoc-plugin-mdn-links": {
-      "optional": true
-    },
-    "vitest": {
-      "optional": true
-    }
   },
   "engines": {
     "node": "^22.22.2 || >=24.15.0"

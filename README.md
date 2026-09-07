@@ -183,10 +183,18 @@ consumer's tree, so they install beside typedoc itself:
 npm install --save-dev typedoc typedoc-plugin-coverage typedoc-plugin-mdn-links
 ```
 
-Both are declared here as optional peers, the way typedoc is: the
-supported majors are stated once, and nothing reaches a repo that
-documents nothing — a plain dependency would drag typedoc into the
-three apps.
+That install line is the whole contract: neither typedoc nor the
+plugins are declared here in any field `npm install` reads. The
+optional peer that would be the textbook place is not one through
+GitHub Packages, which strips `peerDependenciesMeta` from the
+packument (measured 2026-09-07 on 4.5.0: the tarball carries the map,
+`npm view … peerDependenciesMeta --json` prints nothing), so every
+optional peer reaches a consumer as a mandatory one — typedoc declared
+that way had been landing in the three apps' locks, which document
+nothing, since their first adoption. The majors the preset is proven
+against are the devDependency ranges here (typedoc 0.28, coverage 4,
+mdn-links 5), pinned by a real run over a fixture; a consumer keeps its
+own pins and Dependabot moves them there.
 
 ### vitest (decorator transform)
 
