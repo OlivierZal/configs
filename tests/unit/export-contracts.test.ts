@@ -5,7 +5,10 @@ import { webviewFloorBlock } from '../../src/eslint/index.ts'
 import { typedocBase } from '../../src/typedoc/index.ts'
 import { coverageDefaults } from '../../src/vitest/coverage.ts'
 import { swcOptions, swcPlugin } from '../../src/vitest/swc.ts'
+import packageJson from '../../package.json' with { type: 'json' }
 import prettierConfig from '../../src/prettier/index.ts'
+
+const typedocPlugins = ['typedoc-plugin-mdn-links', 'typedoc-plugin-coverage']
 
 // The eslint presets are exercised by real lint runs; the other
 // modules export plain objects whose contract is their shape — pin it
@@ -18,6 +21,22 @@ describe('export contracts', () => {
       semi: false,
       singleQuote: true,
     })
+  })
+
+  // The barrel publishes the two presets and the one fragment a
+  // consumer composes on its own; the fragments the presets assemble
+  // from are module-internal. Pinned at runtime because the lint rule
+  // that would report an unused export is inert under ESLint 10
+  // (`shared.ts`), so a fragment re-exported "for later" would otherwise
+  // ride out unnoticed, as nineteen of them once did.
+  it('should publish only the presets and the webview floor', async () => {
+    const barrel = await import('../../src/eslint/index.ts')
+
+    expect(
+      Object.keys(barrel).toSorted((first, second) =>
+        first.localeCompare(second),
+      ),
+    ).toStrictEqual(['homeyApp', 'library', 'webviewFloorBlock'])
   })
 
   // A library shipping webview-bundled sources composes the floor from
@@ -55,6 +74,35 @@ describe('export contracts', () => {
     // defaults must show up as an explicit snapshot update.
     expect(config).toMatchSnapshot()
   })
+
+  // typedoc loads each plugin by name from the consumer's tree, so the
+  // list the preset emits is a dependency claim on every consumer, and
+  // it is declared where a claim on a consumer belongs: as an optional
+  // peer beside typedoc itself. Never a plain dependency — the plugins
+  // peer on typedoc, and npm would then install typedoc into the three
+  // apps, which document nothing.
+  it('should name the typedoc plugins it loads', () => {
+    expect(
+      typedocBase({
+        categoryOrder: [],
+        hostedBaseUrl: 'https://example.invalid/docs/',
+        name: 'Example',
+        navigationLinks: {},
+      }).plugin,
+    ).toStrictEqual(typedocPlugins)
+  })
+
+  it.each(typedocPlugins)(
+    'should declare %s as an optional peer, never a dependency',
+    (plugin) => {
+      expect(packageJson.peerDependencies).toHaveProperty(plugin)
+      expect(packageJson.peerDependenciesMeta).toHaveProperty(
+        [plugin, 'optional'],
+        true,
+      )
+      expect(packageJson.dependencies).not.toHaveProperty(plugin)
+    },
+  )
 
   it('should forward custom entry points for multi-entry packages', () => {
     const config = typedocBase({

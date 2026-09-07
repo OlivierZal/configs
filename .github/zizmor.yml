@@ -6,7 +6,8 @@ rules:
     ignore:
       - claude-dependabot-fix.yml
   # Not applicable: we publish to GitHub Packages with the job-scoped
-  # GITHUB_TOKEN (already OIDC-based), not to npmjs.org.
+  # GITHUB_TOKEN (already OIDC-based), not to npmjs.org. The step lives
+  # in the reusable; publish.yml is a stub over it.
   use-trusted-publishing:
     ignore:
-      - publish.yml
+      - reusable-publish.yml
