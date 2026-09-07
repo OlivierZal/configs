@@ -401,7 +401,9 @@ describe.each([
 // `.ts` neighbour — the `nodenext` form every consumer writes — is what
 // the node fallback cannot follow, so the resolving half fails without
 // the package (every import then reports a resolve error) and the
-// missing-module half proves the rule still reports through it.
+// missing-module half proves the rule still reports through it. The
+// resolving half demands a fully clean run rather than the absence of
+// one rule: a parse failure or a misnamed path reports no rule either.
 describe.each([
   { preset: appPreset, presetName: 'homeyApp' },
   { preset: libraryPreset, presetName: 'library' },
@@ -412,7 +414,7 @@ describe.each([
     async () => {
       await expect(
         lintFixture(preset, 'resolver', 'resolved.ts'),
-      ).resolves.not.toContain('import-x/no-unresolved')
+      ).resolves.toStrictEqual([])
     },
   )
 
