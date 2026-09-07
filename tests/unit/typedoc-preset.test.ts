@@ -14,7 +14,7 @@ import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { typedocBase } from '../../src/typedoc/index.ts'
-import { repoRoot } from '../helpers.ts'
+import { asString, repoRoot } from '../helpers.ts'
 
 // A real typedoc run over an on-disk fixture, from a copy in a scratch
 // directory so nothing lands in the tree: the preset names two plugins
@@ -31,6 +31,23 @@ const htmlFilesUnder = (dir: string): string[] =>
   readdirSync(dir, { recursive: true, withFileTypes: true })
     .filter((entry) => entry.isFile() && entry.name.endsWith('.html'))
     .map((entry) => path.join(entry.parentPath, entry.name))
+
+// The hosts the generated pages link to, read off each parsed URL: the
+// mdn-links trace is a link whose HOST is MDN, and a substring search
+// for the name would also accept a host that merely contains it.
+const linkHostsUnder = (dir: string): string[] =>
+  htmlFilesUnder(dir).flatMap((file) =>
+    readFileSync(file, 'utf8')
+      .matchAll(/href="(?<href>[^"]*)"/gv)
+      .map(({ groups }) => {
+        const { hostname } = new URL(
+          asString(groups?.href, 'href'),
+          'https://example.invalid',
+        )
+        return hostname
+      })
+      .toArray(),
+  )
 
 describe(typedocBase, () => {
   beforeAll(() => {
@@ -77,10 +94,6 @@ describe(typedocBase, () => {
   })
 
   it('should load typedoc-plugin-mdn-links', () => {
-    expect(
-      htmlFilesUnder(outDir).some((file) =>
-        readFileSync(file, 'utf8').includes('developer.mozilla.org'),
-      ),
-    ).toBe(true)
+    expect(linkHostsUnder(outDir)).toContain('developer.mozilla.org')
   })
 })

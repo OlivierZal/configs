@@ -2,7 +2,8 @@
 # tarball's provenance, publish it to GitHub Packages. Derived from the
 # four identical publish.yml files the libraries carried (2026-09-07) —
 # the same job, steps and pins, with `workflow_call` in place of the
-# release trigger the caller keeps. The `npm` environment and the
+# release trigger the caller keeps, minus an `IS_PRERELEASE` env entry
+# nothing read. The `npm` environment and the
 # `id-token: write` the attestation needs travel with the job; the
 # caller grants them and nothing more. This repo's own publish.yml calls
 # it through `./`, so the path runs here on every release of this
@@ -38,8 +39,9 @@ jobs:
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: '*.tgz'
+      # The expression decides the dist-tag before the shell runs: a
+      # boolean from the release event, not text that could inject.
       - env:
-          IS_PRERELEASE: ${{ github.event.release.prerelease }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm publish *.tgz ${{ github.event.release.prerelease && '--tag next' || '' }}
     timeout-minutes: 15

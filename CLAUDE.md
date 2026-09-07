@@ -339,10 +339,10 @@ longer turns it off with a reason that was false twice over.
   spot, cheap to detect (the run fails immediately) and not worth a
   cross-repo probe.
 - `reusable-docs.yml` and `reusable-publish.yml` (5.0.0) are the
-  release-only reusables, derived byte-for-byte from the four identical
-  files the libraries carried, and they sit squarely in this blind
-  spot: this repo builds no docs site and publishes once per release.
-  Two mitigations, neither a proof. `publish.yml` here calls
+  release-only reusables, derived from the four identical files the
+  libraries carried (one dead env entry fewer), and they sit squarely
+  in this blind spot: this repo builds no docs site and publishes once
+  per release. Two mitigations, neither a proof. `publish.yml` here calls
   `reusable-publish.yml` through `./`, so that path runs on every
   release of this package — the caller's shape exactly, minus the
   scoped install. `reusable-docs.yml` takes `dry-run`, which builds and
