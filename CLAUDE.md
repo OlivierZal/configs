@@ -82,8 +82,7 @@ both channels — bump once, release once.
 
 ## The eslint entry point
 
-`./eslint` publishes the two presets, their option types and
-`webviewFloorBlock` — nothing else since 5.0.0. Nineteen fragment
+`./eslint` publishes the two presets, their option types (`HomeyAppOptions`, `LibraryOptions`, `TemplateExpressionAllowEntry`) and `webviewFloorBlock` — nothing else since 5.0.0. Nineteen fragment
 re-exports and two option types rode out for "the day a repo genuinely
 fits neither family": measured 2026-09-07, no consumer imported any of
 them, and the set could not have assembled a third family anyway
@@ -554,7 +553,7 @@ The CSS gate (`css/use-baseline`, same file) is bound to the same fact
 since 5.0.0, through the one knob the rule has — a Baseline year — plus
 an exact-name allowlist. 2022 is the last year whose every entry sits
 inside the 16.4 WebKit (Safari 16.2 at the latest); 2023 admits what
-Safari 16.5 brought (CSS nesting, `:user-valid`), and the `newly` it
+Safari 16.5 brought (`&`-nesting — the one nesting form the rule detects — and `:user-valid`), and the `newly` it
 replaced admitted Safari 17.5's `text-wrap`. Baseline dates a feature by
 the LAST core browser to ship it, so the year alone also rejects CSS
 WebKit had before the floor: measured over the three apps' stylesheets

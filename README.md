@@ -22,7 +22,8 @@ npm install --save-dev --save-exact @olivierzal/configs
 ```
 
 Every family repo's `.nvmrc` names the install floor of its tree —
-22.22.2 today, the lowest Node the tooling this package pulls into every
+22.22.2 once the four libraries' 5.0.0 adoptions land, the apps being
+there already; the lowest Node the tooling this package pulls into every
 consumer installs on — and never a sibling's value or a round number;
 `engines` keeps stating what the code needs where it runs (the device
 floor in the four libraries, that same install floor here and in the
@@ -110,8 +111,7 @@ export default defineConfig([
 ])
 ```
 
-That is the whole of the `eslint` entry point: the two presets, their
-option types and `webviewFloorBlock`. The fragments the presets
+That is the whole of the `eslint` entry point: the two presets, their option types (`HomeyAppOptions`, `LibraryOptions`, `TemplateExpressionAllowEntry`) and `webviewFloorBlock`. The fragments the presets
 assemble from are not public — a repo fits one of the two families, or
 the family gains a preset here.
 

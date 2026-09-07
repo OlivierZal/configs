@@ -281,8 +281,9 @@ const cssBlock: Config[] = defineConfig([
       // has, a Baseline year: a feature passes once every core browser
       // had shipped it by that year's end. 2022 is the last year inside
       // the floor (its WebKit half is Safari 16.2 at the latest); 2023
-      // would admit what Safari 16.5 brought (CSS nesting, `:user-valid`)
-      // and that engine lacks. The year moves with the App Store minimum
+      // would admit what Safari 16.5 brought (`&`-nesting — the one
+      // nesting form the rule detects — and `:user-valid`) and that
+      // engine lacks. The year moves with the App Store minimum
       // `ios-floor-watch.yml` records, and only with it.
       //
       // The proxy cuts the other way too: Baseline dates a feature by

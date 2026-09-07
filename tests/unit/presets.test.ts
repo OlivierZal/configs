@@ -293,6 +293,10 @@ describe('css baseline floor', () => {
       css: '@starting-style {\n  a {\n    color: red;\n  }\n}\n',
       feature: '@starting-style',
     },
+    // Safari 16.5 features: 2023 would admit them, 2022 rejects them —
+    // the rows that hold the year where the floor put it.
+    { css: 'a:user-valid {\n  color: red;\n}\n', feature: ':user-valid' },
+    { css: 'a {\n  & b {\n    color: red;\n  }\n}\n', feature: '`&` nesting' },
   ])('should reject $feature, above the floor', async ({ css }) => {
     await expect(lintCss(css)).resolves.toContain('css/use-baseline')
   })
