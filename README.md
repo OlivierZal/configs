@@ -21,6 +21,15 @@ release tag as the pin's version comment. One version covers both —
 npm install --save-dev --save-exact @olivierzal/configs
 ```
 
+Every family repo's `.nvmrc` names the install floor of its tree —
+22.22.2 once the four libraries' 5.0.0 adoptions land, the apps being
+there already; the lowest Node the tooling this package pulls into every
+consumer installs on — and never a sibling's value or a round number;
+`engines` keeps stating what the code needs where it runs (the device
+floor in the four libraries, that same install floor here and in the
+apps, whose device floor lives in `compatibility`). Re-derive it when
+the tree moves.
+
 ### eslint
 
 ```ts title="eslint.config.ts (Homey app)"
@@ -102,6 +111,10 @@ export default defineConfig([
 ])
 ```
 
+That is the whole of the `eslint` entry point: the two presets, their option types (`HomeyAppOptions`, `LibraryOptions`, `TemplateExpressionAllowEntry`) and `webviewFloorBlock`. The fragments the presets
+assemble from are not public — a repo fits one of the two families, or
+the family gains a preset here.
+
 Anchor every `wireNamingEntries` filter (`^…$`): a filtered entry
 outranks the core's `requiresQuotes` skip, so an open-ended pattern
 swallows quoted keys (`'Content-Type'`) it was never meant to judge.
@@ -129,17 +142,18 @@ its formatting any more.
 { "extends": "@olivierzal/configs/tsconfig/app" }
 ```
 
-Bases: `tsconfig/app`, `tsconfig/library`, plus `-build` variants.
-Path-bearing options (`outDir`, `rootDir`, `include`) stay
-consumer-side on purpose: paths in an extended tsconfig resolve
+Bases: `tsconfig/app` and `tsconfig/library`, one per family and
+nothing else. Path-bearing options (`outDir`, `rootDir`, `include`)
+stay consumer-side on purpose: paths in an extended tsconfig resolve
 relative to the base file, which lives in `node_modules` — a base
-carrying them resolves an empty file list. The `-build` bases
-therefore hold no path options; the consumer declares its own:
+carrying them resolves an empty file list. A build config declares its
+own beside the base (or extends the repo's `tsconfig.json`, which
+names the base once):
 
 ```jsonc title="tsconfig.build.json"
 {
-  "compilerOptions": { "rootDir": "src" },
-  "extends": "@olivierzal/configs/tsconfig/library-build",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+  "extends": "@olivierzal/configs/tsconfig/library",
   "include": ["src"],
 }
 ```
@@ -160,6 +174,27 @@ const config = typedocBase({
 
 export default config
 ```
+
+The preset names two plugins (`typedoc-plugin-mdn-links`,
+`typedoc-plugin-coverage`) that typedoc loads by name from the
+consumer's tree, so they install beside typedoc itself:
+
+```sh title="install"
+npm install --save-dev typedoc typedoc-plugin-coverage typedoc-plugin-mdn-links
+```
+
+That install line is the whole contract: neither typedoc nor the
+plugins are declared here in any field `npm install` reads. The
+optional peer that would be the textbook place is not one through
+GitHub Packages, which strips `peerDependenciesMeta` from the
+packument (measured 2026-09-07 on 4.5.0: the tarball carries the map,
+`npm view … peerDependenciesMeta --json` prints nothing), so every
+optional peer reaches a consumer as a mandatory one — typedoc declared
+that way had been landing in the three apps' locks, which document
+nothing, since their first adoption. The majors the preset is proven
+against are the devDependency ranges here (typedoc 0.28, coverage 4,
+mdn-links 5), pinned by a real run over a fixture; a consumer keeps its
+own pins and Dependabot moves them there.
 
 ### vitest (decorator transform)
 
@@ -265,11 +300,65 @@ pointless.
 Available: `reusable-ci.yml` (check + caller-defined test matrix, caller
 picks the legs, the coverage leg and the library gates, plus the Sonar
 gate), `reusable-claude-dependabot-fix.yml` (caller keeps the
-`workflow_run` trigger and passes its verify commands). The single-file
-workflows (`dependency-review`, `pr-title`, `zizmor`, `claude*`,
-`dependabot`) also accept `workflow_call` so callers can become stubs.
-`templates/zizmor-apps.yml` is the apps' zizmor config variant; this repo
-ships the libs' form.
+`workflow_run` trigger and passes its verify commands),
+`reusable-publish.yml` and `reusable-docs.yml` (the libraries' release
+path: the caller keeps the `release` trigger, and the `npm` and
+`github-pages` environments travel with the called jobs together with
+the `id-token: write` the attestation and the deployment need). The
+single-file workflows (`dependency-review`, `pr-title`, `zizmor`,
+`claude*`, `dependabot`) also accept `workflow_call` so callers can
+become stubs. `templates/zizmor-apps.yml` is the apps' zizmor config
+variant; this repo ships the libs' form.
+
+```yaml title=".github/workflows/publish.yml"
+jobs:
+  publish:
+    permissions:
+      attestations: write
+      contents: read
+      id-token: write
+      packages: write
+    uses: OlivierZal/configs/.github/workflows/reusable-publish.yml@<commit sha> # vX.Y.Z
+name: Publish package to GitHub Packages
+on:
+  release:
+    types: [published]
+permissions: {}
+```
+
+```yaml title=".github/workflows/docs.yml"
+jobs:
+  docs:
+    permissions:
+      contents: read
+      id-token: write
+      packages: read
+      pages: write
+    uses: OlivierZal/configs/.github/workflows/reusable-docs.yml@<commit sha> # vX.Y.Z
+    with:
+      dry-run: ${{ inputs.dry-run || false }}
+name: Generate & deploy docs
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        default: false
+        description: Build the site without deploying it.
+        type: boolean
+permissions: {}
+```
+
+Both called workflows reference the caller's copy of
+`.github/actions/setup-node-and-install`, the one `reusable-ci.yml`
+already needs. `dry-run` is the rehearsal a release-only path can get:
+dispatch it by hand once adopted and watch the build half succeed on
+the reusable before a release reaches the deploy half. This repository
+runs `reusable-publish.yml` itself on every release (its own
+`publish.yml` calls it), but builds no docs site — so the docs path is
+proven by that rehearsal and by a caller's first release through it,
+not from here.
 
 ## Action pins
 

@@ -14,6 +14,7 @@ import unicorn from 'eslint-plugin-unicorn'
 
 import {
   type NamingConventionOptions,
+  type SharedMainRulesOptions,
   type TemplateExpressionAllowEntry,
   configJsBlock,
   configTsBlock,
@@ -275,15 +276,36 @@ const cssBlock: Config[] = defineConfig([
       'css/prefer-logical-properties': 'error',
       'css/relative-font-units': 'error',
       'css/selector-complexity': 'error',
-      // `newly` sits ABOVE the derived floor, not on it: Baseline "newly
-      // available" admits CSS that became interoperable after the iOS
-      // 16.4 WebKit shipped (2023-03) — `text-wrap` and `@starting-style`
-      // pass here and that engine lacks them. The engine is the system
-      // WebKit `webviewFloorBlock` derives from, never a Chromium.
-      // Binding `available` to the floor's year is a policy-crossing
-      // release (adoption doctrine), owed; once bound, it moves with the
-      // minimum `ios-floor-watch.yml` records.
-      'css/use-baseline': ['error', { available: 'newly' }],
+      // Bound to the engine `webviewFloorBlock` derives from — the iOS
+      // 16.4 WebKit, never a Chromium — through the one knob the rule
+      // has, a Baseline year: a feature passes once every core browser
+      // had shipped it by that year's end. 2022 is the last year inside
+      // the floor (its WebKit half is Safari 16.2 at the latest); 2023
+      // would admit what Safari 16.5 brought (`&`-nesting — the one
+      // nesting form the rule detects — and `:user-valid`) and that
+      // engine lacks. The year moves with the App Store minimum
+      // `ios-floor-watch.yml` records, and only with it.
+      //
+      // The proxy cuts the other way too: Baseline dates a feature by
+      // the LAST core browser to ship it, so the year alone rejects CSS
+      // WebKit had before the floor. Such a feature re-enters by exact
+      // name with the Safari release that carries it (MDN
+      // browser-compat-data), and only at 16.4 or below — measured over
+      // the three apps' stylesheets (2026-09-07) and grown the same way:
+      // an app meeting a new rejection reads the compat table, and the
+      // feature either lands here with its release or gets rewritten.
+      'css/use-baseline': [
+        'error',
+        {
+          // Safari 16.2; dated 2023 by Firefox 113.
+          allowFunctions: ['color-mix'],
+          // `mask-image`: unprefixed since Safari 15.4, dated 2023 by
+          // Chrome 120. `outline`: dated 2023 by Safari 16.4 itself, the
+          // floor's own release, for following `border-radius`.
+          allowProperties: ['mask-image', 'outline'],
+          available: 2022,
+        },
+      ],
       'unicorn/expiring-todo-comments': 'error',
       'unicorn/no-empty-file': 'error',
       'unicorn/no-missing-local-resource': 'error',
@@ -325,7 +347,7 @@ const appMainRuleOptions = (
     HomeyAppOptions['templateExpressionAllow']
   >,
   naming: NamingConventionOptions,
-): Parameters<typeof sharedMainRules>[0] => ({
+): SharedMainRulesOptions => ({
   extraneous: {
     devDependencies: [
       '*.config.{js,mjs,mts,ts}',

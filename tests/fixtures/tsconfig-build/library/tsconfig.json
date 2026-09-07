@@ -1,5 +1,5 @@
 {
   "compilerOptions": { "rootDir": "src" },
-  "extends": "@olivierzal/configs/tsconfig/library-build",
+  "extends": "@olivierzal/configs/tsconfig/library",
   "include": ["src"]
 }

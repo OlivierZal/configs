@@ -237,7 +237,7 @@ const namingConventionTail = (
 
 // The family-wide naming policy; families splice their wire-protocol
 // vocabularies through `extraEntries`.
-export const namingConventionEntries = ({
+const namingConventionEntries = ({
   booleanFilter,
   extraEntries = [],
   propertyFormats = ['camelCase'],
@@ -448,6 +448,12 @@ const staticMainRules: NonNullable<Config['rules']> = {
   'import-x/no-relative-packages': 'error',
   'import-x/no-self-import': 'error',
   'import-x/no-unresolved': ['error', { caseSensitiveStrict: true }],
+  // Inert under ESLint 10, which removed the FileEnumerator API the rule
+  // enumerates `src` with: the plugin returns no visitor and says so
+  // (the suppressed warning is that statement). Kept at `error` so the
+  // verdict re-arms the day import-x ships its replacement, but nothing
+  // in the family may lean on it meanwhile — an unused export is caught
+  // by a test that pins the published surface, never by this rule.
   'import-x/no-unused-modules': [
     'error',
     {
@@ -819,7 +825,7 @@ export const changelogBlock: Config = {
   },
 }
 
-export const sharedTestRules: NonNullable<Config['rules']> = {
+const sharedTestRules: NonNullable<Config['rules']> = {
   // Fixtures and assertions are literal-heavy by nature.
   '@typescript-eslint/no-magic-numbers': 'off',
   // Owned by `vitest/unbound-method`, the mock-aware port.
@@ -894,8 +900,10 @@ export const sharedTestRules: NonNullable<Config['rules']> = {
   'vitest/warn-todo': 'error',
 }
 
+// Both presets pass their family's test rules; there is no caller for
+// which an empty table would be right.
 export const testsBlock = (
-  extraRules: NonNullable<Config['rules']> = {},
+  extraRules: NonNullable<Config['rules']>,
 ): Config[] =>
   defineConfig([
     {

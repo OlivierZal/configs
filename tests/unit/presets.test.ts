@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
 import type { Config } from 'eslint/config'
@@ -9,16 +8,6 @@ import { describe, expect, it } from 'vitest'
 import { homeyApp } from '../../src/eslint/homey-app.ts'
 import { library } from '../../src/eslint/library.ts'
 import { jsdocBlock, mainLanguageOptions } from '../../src/eslint/shared.ts'
-
-// Throws instead of narrowing conditionally: the vitest rules ban
-// conditional logic inside tests.
-const parseRecord = (raw: string): Record<string, unknown> => {
-  const parsed: unknown = JSON.parse(raw)
-  if (typeof parsed !== 'object' || parsed === null) {
-    throw new TypeError('expected a JSON object')
-  }
-  return { ...parsed }
-}
 
 const appPreset = homeyApp({
   bundledSourceGlobs: ['settings/**'],
@@ -257,6 +246,67 @@ describe('html formatting handover', () => {
     await expect(lintHtml(invalid)).resolves.toStrictEqual([
       'html/no-invalid-role',
     ])
+  })
+})
+
+const cssBlocks = appPreset.filter(
+  (entry) => entry.files?.includes('**/*.css') === true,
+)
+
+const lintCss = async (text: string): Promise<(string | null)[]> => {
+  const eslint = new ESLint({
+    overrideConfig: cssBlocks,
+    overrideConfigFile: true,
+  })
+  const [result] = await eslint.lintText(text, {
+    filePath: 'settings/index.css',
+  })
+  return result?.messages.map(({ ruleId }) => ruleId) ?? []
+}
+
+// The CSS gate is bound to the same engine as the JS floor — the iOS
+// 16.4 WebKit — through a Baseline year, plus an exact-name allowlist
+// for what that engine shipped ahead of the other browsers. Real lint
+// runs, both ways: a feature above the floor is rejected, and the
+// allowlisted ones pass where the year alone would refuse them.
+describe('css baseline floor', () => {
+  it('should bind the year to the floor and allow features by name', () => {
+    expect(
+      cssBlocks
+        .map((entry) => entry.rules?.['css/use-baseline'])
+        .filter((option) => Array.isArray(option)),
+    ).toStrictEqual([
+      [
+        'error',
+        {
+          allowFunctions: ['color-mix'],
+          allowProperties: ['mask-image', 'outline'],
+          available: 2022,
+        },
+      ],
+    ])
+  })
+
+  it.each([
+    { css: 'a {\n  text-wrap: balance;\n}\n', feature: 'text-wrap' },
+    {
+      css: '@starting-style {\n  a {\n    color: red;\n  }\n}\n',
+      feature: '@starting-style',
+    },
+    // Safari 16.5 features: 2023 would admit them, 2022 rejects them —
+    // the rows that hold the year where the floor put it.
+    { css: 'a:user-valid {\n  color: red;\n}\n', feature: ':user-valid' },
+    { css: 'a {\n  & b {\n    color: red;\n  }\n}\n', feature: '`&` nesting' },
+  ])('should reject $feature, above the floor', async ({ css }) => {
+    await expect(lintCss(css)).resolves.toContain('css/use-baseline')
+  })
+
+  it('should accept what WebKit shipped before the floor', async () => {
+    await expect(
+      lintCss(
+        'a {\n  color: color-mix(in srgb, red, blue);\n  mask-image: none;\n  outline: none;\n}\n',
+      ),
+    ).resolves.toStrictEqual([])
   })
 })
 
@@ -510,35 +560,6 @@ describe('scoped wire vocabulary', () => {
       await expect(
         lintFixture(scoped, 'naming', 'strict-property.ts'),
       ).resolves.toContain(namingRule)
-    },
-  )
-})
-
-describe('tsconfig bases', () => {
-  it.each(['app', 'app-build', 'library', 'library-build'])(
-    'should parse %s.json',
-    async (name) => {
-      const raw = await readFile(
-        new URL(`../../tsconfig-bases/${name}.json`, import.meta.url),
-        'utf8',
-      )
-
-      expect(() => parseRecord(raw)).not.toThrow()
-    },
-  )
-
-  it.each(['app', 'library'])(
-    'should keep outDir out of the %s base',
-    async (name) => {
-      const raw = await readFile(
-        new URL(`../../tsconfig-bases/${name}.json`, import.meta.url),
-        'utf8',
-      )
-
-      // Paths in an extended tsconfig resolve relative to the BASE
-      // file: an outDir here would emit inside node_modules for every
-      // consumer.
-      expect(parseRecord(raw).compilerOptions).not.toHaveProperty('outDir')
     },
   )
 })

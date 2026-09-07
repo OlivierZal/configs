@@ -42,10 +42,6 @@ const config: Config[] = defineConfig([
           peerDependencies: true,
         },
       ],
-      // Preset fragments are consumed by the published entry points and
-      // the test suite; intra-package usage analysis cannot see package
-      // consumers.
-      'import-x/no-unused-modules': 'off',
     },
   },
   {

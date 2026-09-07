@@ -3,6 +3,9 @@
 # the Homey mobile app's iOS App Store minimum — 16.4 when derived
 # (2026-08-11) — and states its re-evaluation condition: es2024 becomes
 # derivable when that minimum reaches 17.4 (the `v` flag alone at 17).
+# The CSS gate beside it (`css/use-baseline`, same file) binds its
+# Baseline year and allowlist to the same minimum, and re-derives with
+# it.
 # A condition nobody re-reads is a comment, not a mechanism; this is the
 # mechanism. It asks the iTunes Lookup API (JSON, no scraping) and opens
 # an issue on ANY move from the recorded value, so the derivation can
@@ -27,7 +30,8 @@ jobs:
           set -euo pipefail
 
           # The value the docstring derives from; moves ONLY together
-          # with src/eslint/homey-app.ts restating its derivation.
+          # with src/eslint/homey-app.ts restating its derivations — the
+          # es2023 floor, and the `css/use-baseline` year and allowlist.
           readonly recorded='16.4'
           # Homey — A better smart home, Athom B.V. (bundle app.homey).
           readonly track_id='1435800024'
@@ -76,7 +80,7 @@ jobs:
           body=$(printf '%s\n\n%s\n\n%s' \
             "The Homey mobile app's App Store minimum is now **${minimum}** (iTunes Lookup, track id ${track_id}); the webview floor doctrine in \`src/eslint/homey-app.ts\` derives es2023 from **${recorded}**." \
             "Verdict at this value: ${verdict}." \
-            "Re-derivation is a doctrine change, not a mechanical bump: restate \`webviewFloorBlock\`'s docstring from the new minimum (and, at 17.4, decide the es2024 question for the family), update the recorded value in \`.github/workflows/ios-floor-watch.yml\` in the same pull request, then release and adopt — a policy-crossing release per the adoption doctrine.")
+            "Re-derivation is a doctrine change, not a mechanical bump: restate \`webviewFloorBlock\`'s docstring from the new minimum (and, at 17.4, decide the es2024 question for the family), re-derive the \`css/use-baseline\` year and allowlist in the same file, update the recorded value in \`.github/workflows/ios-floor-watch.yml\` in the same pull request, then release and adopt — a policy-crossing release per the adoption doctrine.")
           gh issue create --repo "$REPO" --title "$title" --body "$body"
     timeout-minutes: 10
 name: iOS floor watch

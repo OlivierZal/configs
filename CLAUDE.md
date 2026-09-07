@@ -26,6 +26,15 @@ both channels — bump once, release once.
   tsconfig bases: paths in an extended tsconfig resolve relative to the
   BASE file (inside `node_modules` for consumers), so a base carrying
   them resolves an empty file list. Pinned by a test.
+- Two tsconfig bases, two subpaths (`tsconfig/app`, `tsconfig/library`),
+  nothing else. The `-build` aliases retired in 5.0.0 were content-free
+  `{ extends }` shells of those two: measured 2026-09-07, one consumer
+  extended one of them and none the other, while a build config already
+  names its base once (its own `tsconfig.json`, or the plain base). Four
+  twins on two spellings is the shape that drifts; the suite pins the
+  export map to the files on disk in both directions. The bare `.`
+  export went with them — imported by no consumer, a duplicate of
+  `./eslint`.
 - This package's `engines` is NOT the device floor the four runtime
   libraries declare (the three apps derive theirs the way this package
   does, and state the device floor in `compatibility`) — nothing here
@@ -37,6 +46,17 @@ both channels — bump once, release once.
   floor this package could not actually install on, and `.nvmrc` sent
   every fresh clone there. Both now name the derived value; re-derive it
   when the tree moves rather than nudging it by hand.
+- `.nvmrc` is the INSTALL floor, in every repo of the family, and it is
+  derived HERE: the lowest Node the tree this package imposes on every
+  consumer installs on — 22.22.2 today, from
+  `eslint-plugin-package-json`'s `^22.22.2 || >=24.15.0`. It is not
+  `engines`. The four libraries keep `engines` at the device floor
+  (22.20, what their code needs where it runs) and still cannot install
+  below 22.22.2, which is the one thing a fresh clone must know; this
+  package and the three apps derive `engines` the same way and state
+  the device floor elsewhere. Recorded 2026-09-07 with the libraries'
+  move to 22.22.2 (their 5.0.0 adoption); re-derive when the tree moves,
+  never nudge by hand.
 
 ## Naming doctrine
 
@@ -59,6 +79,27 @@ both channels — bump once, release once.
 - Wire exceptions are exact-name allowlists justified by the protocol
   that imposes them (API field, payload key, platform vocabulary) —
   anything of our own naming gets renamed, not excused.
+
+## The eslint entry point
+
+`./eslint` publishes the two presets, their option types (`HomeyAppOptions`, `LibraryOptions`, `TemplateExpressionAllowEntry`) and `webviewFloorBlock` — nothing else since 5.0.0. Nineteen fragment
+re-exports and two option types rode out for "the day a repo genuinely
+fits neither family": measured 2026-09-07, no consumer imported any of
+them, and the set could not have assembled a third family anyway
+(`mainLanguageOptions`, `wireNamingBlock` and `testNamingRules` were
+never exported). The verdict is the naming doctrine's own: a repo fits
+one of the two families, or the family gains a preset HERE — never a
+hand-assembled third, which is the copy that drifts. The fragments stay
+module-internal in `shared.ts` and `helpers.ts`.
+
+Pinned by a runtime test of the barrel's export names, because the
+rule that would report an unused export cannot:
+`import-x/no-unused-modules` is inert under ESLint 10 — the plugin
+returns no visitor without the FileEnumerator API, and the family's
+`suppressMissingFileEnumeratorAPIWarning` is that fact acknowledged. It
+stays at `error` so the verdict re-arms when import-x ships its
+replacement; nothing leans on it meanwhile, and this repo's overlay no
+longer turns it off with a reason that was false twice over.
 
 ## Pin doctrine
 
@@ -265,6 +306,39 @@ both channels — bump once, release once.
   `eslint --print-config` on any `.ts` file shows those settings — and
   the answer is measured by hiding the package, never inferred from a
   grep.
+- `typedoc-plugin-mdn-links` and `typedoc-plugin-coverage` are the
+  mirror case: the typedoc preset names them and typedoc loads them by
+  name from the CONSUMER's tree, so the claim is on the consumer — and
+  it is declared in NO field the installer reads, not even the optional
+  peer that would be the textbook place. 5.0.0 first declared them so,
+  beside `typedoc`, and the consumers' dry adoptions caught the flaw
+  before release: GitHub Packages strips `peerDependenciesMeta` from
+  the packument. Measured 2026-09-07 on 4.5.0 — `npm view` of its
+  `peerDependencies --json` lists the four peers and of its
+  `peerDependenciesMeta --json` prints nothing, while
+  `npm pack` of the same version carries the map and an npmjs control
+  (`eslint-plugin-import-x@4.17.1`) keeps its own. So every optional
+  peer reaches a consumer as a mandatory one: `node_modules/typedoc`
+  (`dev: true, peer: true`) and fourteen packages under it sat in the
+  three apps' locks on that day's `main`, since their first adoption,
+  and the 5.0.0 draft would have added both plugins beside it. A
+  `file:` install of the tarball honours the flag the registry drops,
+  which is why a dry adoption against a pack LOSES typedoc where the
+  registry re-pin adds it — the two channels answer differently, and
+  only the registry's answer ships. Removing the field removes the
+  class: `peerDependencies` names the tools every consumer runs
+  (eslint, prettier, vitest) as plain peers, there is no
+  `peerDependenciesMeta` to strip, and the tarball says what the
+  packument says. typedoc and its plugins stay devDependencies here for
+  the proof — a real typedoc run over a fixture, both plugins loading
+  and leaving their trace (the coverage badge, the MDN links on an
+  `Error` subclass's inherited members) — and the README's typedoc
+  section carries the install line and the majors proven. Pinned in
+  `export-contracts.test.ts`: the three names in no installer field,
+  the peer set exact, no meta. Re-verify through the registry, never
+  the tarball, once 5.0.0 is published: `npm view` of 5.0.0's
+  `peerDependencies --json` must name exactly those three, and the
+  apps' re-pin locks must lose `node_modules/typedoc`.
 
 ## Reusable-workflow blind spot
 
@@ -285,6 +359,22 @@ both channels — bump once, release once.
   `.github/actions/setup-node-and-install`; that stays a known blind
   spot, cheap to detect (the run fails immediately) and not worth a
   cross-repo probe.
+- `reusable-docs.yml` and `reusable-publish.yml` (5.0.0) are the
+  release-only reusables, derived from the four identical files the
+  libraries carried (one dead env entry fewer), and they sit squarely
+  in this blind spot: this repo builds no docs site and publishes once
+  per release. Two mitigations, neither a proof. `publish.yml` here calls
+  `reusable-publish.yml` through `./`, so that path runs on every
+  release of this package — the caller's shape exactly, minus the
+  scoped install. `reusable-docs.yml` takes `dry-run`, which builds and
+  packs without deploying, so an adopter dispatches it by hand and
+  watches the build half before a release reaches the deploy half. What
+  stays unproven from here is the deploy half and the `npm` environment
+  on a caller, until its first release through the reusable — the
+  residual risk of a release-path reusable, stated rather than hidden.
+  `tests/unit/reusable-release-workflows.test.ts` holds the shape the
+  callers depend on: the call surface, the environments and grants, the
+  dry-run gate and the dogfood reference.
 
 ## Commands
 
@@ -313,8 +403,8 @@ both channels — bump once, release once.
   package owns the shim that day.
 - `npm test` / `test:coverage` — vitest: structural preset assertions,
   a REAL floor lint run (mutation: iterator helpers and the `v` flag
-  must be flagged by `homey-app`, absent from `library`), tsconfig-base
-  pins.
+  must be flagged by `homey-app`, absent from `library`), a real CSS
+  floor run, a real typedoc run, tsconfig-base pins.
 - `npm run lint:package` — build + publint --strict.
 
 ## Adopting a fixer
@@ -435,7 +525,12 @@ adoption PR per consumer, which proves iso-behavior with
 `eslint --print-config` diffs before/after on representative files.
 Reusable-workflow callers pin a commit SHA with the release tag as its
 version comment — never `@main`, and never a bare tag, which zizmor's
-`unpinned-uses` flags. A release that CHANGES policy (a naming
+`unpinned-uses` flags. A DRY adoption installs the pack by `file:`,
+which reads the tarball's manifest; the real re-pin reads the packument,
+and the two differ by exactly the fields GitHub Packages strips (see
+"Dependencies nothing imports"). What a release installs is therefore
+verified through the registry once published, never inferred from the
+pack — the pack proves the code, the packument proves the install. A release that CHANGES policy (a naming
 tightening, a new floor) is the opposite: every diff is a deliberate,
 per-repo-classified change — and the dependabot-fix guidance tells the
 fixer to stop and leave the PR red when a bump crosses such a release.
@@ -453,6 +548,21 @@ derivable, at 17.4 the whole es2023 floor does — and an empty or
 unreadable answer fails the run: an unread floor must not read as a
 holding one. Re-deriving is a doctrine change (a policy-crossing
 release per the adoption doctrine), never a mechanical bump.
+
+The CSS gate (`css/use-baseline`, same file) is bound to the same fact
+since 5.0.0, through the one knob the rule has — a Baseline year — plus
+an exact-name allowlist. 2022 is the last year whose every entry sits
+inside the 16.4 WebKit (Safari 16.2 at the latest); 2023 admits what
+Safari 16.5 brought (`&`-nesting — the one nesting form the rule detects — and `:user-valid`), and the `newly` it
+replaced admitted Safari 17.5's `text-wrap`. Baseline dates a feature by
+the LAST core browser to ship it, so the year alone also rejects CSS
+WebKit had before the floor: measured over the three apps' stylesheets
+(2026-09-07), seven declarations in com.melcloud — `color-mix()`
+(Safari 16.2), `mask-image` (15.4), `outline` (dated by 16.4 itself for
+following `border-radius`). Those re-enter by exact name with the
+Safari release MDN's compat data records, and only at 16.4 or below;
+the list grows the same way. The watch's restate list names the gate,
+so year and list re-derive with the minimum.
 
 ## Agent workflows — reads in the agent, writes in deterministic steps
 
@@ -516,7 +626,8 @@ that content and let the two drift. The obligation the verdict carries is
 that the notes stay substantial — a channel nobody keeps is not a channel.
 
 `claude-dependabot-fix.yml` calls this repo's own reusable workflow
-through a local `./` reference, exactly as `ci.yml` does. Self-calling was
+through a local `./` reference, exactly as `ci.yml` and `publish.yml`
+do. Self-calling was
 assumed circular; it is not — the caller fires once per completed build
 and the callee resolves from the same commit. `./` is also the honest form
 here: a SHA pin to itself would need rewriting at every release, and

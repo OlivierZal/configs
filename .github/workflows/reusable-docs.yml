@@ -1,0 +1,67 @@
+# The published libraries' documentation pipeline, callable: build the
+# typedoc site and deploy it to GitHub Pages. Derived from the four
+# identical docs.yml files the libraries carried (2026-09-07) — the same
+# jobs, steps and pins, with `workflow_call` in place of the release
+# trigger the caller keeps. The `github-pages` environment and the
+# `id-token: write` the deployment needs travel with the deploy job;
+# the caller grants them and nothing more.
+#
+# `dry-run` builds and packs the site without deploying it: the one
+# rehearsal a release-only path can get. A caller dispatches it by hand
+# and watches the build half succeed on the reusable before a release
+# ever reaches the deploy half (CLAUDE.md, the reusable-workflow blind
+# spot — no run from this repo exercises these jobs, which document
+# nothing).
+concurrency:
+  cancel-in-progress: false
+  group: pages
+jobs:
+  build:
+    name: Build docs
+    permissions:
+      contents: read
+      packages: read
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The install pulls @olivierzal packages from GitHub Packages,
+      # which requires auth even for read.
+      - uses: ./.github/actions/setup-node-and-install
+        with:
+          npm-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: npm run build
+      - run: npm run docs
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: docs
+    timeout-minutes: 15
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    if: ${{ !inputs.dry-run }}
+    name: Deploy docs
+    needs: build
+    permissions:
+      id-token: write
+      pages: write
+    runs-on: ubuntu-24.04
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
+    timeout-minutes: 10
+name: Reusable docs
+on:
+  workflow_call:
+    inputs:
+      # Build and pack without deploying — a rehearsal of the release
+      # path from a manual dispatch, the only run that can prove the
+      # build half before a release reaches the deploy half.
+      dry-run:
+        default: false
+        required: false
+        type: boolean
+permissions: {}

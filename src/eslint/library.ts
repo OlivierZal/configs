@@ -12,6 +12,7 @@ import unicorn from 'eslint-plugin-unicorn'
 
 import {
   type NamingConventionOptions,
+  type SharedMainRulesOptions,
   changelogBlock,
   configJsBlock,
   configTsBlock,
@@ -53,7 +54,7 @@ const libraryNaming = (
 
 const libraryMainRuleOptions = (
   wireNamingEntries: NonNullable<LibraryOptions['wireNamingEntries']>,
-): Parameters<typeof sharedMainRules>[0] => ({
+): SharedMainRulesOptions => ({
   extraneous: {
     devDependencies: ['*.config.{js,mjs,mts,ts}', 'tests/**'],
     includeTypes: true,
