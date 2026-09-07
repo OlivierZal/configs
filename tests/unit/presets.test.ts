@@ -394,6 +394,41 @@ describe.each([
   )
 })
 
+// The import rules resolve through `eslint-import-resolver-typescript`,
+// which no file names: `importXConfigs.typescript` sets
+// `settings['import-x/resolver']` to `{ typescript: true }` and import-x
+// loads the package from that name. A `.js` specifier standing for a
+// `.ts` neighbour — the `nodenext` form every consumer writes — is what
+// the node fallback cannot follow, so the resolving half fails without
+// the package (every import then reports a resolve error) and the
+// missing-module half proves the rule still reports through it. The
+// resolving half demands a fully clean run rather than the absence of
+// one rule: a parse failure or a misnamed path reports no rule either.
+describe.each([
+  { preset: appPreset, presetName: 'homeyApp' },
+  { preset: libraryPreset, presetName: 'library' },
+])('import resolution via $presetName', ({ preset }) => {
+  it(
+    'should resolve a js specifier to its ts neighbour',
+    { timeout: 60_000 },
+    async () => {
+      await expect(
+        lintFixture(preset, 'resolver', 'resolved.ts'),
+      ).resolves.toStrictEqual([])
+    },
+  )
+
+  it(
+    'should still report a module that exists under no extension',
+    { timeout: 60_000 },
+    async () => {
+      await expect(
+        lintFixture(preset, 'resolver', 'unresolved.ts'),
+      ).resolves.toContain('import-x/no-unresolved')
+    },
+  )
+})
+
 const namingRule = '@typescript-eslint/naming-convention'
 
 describe('strict naming core', () => {

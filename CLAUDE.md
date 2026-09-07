@@ -242,6 +242,30 @@ both channels — bump once, release once.
   reasons, expiry — existed natively, and one of them had already been
   used here.
 
+## Dependencies nothing imports
+
+- `eslint-import-resolver-typescript` is load-bearing although no file
+  names it: `importXConfigs.typescript`, which both presets extend,
+  sets `settings['import-x/resolver']` to `{ typescript: true }`, and
+  import-x loads the package from that name at lint time. Measured
+  2026-09-07 with the package hidden: every import rule reports
+  `Resolve error: typescript with invalid interface loaded as resolver`
+  (the name falls through to the `typescript` compiler package, which
+  is not a resolver) and every import goes unresolved. It stays in
+  `dependencies`, since the lookup happens in each consumer's lint run.
+  Pinned by a real run in `tests/unit/presets.test.ts`: a `.js`
+  specifier standing for a `.ts` neighbour — the `nodenext` form every
+  consumer writes — resolves, and a missing module still reports.
+- The opposite case is a line to delete, not to keep for safety:
+  `jsonc-eslint-parser` was declared here from the first commit while
+  nothing under `src/` named it and `eslint-plugin-package-json`
+  already carries it in its own `dependencies`. Removed 2026-09-07.
+  The question for a dependency with no importer is whether a tool
+  loads it by name from a setting the presets emit —
+  `eslint --print-config` on any `.ts` file shows those settings — and
+  the answer is measured by hiding the package, never inferred from a
+  grep.
+
 ## Reusable-workflow blind spot
 
 - A reusable workflow whose only proof is this repository is untested

@@ -26,6 +26,7 @@ updates:
       eslint:
         patterns:
           - '@eslint/*'
+          - '@html-eslint/*'
           - '@stylistic/*'
           - eslint
           - eslint-*
@@ -33,6 +34,7 @@ updates:
       minor-and-patch:
         exclude-patterns:
           - '@eslint/*'
+          - '@html-eslint/*'
           - '@stylistic/*'
           - '@vitest/*'
           - eslint
