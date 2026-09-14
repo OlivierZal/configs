@@ -357,6 +357,16 @@ const staticMainRules: NonNullable<Config['rules']> = {
       ignoreTypeIndexes: true,
     },
   ],
+  // 8.69: a conditional over a union that MAY hold a promise is as
+  // wrong as one that always does — `all` flags every such union.
+  '@typescript-eslint/no-misused-promises': [
+    'error',
+    {
+      checksConditionals: { flagUnions: 'all' },
+      checksSpreads: true,
+      checksVoidReturn: true,
+    },
+  ],
   '@typescript-eslint/no-shadow': [
     'error',
     // `allow` covers deliberate polyfill re-exports (Temporal, Intl).
