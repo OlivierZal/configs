@@ -229,9 +229,10 @@ longer turns it off with a reason that was false twice over.
   than the exemption it would retire. So
   the gate ACCEPTS such a pull request only after establishing that
   every commit on it is Dependabot's own. That clause is not
-  decorative: the family's dependabot-fix workflow pushes Claude's
-  fixes onto exactly these branches, and such a commit would otherwise
-  reach `main` having been read by no analysis at all.
+  decorative: a fix pushed onto such a branch by hand — or by the
+  dependabot-fix workflow 6.0.0 retired, whose success path was
+  exactly that push — would otherwise reach `main` having been read by
+  no analysis at all.
   - AUTHORSHIP is the whole check, and the file allowlist that used to
     accompany it is gone. Dependabot authors manifests, lockfiles and
     pinned references — never source — so its own commits cannot move a
@@ -536,8 +537,8 @@ and the two differ by exactly the fields GitHub Packages strips (see
 verified through the registry once published, never inferred from the
 pack — the pack proves the code, the packument proves the install. A release that CHANGES policy (a naming
 tightening, a new floor) is the opposite: every diff is a deliberate,
-per-repo-classified change — and the dependabot-fix guidance tells the
-fixer to stop and leave the PR red when a bump crosses such a release.
+per-repo-classified change — a Dependabot bump that crosses such a
+release is left red for a human to classify, never auto-fixed.
 
 ## The iOS floor watch
 
@@ -600,19 +601,22 @@ against a gh shim, both directions mutation-checked.
 
 This split is the DEFAULT for future agent workflows here. claude.yml
 (interactive) and claude-code-review post through the action's own
-comment channel, not agent-side `gh` writes. dependabot-fix does NOT
-yet meet the boundary: both of its writes — the push (step 4 of its
-prompt) and the out-of-scope fallback, "post one comment on the PR"
-(step 5) — are agent-side Bash on the App token the action mints, no
-`--allowedTools` names them, and no deterministic step verifies that
-either happened, so a denied write would go green exactly as the triage
-incident did. Never exercised so far: every family run that reached the
-action died at its actor gate ("Workflow initiated by non-human actor:
-dependabot … Add bot to allowed_bots", com.melcloud run 33241273956,
-2026-08-29), so the agent step has never run. Bringing it to the
-boundary is a sentinel verdict plus a deterministic post/verify step
-under `pull-requests: write` — a change to what callers grant, so a
-release. Audit against this boundary before adding a workflow that
+comment channel, not agent-side `gh` writes. The dependabot-fix
+workflow (a `workflow_run` reusable plus a stub in every repo, 403
+lines, and the `dangerous-triggers` zizmor ignore that existed only for
+it, in eight `.github/zizmor.yml`) was RETIRED in 6.0.0, on two
+measurements: 4,296 runs family-wide with zero successes — every run
+that reached the action died at its actor gate (`allowed_bots` never
+set), the rest skipped at the job `if` — and, decisively, a success
+path the family's own Sonar gate refuses by design: the prompt's step 4
+pushed the fix onto the Dependabot branch, and `check-sonar-gate.sh`
+fails a Dependabot branch carrying any commit that is not Dependabot's.
+Armed, it would have turned every PR it touched red. The 18 Dependabot CI
+failures of its lifetime were all fixed by hand, which is the path that
+stays: a red Dependabot bump is a human's to classify. Re-adding an
+agent that writes on a Dependabot branch means a separate pull request
+for the fix, a sentinel verdict and a deterministic post/verify step —
+audit against the boundary above before adding any workflow that
 relies on agent-side writes.
 
 ## Governance files

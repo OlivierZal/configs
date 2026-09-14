@@ -299,16 +299,13 @@ pointless.
 
 Available: `reusable-ci.yml` (check + caller-defined test matrix, caller
 picks the legs, the coverage leg and the library gates, plus the Sonar
-gate), `reusable-claude-dependabot-fix.yml` (caller keeps the
-`workflow_run` trigger and passes its verify commands),
-`reusable-publish.yml` and `reusable-docs.yml` (the libraries' release
+gate), `reusable-publish.yml` and `reusable-docs.yml` (the libraries' release
 path: the caller keeps the `release` trigger, and the `npm` and
 `github-pages` environments travel with the called jobs together with
 the `id-token: write` the attestation and the deployment need). The
 single-file workflows (`dependency-review`, `pr-title`, `zizmor`,
 `claude*`, `dependabot`) also accept `workflow_call` so callers can
-become stubs. `templates/zizmor-apps.yml` is the apps' zizmor config
-variant; this repo ships the libs' form.
+become stubs.
 
 ```yaml title=".github/workflows/publish.yml"
 jobs:

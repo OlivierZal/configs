@@ -31,9 +31,10 @@
 #
 # So the exemption is granted only once this script has established that
 # every commit on the branch is Dependabot's own. That is not a
-# theoretical precaution: the family's dependabot-fix workflow pushes
-# agent-authored fixes onto exactly these branches, and that is the hole
-# this clause closes. Dependabot itself authors manifests and pinned
+# theoretical precaution: a human — or, until 6.0.0 retired it, the
+# family's dependabot-fix workflow — pushing a fix onto one of these
+# branches is exactly the hole this clause closes, and the reason that
+# workflow could never have gone green. Dependabot itself authors manifests and pinned
 # references, never source, so its own commits cannot move a metric —
 # which is why their authorship is the whole check, and why the file
 # list that used to accompany it added nothing.
