@@ -383,6 +383,16 @@ longer turns it off with a reason that was false twice over.
 
 ## Commands
 
+- `reusable-homey-validate.yml` and `reusable-homey-publish.yml`
+  (6.0.0) are the apps' twins, derived from three byte-identical
+  validate.yml files and three publish.yml files that differed only by
+  their bundle list (now the `bundles` input, one path per line, read
+  through the environment). Validate is OUTSIDE the blind spot — it runs
+  on every app pull request and proves itself there — but its required
+  check renames from `Validate app` to `validate / Validate app`, so an
+  adoption ships first, reports on real PRs, then swaps the context in
+  the app's ruleset. Publish is release-only like `reusable-docs.yml`
+  and is proven by each app's next store release.
 - `npm run build` — purges `dist` before emitting, because `tsc` overwrites
   but never deletes: a module renamed or removed in `src` would otherwise
   survive in `dist`, and `files` ships that directory, so `prepare` would

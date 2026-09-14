@@ -299,7 +299,10 @@ pointless.
 
 Available: `reusable-ci.yml` (check + caller-defined test matrix, caller
 picks the legs, the coverage leg and the library gates, plus the Sonar
-gate), `reusable-publish.yml` and `reusable-docs.yml` (the libraries' release
+gate), `reusable-homey-validate.yml` and `reusable-homey-publish.yml`
+(the apps' path: the caller keeps its triggers, the `homey` environment
+travels with the publish job, and the caller passes its bundle list),
+`reusable-publish.yml` and `reusable-docs.yml` (the libraries' release
 path: the caller keeps the `release` trigger, and the `npm` and
 `github-pages` environments travel with the called jobs together with
 the `id-token: write` the attestation and the deployment need). The
