@@ -363,7 +363,9 @@ longer turns it off with a reason that was false twice over.
 - Since 6.1.0 the reusables reach `.github/actions/setup-node-and-install`
   through `$/`, GitHub's self-repository syntax (2026-07-30: a `uses:`
   starting with `$/` resolves in the repository that DEFINES the
-  workflow, at the commit that is running, no checkout needed), so a
+  workflow, at the commit that is running, no checkout needed; GitHub.com
+  only, runner 2.336.0 or newer — the hosted runners every caller uses
+  qualify, GitHub Enterprise Server does not), so a
   caller carries no copy of the action and the former blind spot — a
   caller that never copied it — is gone. `./` in a reusable resolved
   against the CALLER's checkout, which is why every repository carried

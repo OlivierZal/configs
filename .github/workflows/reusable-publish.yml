@@ -6,7 +6,7 @@
 # nothing read. The `npm` environment and the
 # `id-token: write` the attestation needs travel with the job; the
 # caller grants them and nothing more. This repo's own publish.yml calls
-# it through `./`, so the path runs here on every release of this
+# it through `$/`, so the path runs here on every release of this
 # package — the one release-only reusable a run from this repo can
 # exercise (CLAUDE.md, the reusable-workflow blind spot).
 concurrency:

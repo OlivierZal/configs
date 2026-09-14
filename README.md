@@ -354,7 +354,9 @@ Both called workflows, like `reusable-ci.yml`, reach THIS repository's
 `.github/actions/setup-node-and-install` through GitHub's
 self-repository syntax (`$/`, resolved in the repository that defines
 the workflow at the commit that is running), so a caller carries no
-copy of the action. `dry-run` is the rehearsal a release-only path can get:
+copy of the action. The syntax is GitHub.com-only and needs runner
+2.336.0 or newer; GitHub's hosted runners qualify, GitHub Enterprise
+Server does not. `dry-run` is the rehearsal a release-only path can get:
 dispatch it by hand once adopted and watch the build half succeed on
 the reusable before a release reaches the deploy half. This repository
 runs `reusable-publish.yml` itself on every release (its own

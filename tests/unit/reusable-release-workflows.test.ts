@@ -109,8 +109,8 @@ describe('reusable-publish.yml', () => {
   })
 
   // The dogfooding half: the one release-only reusable a run from this
-  // repo can exercise is exercised, through the same local reference
-  // ci.yml uses for the reusable CI.
+  // repo can exercise is exercised, through the same `$/` self-repository
+  // reference ci.yml uses for the reusable CI.
   it('should be what this repo publishes through', () => {
     const publish = jobOf('publish.yml', 'publish')
 
