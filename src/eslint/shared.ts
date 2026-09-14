@@ -43,6 +43,87 @@ export const linterOptionsBlock: Config = {
   },
 }
 
+// unicorn 74 ships `expiring-todo-comments` hollow: `checkDates` and
+// `allowWarningComments` default to false/true, so a dated warning
+// comment never expired and an undated one was never a report. Stated
+// wherever the rule runs (the main table, Markdown, HTML, CSS — a
+// severity-only entry falls back to the plugin defaults), so every
+// warning term names its expiry. Measured 2026-09-15: zero such
+// comments across the eight repos, so the guard is latent. ESLint
+// 10.10 + unicorn 74 report a term anywhere in a comment (the doc tag
+// of that name included), word-bounded — this very comment names none;
+// `ignore` is the escape hatch should placeholder prose ever need one.
+// `checkDatesOnPullRequests` stays at its default (false): an expiry is
+// a clock event outside the pull request — the dependency-review split
+// by TIME — and lands on `main`'s push run instead.
+export const expiringTodoComments: Linter.RuleEntry = [
+  'error',
+  { allowWarningComments: false, checkDates: true },
+]
+
+// The `confusing-browser-globals` set, inlined: the package is
+// unmaintained and would fail the plugin-triage maintenance gate.
+const confusingBrowserGlobals: readonly string[] = [
+  'addEventListener',
+  'blur',
+  'close',
+  'closed',
+  'confirm',
+  'defaultStatus',
+  'defaultstatus',
+  'event',
+  'external',
+  'find',
+  'focus',
+  'frameElement',
+  'frames',
+  'history',
+  'innerHeight',
+  'innerWidth',
+  'length',
+  'location',
+  'locationbar',
+  'menubar',
+  'moveBy',
+  'moveTo',
+  'name',
+  'onblur',
+  'onerror',
+  'onfocus',
+  'onload',
+  'onresize',
+  'onunload',
+  'open',
+  'opener',
+  'opera',
+  'outerHeight',
+  'outerWidth',
+  'pageXOffset',
+  'pageYOffset',
+  'parent',
+  'print',
+  'removeEventListener',
+  'resizeBy',
+  'resizeTo',
+  'screen',
+  'screenLeft',
+  'screenTop',
+  'screenX',
+  'screenY',
+  'scroll',
+  'scrollbars',
+  'scrollBy',
+  'scrollTo',
+  'scrollX',
+  'scrollY',
+  'self',
+  'status',
+  'statusbar',
+  'stop',
+  'toolbar',
+  'top',
+]
+
 const jsdocRules: NonNullable<Config['rules']> = {
   // The fixer reorders `@param` blocks into signature order and drops
   // duplicates — the same handover as `sort-tags` and perfectionist:
@@ -60,18 +141,66 @@ const jsdocRules: NonNullable<Config['rules']> = {
   // wrote. Both keep reporting, and the plugin offers its suggestions in
   // the editor regardless of these options, which is where a judgment
   // call belongs.
+  // `never`: no column-aligned tag blocks, and a wrapped description
+  // continues unindented — the house layout measured (2026-09-15).
+  // Doc-comment layout is the plugin's because Prettier never enters a
+  // comment. Whitespace fixer, determinate.
+  'jsdoc/check-line-alignment': ['error', 'never'],
   'jsdoc/check-param-names': ['error', { enableFixer: true }],
   'jsdoc/check-template-names': 'error',
   'jsdoc/informative-docs': 'error',
-  'jsdoc/no-bad-blocks': 'error',
+  // Pins the FORM of every block the way `informative-docs` pins its
+  // content: a description starts with a capital, a backtick, a digit
+  // or a `{@link …}` reference (the one opener the default pattern
+  // refuses, hence the custom regex) and ends in `.`, `?`, `!` or a
+  // backtick. `contexts: ['any']` reaches type, interface, enum and
+  // member blocks, not only the three function kinds. `throws` stays
+  // out: the family writes `@throws {@link X} when …`, a tag form of
+  // its own. Measured 0 across the eight repos (2026-09-15).
+  'jsdoc/match-description': [
+    'error',
+    {
+      contexts: ['any'],
+      matchDescription: String.raw`^\n?(?:(?:[A-Z\x60\d_]|\{@)[\s\S]*[.?!\x60]\s*)?$`,
+      tags: { param: true, returns: true, template: true, yields: true },
+    },
+  ],
+  // The default reports a `/***` block only when it carries tags; the
+  // option reports every one, so a mistyped opener cannot silently
+  // drop a surface out of the docs. Fixable.
+  'jsdoc/no-bad-blocks': ['error', { preventAllMultiAsteriskBlocks: true }],
   'jsdoc/no-blank-block-descriptions': 'error',
   'jsdoc/no-blank-blocks': 'error',
+  // Optionality lives in the signature (`name?:` under
+  // exactOptionalPropertyTypes); a `@param [name]` restates it and
+  // drifts — the duplication `no-types` refuses for types. Fixable.
+  'jsdoc/no-defaults': ['error', { noOptionalParamNames: true }],
   'jsdoc/normalize-see-links': 'error',
   'jsdoc/prefer-import-tag': 'error',
-  'jsdoc/require-description': 'error',
-  'jsdoc/require-hyphen-before-param-description': ['error', 'always'],
+  // The house style keeps the `*` line prefix (the reason
+  // `unicorn/no-asterisk-prefix-in-documentation-comments` is off);
+  // until 2026-09-15 nothing checked it. Fixable; adoption cost 39
+  // lines in homey-kit, 0 elsewhere.
+  'jsdoc/require-asterisk-prefix': ['error', 'always'],
+  // Every documented surface carries prose: the default contexts are
+  // the three function kinds, so a tags-only block on a class, a type
+  // or a member passed. Measured 0 across the family.
+  'jsdoc/require-description': ['error', { contexts: ['any'] }],
+  // `@template T - desc` uniformly (37/37 measured); `property` is
+  // forbidden outright by `check-tag-names`, so it is not listed.
+  'jsdoc/require-hyphen-before-param-description': [
+    'error',
+    'always',
+    { tags: { template: 'always' } },
+  ],
+  // Adopted over an absent domain like every other
+  // `require-*-description`: no `@next` tag exists in the family, and
+  // the day one does it carries prose.
+  'jsdoc/require-next-description': 'error',
   'jsdoc/require-rejects': 'error',
-  'jsdoc/require-template': 'error',
+  // One `@template` per type parameter, so `require-template-description`
+  // cannot be satisfied by one description shared across two.
+  'jsdoc/require-template': ['error', { requireSeparateTemplates: true }],
   'jsdoc/require-template-description': 'error',
   'jsdoc/require-throws': 'error',
   'jsdoc/require-throws-description': 'error',
@@ -296,6 +425,19 @@ export interface SharedMainRulesOptions {
 // share verbatim — a table, split from the option-driven entries the
 // factory below merges in.
 const staticMainRules: NonNullable<Config['rules']> = {
+  // Refused with the measured reasons rather than the config-prettier
+  // reflex: the `code` axis conflicts with Prettier's own output (nine
+  // declarations in melcloud-api and seven in com.melcloud the printer
+  // cannot break below 80), and the `comments` axis — the one Prettier
+  // leaves alone — would cost 195 hand-wrapped prose lines family-wide
+  // behind a `code` sentinel the rule needs, having no comments-only
+  // mode. House comments wrap at print width by convention; measured
+  // 2026-09-15 the convention is not held, and a rule that cannot fix
+  // what it reports is not what would hold it.
+  '@stylistic/max-len': 'off',
+  // `checkJSDoc` stays at its default (false): it would rewrite `/** */`
+  // blocks into line comments, which the jsdoc plugin and typedoc
+  // cannot read.
   '@stylistic/multiline-comment-style': [
     'error',
     'separate-lines',
@@ -422,7 +564,16 @@ const staticMainRules: NonNullable<Config['rules']> = {
       requireDefaultForNonUnion: true,
     },
   ],
-  'accessor-pairs': 'error',
+  // Every legitimate need is expressed in tsconfig (`types`, `lib`); a
+  // directive is an import channel none of the import machinery sees.
+  '@typescript-eslint/triple-slash-reference': [
+    'error',
+    { lib: 'never', types: 'never' },
+  ],
+  // `enforceForTSTypes`: the set-without-get check reaches interfaces
+  // and type literals too. `getWithoutSet` stays off — a read-only
+  // getter is a deliberate shape.
+  'accessor-pairs': ['error', { enforceForTSTypes: true }],
   'array-callback-return': ['error', { checkForEach: true }],
   'arrow-body-style': 'error',
   // Measured codebase ceiling.
@@ -432,7 +583,28 @@ const staticMainRules: NonNullable<Config['rules']> = {
   curly: 'error',
   'default-case-last': 'error',
   eqeqeq: 'error',
+  // A named function expression whose name differs from its binding is
+  // a misleading name the naming convention cannot see; the domain is
+  // the generator and decorator expressions the arrow style cannot
+  // absorb.
+  'func-name-matching': [
+    'error',
+    'always',
+    { considerPropertyDescriptor: true },
+  ],
+  // `as-needed`: a name only where ES2015 inference gives none, so no
+  // function expression reaches a stack trace anonymous.
+  'func-names': ['error', 'as-needed'],
   'func-style': 'error',
+  // Completes `accessor-pairs`: a pair sits together, getter first, in
+  // classes, object literals and (`enforceForTSTypes`) interfaces.
+  // `perfectionist/sort-classes` keeps a pair adjacent and is stable
+  // between its two members, so the two rules never fight.
+  'grouped-accessor-pairs': [
+    'error',
+    'getBeforeSet',
+    { enforceForTSTypes: true },
+  ],
   'guard-for-in': 'error',
   'id-length': 'error',
   'import-x/first': 'error',
@@ -479,12 +651,39 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // Measured codebase ceiling.
   'max-depth': ['error', { max: 3 }],
   'max-lines-per-function': 'error',
+  // Measured codebase ceiling (melcloud-api reaches exactly 3 twice),
+  // Promise executors counted: `max-depth` caps blocks, this caps the
+  // callback pyramid. Off in the test block, where `describe` > `it` >
+  // callback > factory nests structurally.
+  'max-nested-callbacks': [
+    'error',
+    { checkConstructorCallCallbacks: true, max: 3 },
+  ],
   'max-statements': 'error',
+  // Shared rather than app-only: homey-kit's webview sources compile
+  // under `lib: DOM` in a library-preset repo, and the other libraries
+  // pay nothing (TS2304 there). A blocking native dialog is the wrong
+  // surface in a Homey webview; the platform's dialogs are.
+  'no-alert': 'error',
   'no-await-in-loop': 'error',
   'no-bitwise': 'error',
+  // `arguments.callee`/`.caller` throw under ESM strict mode and
+  // TypeScript declares them; `prefer-rest-params` skips non-computed
+  // members of `arguments`, so the defect was unowned.
+  'no-caller': 'error',
   'no-cond-assign': ['error', 'always'],
   'no-console': 'error',
+  // Through `js.configs.recommended` at its default; the option also
+  // reports a relational comparison of two literals.
+  'no-constant-binary-expression': [
+    'error',
+    { checkRelationalComparisons: true },
+  ],
   'no-constructor-return': 'error',
+  // Dead structure after a `return`; `allowElseIf: false` keeps chains
+  // from hiding the same shape. Composes with `unicorn/prefer-ternary`
+  // (both accept the ternary form). Fixable, one correction.
+  'no-else-return': ['error', { allowElseIf: false }],
   'no-eval': 'error',
   'no-extend-native': 'error',
   'no-extra-bind': 'error',
@@ -496,28 +695,63 @@ const staticMainRules: NonNullable<Config['rules']> = {
   'no-labels': 'error',
   'no-lone-blocks': 'error',
   'no-lonely-if': 'error',
+  // The core rule, since typescript-eslint 8.64 deprecated its twin: a
+  // closure created in a loop over a binding the loop keeps mutating.
+  'no-loop-func': 'error',
   'no-multi-assign': 'error',
   'no-multi-str': 'error',
+  // Lost verdict re-adopted: unicorn's recommended set turns the core
+  // rule off for its twin, and eslint-config-prettier then turns the
+  // twin off (it demands parentheses) — measured, both at `off`, nested
+  // ternaries unpoliced. The core rule has no formatting content.
+  'no-nested-ternary': 'error',
   'no-new': 'error',
   'no-new-func': 'error',
   'no-object-constructor': 'error',
   'no-param-reassign': 'error',
   'no-promise-executor-return': 'error',
+  // Under `lib: DOM` every `window` property is a bare global
+  // TypeScript accepts, so a forgotten local reads `name`, `status`,
+  // `length`, `event`, `parent`, `top`… with a plausible type. The
+  // explicit `globalThis.x` form `unicorn/prefer-global-this` writes
+  // passes. Shared for homey-kit's webview sources; the other libraries
+  // pay nothing (TS2304).
+  'no-restricted-globals': ['error', ...confusingBrowserGlobals],
   'no-return-assign': ['error', 'always'],
+  // A `javascript:` URL is string-evaluated code in the webview pages;
+  // the literal complement of `unicorn/no-unsafe-dom-html`. Shared for
+  // the same reason as `no-alert`.
+  'no-script-url': 'error',
   'no-self-compare': 'error',
   'no-sequences': ['error', { allowInParentheses: false }],
   'no-template-curly-in-string': 'error',
-  'no-unmodified-loop-condition': 'error',
+  // `checkConditionalExpressions`: each operand of a `?:` inside a loop
+  // condition is checked on its own, not the ternary as one group.
+  'no-unmodified-loop-condition': [
+    'error',
+    { checkConditionalExpressions: true },
+  ],
   'no-unneeded-ternary': 'error',
   'no-unreachable-loop': 'error',
   // Owned by `@typescript-eslint/no-unused-private-class-members`.
   'no-unused-private-class-members': 'off',
+  // `fn.call(undefined, a)` is a plain call written the long way;
+  // `prefer-spread` and `unicorn/prefer-reflect-apply` own the `apply`
+  // half only.
+  'no-useless-call': 'error',
   'no-useless-computed-key': 'error',
+  // `prefer-template` reports concatenation only with a non-literal
+  // operand; two literals on one line are its residue.
+  'no-useless-concat': 'error',
   'no-useless-rename': 'error',
   'no-useless-return': 'error',
   'no-void': 'error',
   'object-shorthand': 'error',
   'one-var': ['error', 'never'],
+  // The arithmetic twin of `unicorn/logical-assignment-operators`
+  // (`always`): `x = x + y` → `x += y`. Fixable, one correction; the
+  // rule skips targets with side effects.
+  'operator-assignment': ['error', 'always'],
   'perfectionist/sort-array-includes': 'error',
   'perfectionist/sort-enums': 'error',
   'perfectionist/sort-export-attributes': 'error',
@@ -601,7 +835,20 @@ const staticMainRules: NonNullable<Config['rules']> = {
   'perfectionist/sort-sets': 'error',
   'perfectionist/sort-switch-case': 'error',
   'perfectionist/sort-union-types': ['error', typeSortOptions],
-  'prefer-arrow-callback': 'error',
+  // Owned by `one-var: 'never'`: every multi-declarator statement is
+  // split before order matters, and the split keeps evaluation order
+  // where this rule's fixer would reorder side-effecting initialisers.
+  // Its one unowned residue, a multi-declarator `for (;;)` initialiser,
+  // is absent across the eight repos (2026-09-15).
+  'perfectionist/sort-variable-declarations': 'off',
+  // `allowUnboundThis: false`: a `function` callback is reported even
+  // when it mentions `this` — the stance `func-style`,
+  // `unicorn/consistent-function-style` and `prefer-short-arrow-method`
+  // already take. A callback that needs a dynamic `this` is a hoisted
+  // `this`-typed function passed by reference; none exists
+  // (2026-09-15). The fixer converts only the semantics-preserving
+  // cases.
+  'prefer-arrow-callback': ['error', { allowUnboundThis: false }],
   'prefer-exponentiation-operator': 'error',
   'prefer-named-capture-group': 'error',
   'prefer-numeric-literals': 'error',
@@ -609,6 +856,13 @@ const staticMainRules: NonNullable<Config['rules']> = {
   'prefer-object-spread': 'error',
   'prefer-regex-literals': ['error', { disallowRedundantWrapping: true }],
   'prefer-template': 'error',
+  // The parameter-less `catch { throw new X() }` is the one remaining
+  // way to sever an error chain silently. Suggestion only; the error
+  // classes with a `cause` slot are each repo's vocabulary.
+  'preserve-caught-error': ['error', { requireCatchParameter: true }],
+  // `always`: the explicit radix on every `parseInt`, `Number.parseInt`
+  // included.
+  radix: ['error', 'always'],
   'require-atomic-updates': 'error',
   'require-unicode-regexp': ['error', { requireFlag: 'v' }],
   'symbol-description': 'error',
@@ -623,6 +877,7 @@ const staticMainRules: NonNullable<Config['rules']> = {
   'unicorn/consistent-destructuring': 'error',
   'unicorn/consistent-function-style': ['error', { default: 'arrow-function' }],
   'unicorn/custom-error-definition': 'error',
+  'unicorn/expiring-todo-comments': expiringTodoComments,
   // Owned by `@typescript-eslint/naming-convention`.
   'unicorn/id-match': 'off',
   'unicorn/iteration-fallback-style': 'error',
@@ -820,7 +1075,7 @@ export const markdownBlock: Config[] = defineConfig([
       'markdown/no-missing-link-fragments': ['error', { ignoreCase: false }],
       'markdown/no-space-in-emphasis': ['error', { checkStrikethrough: true }],
       'markdown/table-column-count': ['error', { checkMissingCells: true }],
-      'unicorn/expiring-todo-comments': 'error',
+      'unicorn/expiring-todo-comments': expiringTodoComments,
       'unicorn/no-empty-file': 'error',
       'unicorn/no-missing-local-resource': 'error',
     },
@@ -841,8 +1096,10 @@ const sharedTestRules: NonNullable<Config['rules']> = {
   // Owned by `vitest/unbound-method`, the mock-aware port.
   '@typescript-eslint/unbound-method': 'off',
   // Suites are one `describe` per function — length caps target
-  // production code, not test tables.
+  // production code, not test tables — and `describe` > `it` > callback
+  // > mock factory nests four to six deep by construction.
   'max-lines-per-function': 'off',
+  'max-nested-callbacks': 'off',
   'max-statements': 'off',
   // Mock builders nest factories.
   'unicorn/max-nested-calls': ['error', { max: 4 }],
@@ -907,6 +1164,14 @@ const sharedTestRules: NonNullable<Config['rules']> = {
   'vitest/require-to-throw-message': 'error',
   'vitest/require-top-level-describe': 'error',
   'vitest/unbound-method': 'error',
+  // `alwaysAwait`: a block-bodied `return expect(…).resolves` in a hook,
+  // a `describe` body or a helper — where `no-test-return-statement`
+  // (test bodies only) does not look — is reported; an expression-bodied
+  // arrow stays accepted. The fixer is right for one site per file and
+  // wrong for two or more non-async callbacks in one file (the second
+  // gets `await` inside a non-async function), so a multi-site `--fix`
+  // is read before it lands.
+  'vitest/valid-expect': ['error', { alwaysAwait: true }],
   'vitest/warn-todo': 'error',
 }
 
@@ -941,6 +1206,16 @@ export const yamlBlock = (stepKeyOrder: readonly string[]): Config[] =>
             snake_case: true,
           },
         ],
+        // Mirrors the core `no-irregular-whitespace` verdict
+        // (`skipStrings: false`): an NBSP inside a quoted `run:` or
+        // `name:` scalar is reported too.
+        'yml/no-irregular-whitespace': ['error', { skipQuotedScalars: false }],
+        // Deliberate override of `ymlConfigs.prettier`: Prettier
+        // preserves float spelling (`1.50` survives a pass, probed
+        // 2026-09-15), so nothing owns this. The fixer retags `x.0` as
+        // the integer `x`, which the workflow and Dependabot scalars the
+        // family writes never carry (versions are quoted).
+        'yml/no-trailing-zeros': 'error',
         'yml/require-string-key': 'error',
         'yml/sort-keys': [
           'error',
@@ -981,10 +1256,29 @@ export const packageJsonBlock = (
         // rolling spec should be the default from the first commit
         // rather than a later cleanup. Drop it if the family commits to
         // staying multi-repo for good.
+        // Guards the runtime pins — api-core, homey-kit, melcloud-api,
+        // heatzy-api under `dependencies` — against a committed `file:`,
+        // `link:` or relative pack rehearsal, the shape the 2026-09-07
+        // dry adoptions took. It reads `dependencies` only: the
+        // `@olivierzal/configs` rehearsal lands in `devDependencies`,
+        // where `check-pins.sh` is the guard. A runtime `file:` pin
+        // lints red on this rule until the re-pin — that red is the
+        // point.
+        'package-json/no-local-dependencies': 'error',
         'package-json/prefer-rolling-workspace-spec': 'error',
         'package-json/require-author': 'error',
         'package-json/require-bugs': 'error',
         'package-json/require-engines': 'error',
+        // The exact-pin doctrine, mechanised for the family packages:
+        // `check-pins.sh` polices the two two-channel packages, this
+        // rule reaches the three single-channel ones (api-core,
+        // melcloud-api, heatzy-api) too. Third-party ranges are caret by
+        // habit, not by verdict, so they stay out; `npm:` aliases and
+        // `file:` specs are not semver ranges and pass.
+        'package-json/restrict-dependency-ranges': [
+          'error',
+          { forPackages: ['^@olivierzal/'], rangeType: 'pin' },
+        ],
         ...familyRules,
       },
     },

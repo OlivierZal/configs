@@ -18,6 +18,7 @@ import {
   type TemplateExpressionAllowEntry,
   configJsBlock,
   configTsBlock,
+  expiringTodoComments,
   jsdocBlock,
   jsonBlock,
   linterOptionsBlock,
@@ -196,8 +197,11 @@ const htmlBlock: Config[] = defineConfig([
       // CONFLICTING: Prettier indents HTML by two spaces where the
       // rule expects four, so every nested line fails.
       'html/indent': 'off',
-      // REDUNDANT
-      'html/lowercase': 'off',
+      // Kept: Prettier lowercases only the element and attribute names
+      // it knows — its own output keeps `onClick`, `DATA-FOO`,
+      // `<MY-ELEMENT>` — so it neither guarantees nor contradicts this;
+      // SVG camelCase attributes are exempt. One determinate fix.
+      'html/lowercase': 'error',
       'html/max-element-depth': 'error',
       'html/no-abstract-roles': 'error',
       'html/no-accesskey-attrs': 'error',
@@ -222,6 +226,43 @@ const htmlBlock: Config[] = defineConfig([
       'html/no-non-scalable-viewport': 'error',
       'html/no-positive-tabindex': 'error',
       'html/no-redundant-role': 'error',
+      // Pins an incident every page documents in its boot comment: a
+      // static `<script type="module">` stalls a cold webview boot and
+      // blocks `onHomeyReady` (proven on-device on com.melcloud), so
+      // bundles ship as classic `defer` scripts. Case-insensitive and
+      // whitespace-tolerant, as the HTML spec matches script types.
+      'html/no-restricted-attr-values': [
+        'error',
+        {
+          attrPatterns: ['^type$'],
+          attrValuePatterns: [String.raw`^\s*[Mm][Oo][Dd][Uu][Ll][Ee]\s*$`],
+          message:
+            'Module scripts stall a cold webview boot: ship bundles as classic defer scripts.',
+        },
+      ],
+      // Inline handlers are JavaScript outside the TypeScript bundle,
+      // the webview floor and the DOM rules; case-insensitive because
+      // browsers read attribute names that way.
+      'html/no-restricted-attrs': [
+        'error',
+        {
+          attrPatterns: ['^[Oo][Nn][A-Za-z]+$'],
+          message:
+            'Inline event handlers bypass the TypeScript bundle: wire listeners from the .mts sources.',
+          tagPatterns: ['.*'],
+        },
+      ],
+      // CSS inside `<style>` reaches none of the `css/` table (Baseline
+      // floor, logical properties, relative units): the element form of
+      // what `no-inline-styles` closes for the attribute.
+      'html/no-restricted-tags': [
+        'error',
+        {
+          message:
+            'CSS lives in .css files, where the css/ table (Baseline floor, logical properties, relative units) sees it.',
+          tagPatterns: ['^style$'],
+        },
+      ],
       'html/no-script-style-type': 'error',
       'html/no-skip-heading-levels': 'error',
       'html/no-target-blank': 'error',
@@ -231,6 +272,22 @@ const htmlBlock: Config[] = defineConfig([
       'html/prefer-https': 'error',
       // REDUNDANT
       'html/quotes': 'off',
+      // The positive half of the boot verdict above: every external
+      // script (8 across the five pages) is a classic `defer` script,
+      // so the head never blocks the webview boot; the `conditions`
+      // clause leaves the inline boot script alone. No `value` — that
+      // is what arms the fixer, which would write `defer=""` out of
+      // `sort-attrs` order.
+      'html/require-attrs': [
+        'error',
+        {
+          attr: 'defer',
+          conditions: [{ attr: 'src', kind: 'present' }],
+          message:
+            'External scripts load as classic defer scripts so the head never blocks the webview boot.',
+          tag: 'script',
+        },
+      ],
       'html/require-button-type': 'error',
       // CONFLICTING: Prettier self-closes void elements (`<img … />`),
       // which is exactly what this rule reports. Its name suggests
@@ -245,13 +302,28 @@ const htmlBlock: Config[] = defineConfig([
       'html/require-frame-title': 'error',
       'html/require-input-label': 'error',
       'html/require-meta-charset': 'error',
+      // SEO, both: a Homey settings page or widget renders inside the
+      // Homey app and no crawler reads it. The `<meta name="description">`
+      // tags the apps carry are cargo (2024-09, no recorded reason), free
+      // to leave.
+      'html/require-meta-description': 'off',
       'html/require-meta-viewport': 'error',
+      'html/require-open-graph-protocol': 'off',
       // Kept: attribute ORDER reads like formatting, but Prettier
       // preserves the order it is given — no formatter enforces this, so
       // dropping it would drop the convention itself.
       'html/sort-attrs': 'error',
       'html/svg-require-viewbox': 'error',
-      'unicorn/expiring-todo-comments': 'error',
+      // Bound to the same iOS 16.4 floor as `css/use-baseline` below,
+      // through the same Baseline year; the default (`widely`) is a
+      // rolling 30-month window already a year past the floor. Unlike
+      // the CSS rule this one has no allow-list, so a feature WebKit had
+      // before the floor that Baseline dates later (`inert`: Safari
+      // 15.5, dated 2023 by Firefox 112) re-enters by an
+      // `eslint-disable-next-line html/use-baseline` naming the Safari
+      // release, or by a per-app overlay — never by moving the year.
+      'html/use-baseline': ['error', { available: 2022 }],
+      'unicorn/expiring-todo-comments': expiringTodoComments,
       'unicorn/no-empty-file': 'error',
       'unicorn/no-invalid-file-input-accept': 'error',
       // The referenced module bundles are gitignored build outputs (CI
@@ -275,7 +347,26 @@ const cssBlock: Config[] = defineConfig([
       'css/no-invalid-properties': ['error', { allowUnknownVariables: true }],
       'css/prefer-logical-properties': 'error',
       'css/relative-font-units': 'error',
-      'css/selector-complexity': 'error',
+      // Measured family ceiling (com.melcloud's settings/index.css, the
+      // widest corpus, 2026-09-15; the two other apps sit inside it),
+      // one step of headroom on pseudo-classes for the
+      // `:hover:focus-visible` idiom; rises only by a recorded verdict,
+      // like `complexity`. Without limits the entry was inert (every
+      // maximum defaults to Infinity). `maxUniversals: 0` is a measured
+      // absence, not a performance verdict — the `*, *::before` reset
+      // would raise it by verdict.
+      'css/selector-complexity': [
+        'error',
+        {
+          maxAttributes: 2,
+          maxClasses: 3,
+          maxCombinators: 2,
+          maxIds: 1,
+          maxPseudoClasses: 2,
+          maxTypes: 2,
+          maxUniversals: 0,
+        },
+      ],
       // Bound to the engine `webviewFloorBlock` derives from — the iOS
       // 16.4 WebKit, never a Chromium — through the one knob the rule
       // has, a Baseline year: a feature passes once every core browser
@@ -306,7 +397,7 @@ const cssBlock: Config[] = defineConfig([
           available: 2022,
         },
       ],
-      'unicorn/expiring-todo-comments': 'error',
+      'unicorn/expiring-todo-comments': expiringTodoComments,
       'unicorn/no-empty-file': 'error',
       'unicorn/no-missing-local-resource': 'error',
       'unicorn/no-shorthand-property-overrides': 'error',
