@@ -383,44 +383,14 @@ longer turns it off with a reason that was false twice over.
 
 ## Commands
 
-- `reusable-homey-validate.yml` and `reusable-homey-publish.yml`
-  (6.0.0) are the apps' twins, derived from three byte-identical
-  validate.yml files and three publish.yml files that differed only by
-  their bundle list (now the `bundles` input, one path per line, read
-  through the environment). Validate is OUTSIDE the blind spot — it runs
-  on every app pull request and proves itself there — but its required
-  check renames from `Validate app` to `validate / Validate app`, so an
-  adoption ships first, reports on real PRs, then swaps the context in
-  the app's ruleset. Publish is release-only like `reusable-docs.yml`
-  and is proven by each app's next store release.
-- `npm run build` — purges `dist` before emitting, because `tsc` overwrites
-  but never deletes: a module renamed or removed in `src` would otherwise
-  survive in `dist`, and `files` ships that directory, so `prepare` would
-  pack the fossil. The purge is inline rather than a `prebuild` hook so it
-  cannot be skipped with `--ignore-scripts`.
-- `npm run format` / `format:fix` — prettier (self-hosted config).
-- `npm run lint` / `lint:fix` — eslint, self-hosted on this package's
-  own `library` preset (dogfooding). The overlay documents this repo's
-  two structural verdicts: peer-tool imports (a config package imports
-  eslint/prettier as peers by design) and prettier's default-export
-  protocol for `src/prettier`.
-- `npm run typecheck` — the native TypeScript 7 compiler, strict +
-  isolatedDeclarations. It and `build` reach it by path
-  (`node ./node_modules/@typescript/native/bin/tsc`) rather than through
-  the `tsc` shim, and keep doing so. Measured 2026-09-06 (typescript
-  7.0.2 / @typescript/typescript6 6.0.2, lockfile and installed tree
-  agreeing): `.bin/tsc` IS the native compiler, and `tsc6` is the only
-  shim the compat package installs — that package is here for
-  typescript-eslint and typedoc to import, never to compile with. The
-  explicit path names the package the scripts mean, so a layout change
-  (the alias moving, a package claiming the `tsc` name) fails loudly
-  instead of swapping the compiler; a bare `tsc` compiles with whichever
-  package owns the shim that day.
-- `npm test` / `test:coverage` — vitest: structural preset assertions,
-  a REAL floor lint run (mutation: iterator helpers and the `v` flag
-  must be flagged by `homey-app`, absent from `library`), a real CSS
-  floor run, a real typedoc run, tsconfig-base pins.
-- `npm run lint:package` — build + publint --strict.
+- The apps' twins — `reusable-homey-validate.yml`,
+  `reusable-homey-publish.yml` — were derived here (2026-09-14) and
+  moved to homey-kit 6.1.0 before this package's 6.0.0 shipped them,
+  with `ios-floor-watch.yml`: Homey process belongs with the Homey
+  package, and a change to it then costs three adoptions, not seven.
+  What this package keeps is the rule that makes the move safe:
+  `check-pins.sh` polices `OlivierZal/homey-kit` as a two-channel
+  package exactly like itself.
 
 ## Adopting a fixer
 
@@ -571,32 +541,13 @@ release is left red for a human to classify, never auto-fixed.
 
 ## The iOS floor watch
 
-`ios-floor-watch.yml` re-reads, monthly and on dispatch, the fact the
-`homey-app` preset derives its webview floor from: the Homey mobile
-app's App Store iOS minimum (iTunes Lookup API, track id 1435800024 —
-JSON, no scraping). The recorded value lives in the workflow beside the
-docstring's (16.4, read 2026-08-11) and the two move only together. Any
-other answer opens ONE issue naming the verdict — below 17 the
-derivation only needs restating, at 17 the `v` ban stops being
-derivable, at 17.4 the whole es2023 floor does — and an empty or
-unreadable answer fails the run: an unread floor must not read as a
-holding one. Re-deriving is a doctrine change (a policy-crossing
-release per the adoption doctrine), never a mechanical bump.
-
-The CSS gate (`css/use-baseline`, same file) is bound to the same fact
-since 5.0.0, through the one knob the rule has — a Baseline year — plus
-an exact-name allowlist. 2022 is the last year whose every entry sits
-inside the 16.4 WebKit (Safari 16.2 at the latest); 2023 admits what
-Safari 16.5 brought (`&`-nesting — the one nesting form the rule detects — and `:user-valid`), and the `newly` it
-replaced admitted Safari 17.5's `text-wrap`. Baseline dates a feature by
-the LAST core browser to ship it, so the year alone also rejects CSS
-WebKit had before the floor: measured over the three apps' stylesheets
-(2026-09-07), seven declarations in com.melcloud — `color-mix()`
-(Safari 16.2), `mask-image` (15.4), `outline` (dated by 16.4 itself for
-following `border-radius`). Those re-enter by exact name with the
-Safari release MDN's compat data records, and only at 16.4 or below;
-the list grows the same way. The watch's restate list names the gate,
-so year and list re-derive with the minimum.
+Lives in homey-kit since 6.1.0 (`ios-floor-watch.yml`, monthly and on
+dispatch; its issue lands where the webview-floor doctrine is). The
+`homey-app` preset's `webviewFloorBlock` and `css/use-baseline` year
+derive from the value that workflow records (16.4, read 2026-08-11), so
+a move it reports is re-derived HERE, in the preset, and the two
+restatements — the preset's docstring and the workflow's recorded value
+— move together across the two repositories.
 
 ## Agent workflows — reads in the agent, writes in deterministic steps
 

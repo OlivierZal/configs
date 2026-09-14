@@ -10,9 +10,10 @@
 # other claim: declaring it on a commit some tag does reach fails, so
 # it states a fact rather than opting out of one.
 #
-# References to this package's own repo carry a second obligation: the
-# tag must match the `@olivierzal/configs` npm pin, because one version
-# covers both delivery channels.
+# References to a two-channel package — this one and homey-kit, each
+# published as an npm package AND as reusable workflows — carry a
+# second obligation: the tag must match the package's npm pin, because
+# one version covers both delivery channels.
 #
 # Usage: check-pins.sh [root]
 #
@@ -21,8 +22,16 @@
 set -euo pipefail
 
 readonly root=${1:-.}
-readonly self_repo=OlivierZal/configs
-readonly self_package=@olivierzal/configs
+# The two-channel packages, by repository; empty for any other upstream.
+# GitHub resolves a `uses:` slug case-insensitively, so the match does
+# too — a re-cased slug must not slip past the obligation.
+package_for() {
+  case $(printf '%s' "$1" | tr '[:upper:]' '[:lower:]') in
+    olivierzal/configs) printf '%s' '@olivierzal/configs' ;;
+    olivierzal/homey-kit) printf '%s' '@olivierzal/homey-kit' ;;
+    *) printf '' ;;
+  esac
+}
 
 failures=0
 
@@ -87,19 +96,19 @@ tag_for_sha() {
   ' <<<"$refs"
 }
 
-npm_pin=''
-if [[ -f $root/package.json ]]; then
-  npm_pin=$(
-    node -e '
-      const manifest = require(process.argv[1])
-      const { devDependencies = {}, dependencies = {} } = manifest
-      process.stdout.write(
-        devDependencies[process.argv[2]] ?? dependencies[process.argv[2]] ?? "",
-      )
-    ' "$(cd "$(dirname "$root/package.json")" && pwd)/package.json" "$self_package"
-  )
-fi
-readonly npm_pin
+# The exact pin the caller's manifest carries for a two-channel package;
+# empty when it carries none, or has no manifest at all.
+npm_pin_for() {
+  local package=$1
+  [[ -f $root/package.json ]] || return 0
+  node -e '
+    const manifest = require(process.argv[1])
+    const { devDependencies = {}, dependencies = {} } = manifest
+    process.stdout.write(
+      devDependencies[process.argv[2]] ?? dependencies[process.argv[2]] ?? "",
+    )
+  ' "$(cd "$(dirname "$root/package.json")" && pwd)/package.json" "$package"
+}
 
 shopt -s nullglob
 files=(
@@ -123,10 +132,12 @@ for file in "${files[@]}"; do
     [[ $ref =~ ^[0-9a-f]{40}$ ]] || continue
     pins=$((pins + 1))
     where="$file:$number"
+    package=$(package_for "$repo")
 
     if [[ -z $comment ]]; then
-      # `untagged:` is closed to this repo, so it is not offered here.
-      if [[ $repo == "$self_repo" ]]; then
+      # `untagged:` is closed to a two-channel package, so it is not
+      # offered here.
+      if [[ -n $package ]]; then
         fail "$where: $repo is pinned to ${ref:0:8} with no version comment; add \`# <tag>\`"
       else
         fail "$where: $repo is pinned to ${ref:0:8} with no version comment; add \`# <tag>\` or \`# untagged: <reason>\`"
@@ -140,10 +151,10 @@ for file in "${files[@]}"; do
         fail "$where: \`untagged:\` needs a reason naming what the pinned commit carries that no tag does"
         continue
       fi
-      # This repo tags every release, so an untagged ref here would slip
-      # past the two-channel obligation below instead of stating a fact.
-      if [[ $repo == "$self_repo" ]]; then
-        fail "$where: $self_repo pins name a release tag; \`untagged:\` would bypass the npm-pin agreement"
+      # A two-channel package tags every release, so an untagged ref
+      # would slip past the obligation below instead of stating a fact.
+      if [[ -n $package ]]; then
+        fail "$where: $repo pins name a release tag; \`untagged:\` would bypass the npm-pin agreement"
         continue
       fi
       if ! tag=$(tag_for_sha "$repo" "$ref"); then
@@ -172,8 +183,11 @@ for file in "${files[@]}"; do
       fail "$where: $repo \`$comment\` is ${resolved:0:8}, but the pin is ${ref:0:8}"
     fi
 
-    if [[ $repo == "$self_repo" && -n $npm_pin && $comment != "v$npm_pin" ]]; then
-      fail "$where: workflow ref \`$comment\` and npm pin \`$npm_pin\` disagree; one version covers both channels"
+    if [[ -n $package ]]; then
+      npm_pin=$(npm_pin_for "$package")
+      if [[ -n $npm_pin && $comment != "v$npm_pin" ]]; then
+        fail "$where: workflow ref \`$comment\` and the $package pin \`$npm_pin\` disagree; one version covers both channels"
+      fi
     fi
     # Anchored at the key position: a `uses:` inside a comment or a
     # `run:` body is prose, not a reference this repo executes.

@@ -22,10 +22,10 @@ describe('the pin check', () => {
 
     expect(status).toBe(0)
     // Annotated tag, lightweight tag, a declared-untagged commit and
-    // the configs workflow ref. The local `./` reference is not a pin,
+    // the refs to both two-channel packages (configs and homey-kit). The local `./` reference is not a pin,
     // and neither is a `uses:` that sits in a comment or a `run:` body
     // — the fixture carries both.
-    expect(output).toContain('checked 4 pinned reference(s)')
+    expect(output).toContain('checked 5 pinned reference(s)')
   })
 
   // One fixture per way a comment can lie. The trailing-text case is
@@ -42,6 +42,18 @@ describe('the pin check', () => {
     {
       expected: 'one version covers both channels',
       fixture: 'channel-mismatch',
+    },
+    // homey-kit is the second two-channel package (6.1.0 hosts the
+    // apps' process workflows): the same obligation, the same message.
+    {
+      expected: 'the @olivierzal/homey-kit pin `6.0.0` disagree',
+      fixture: 'kit-channel-mismatch',
+    },
+    // GitHub resolves the slug case-insensitively; the obligation
+    // must not be dodged by re-casing it.
+    {
+      expected: 'the @olivierzal/configs pin `9.9.9` disagree',
+      fixture: 'channel-mismatch-case',
     },
     // An exemption that cannot be falsified is an opt-out. These three
     // keep `untagged:` a claim about the upstream: it holds only where

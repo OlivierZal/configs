@@ -1,0 +1,6 @@
+jobs:
+  validate:
+    uses: OlivierZal/homey-kit/.github/workflows/reusable-homey-validate.yml@7777777777777777777777777777777777777777 # v6.1.0
+name: Validate
+on:
+  push: {}

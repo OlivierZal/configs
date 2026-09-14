@@ -299,16 +299,16 @@ pointless.
 
 Available: `reusable-ci.yml` (check + caller-defined test matrix, caller
 picks the legs, the coverage leg and the library gates, plus the Sonar
-gate), `reusable-homey-validate.yml` and `reusable-homey-publish.yml`
-(the apps' path: the caller keeps its triggers, the `homey` environment
-travels with the publish job, and the caller passes its bundle list),
-`reusable-publish.yml` and `reusable-docs.yml` (the libraries' release
+gate), `reusable-publish.yml` and `reusable-docs.yml` (the libraries' release
 path: the caller keeps the `release` trigger, and the `npm` and
 `github-pages` environments travel with the called jobs together with
 the `id-token: write` the attestation and the deployment need). The
 single-file workflows (`dependency-review`, `pr-title`, `zizmor`,
 `claude*`, `dependabot`) also accept `workflow_call` so callers can
-become stubs.
+become stubs. The Homey apps' process — `reusable-homey-validate.yml`,
+`reusable-homey-publish.yml` and the iOS floor watch — lives in
+`@olivierzal/homey-kit` (6.1.0), the second two-channel package
+`check-pins.sh` polices.
 
 ```yaml title=".github/workflows/publish.yml"
 jobs:
