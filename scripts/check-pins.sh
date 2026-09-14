@@ -23,10 +23,12 @@ set -euo pipefail
 
 readonly root=${1:-.}
 # The two-channel packages, by repository; empty for any other upstream.
+# GitHub resolves a `uses:` slug case-insensitively, so the match does
+# too — a re-cased slug must not slip past the obligation.
 package_for() {
-  case $1 in
-    OlivierZal/configs) printf '%s' '@olivierzal/configs' ;;
-    OlivierZal/homey-kit) printf '%s' '@olivierzal/homey-kit' ;;
+  case $(printf '%s' "$1" | tr '[:upper:]' '[:lower:]') in
+    olivierzal/configs) printf '%s' '@olivierzal/configs' ;;
+    olivierzal/homey-kit) printf '%s' '@olivierzal/homey-kit' ;;
     *) printf '' ;;
   esac
 }

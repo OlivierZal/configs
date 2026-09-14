@@ -49,6 +49,12 @@ describe('the pin check', () => {
       expected: 'the @olivierzal/homey-kit pin `6.0.0` disagree',
       fixture: 'kit-channel-mismatch',
     },
+    // GitHub resolves the slug case-insensitively; the obligation
+    // must not be dodged by re-casing it.
+    {
+      expected: 'the @olivierzal/configs pin `9.9.9` disagree',
+      fixture: 'channel-mismatch-case',
+    },
     // An exemption that cannot be falsified is an opt-out. These three
     // keep `untagged:` a claim about the upstream: it holds only where
     // no tag reaches the commit, it must say why, and this repo — which
