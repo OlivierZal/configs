@@ -59,9 +59,10 @@ describe('the unanalysed-pull-request branch', () => {
     expect(output).toContain('no analysable change went unread')
   })
 
-  // Not hypothetical: the family's dependabot-fix workflow pushes
-  // Claude's fixes onto these very branches, and that commit would
-  // otherwise reach main having been read by no analysis at all.
+  // Not hypothetical: a fix pushed onto one of these branches by hand —
+  // or by the dependabot-fix workflow 6.0.0 retired, whose success path
+  // was exactly this — would otherwise reach main having been read by
+  // no analysis at all.
   it('rejects a commit nobody analysed on a Dependabot branch', () => {
     const { output, status } = run(gateScript, {
       ...prEnv,
