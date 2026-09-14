@@ -284,7 +284,7 @@ const cssBlock: Config[] = defineConfig([
       // would admit what Safari 16.5 brought (`&`-nesting — the one
       // nesting form the rule detects — and `:user-valid`) and that
       // engine lacks. The year moves with the App Store minimum
-      // `ios-floor-watch.yml` records, and only with it.
+      // homey-kit's `ios-floor-watch.yml` records, and only with it.
       //
       // The proxy cuts the other way too: Baseline dates a feature by
       // the LAST core browser to ship it, so the year alone rejects CSS

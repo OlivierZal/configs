@@ -1,4 +1,7 @@
 {
+  "dependencies": {
+    "@olivierzal/homey-kit": "6.1.0"
+  },
   "devDependencies": {
     "@olivierzal/configs": "9.9.9"
   }
