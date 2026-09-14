@@ -22,7 +22,7 @@ describe('the pin check', () => {
 
     expect(status).toBe(0)
     // Annotated tag, lightweight tag, a declared-untagged commit and
-    // the refs to the two two-channel packages (configs and homey-kit). The local `./` reference is not a pin,
+    // the refs to both two-channel packages (configs and homey-kit). The local `./` reference is not a pin,
     // and neither is a `uses:` that sits in a comment or a `run:` body
     // — the fixture carries both.
     expect(output).toContain('checked 5 pinned reference(s)')
