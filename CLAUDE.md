@@ -450,7 +450,26 @@ value back.
 
 Whole-plugin verdicts, held to the same bar as rules: strict adoption
 (everything adopted runs at `error`), refusals recorded with their
-reason, re-evaluated when the reason expires. Maintenance is a gate —
+reason, re-evaluated when the reason expires.
+
+The rule tables carry an AUDIT LEDGER: `src/eslint/audited-versions.ts`
+names, per rule-bearing package, the `major.minor` its release notes
+were last read against, and `tests/unit/audited-versions.test.ts`
+fails the moment an installed plugin's `major.minor` leaves it (a
+patch bump passes). Dependabot moves the pins without anyone reading
+what a minor added — a new rule, a new option, a widened default — so
+the tables were drifting behind the tools running them. A red minor
+bump is therefore a human's to settle: read the release notes, adopt
+or refuse what they add in the tables, move the entry in the same pull
+request. The ledger opened 2026-09-14 on the versions installed that
+day, with the bumps of the day read for rules and options
+(typescript-eslint 8.69 `no-misused-promises` → `flagUnions: 'all'`,
+adopted; 8.70 `no-generated-empty-object-type`, arriving through
+`strictTypeChecked`; @eslint/css 2.0 `use-baseline` now checking
+CSS-wide keywords and duplicate `@keyframes` selectors, behaviour only;
+@eslint/json 2.1, perfectionist 5.11, eslint 10.10, jsdoc 64.3–64.4 and
+package-json 1.8.1 adding nothing to configure); every other package
+sat on the version the 5.0.0 triage read. Maintenance is a gate —
 an unmaintained plugin is refused regardless of coverage — but none of
 the three below fails it: all are active under eslint-community.
 
@@ -643,9 +662,9 @@ adoption instructions, and a second file-based history would duplicate
 that content and let the two drift. The obligation the verdict carries is
 that the notes stay substantial — a channel nobody keeps is not a channel.
 
-`claude-dependabot-fix.yml` calls this repo's own reusable workflow
-through a local `./` reference, exactly as `ci.yml` and `publish.yml`
-do. Self-calling was
+`ci.yml` and `publish.yml` call this repo's own reusable workflows
+through a local `./` reference (the retired dependabot-fix stub did
+the same). Self-calling was
 assumed circular; it is not — the caller fires once per completed build
 and the callee resolves from the same commit. `./` is also the honest form
 here: a SHA pin to itself would need rewriting at every release, and
