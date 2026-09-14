@@ -34,7 +34,11 @@ both channels — bump once, release once.
   twins on two spellings is the shape that drifts; the suite pins the
   export map to the files on disk in both directions. The bare `.`
   export went with them — imported by no consumer, a duplicate of
-  `./eslint`.
+  `./eslint`. The top-level `types` that pointed at it STAYS, inert:
+  with an `exports` map present nothing reads it, but the library
+  preset's own `package-json/require-types` demands one, and an
+  overlay `off` to delete one line costs more than the line (weighed
+  2026-09-14).
 - This package's `engines` is NOT the device floor the four runtime
   libraries declare (the three apps derive theirs the way this package
   does, and state the device floor in `compatibility`) — nothing here
