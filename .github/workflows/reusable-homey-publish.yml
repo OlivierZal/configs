@@ -1,0 +1,85 @@
+# The apps' store release, callable: install with registry auth, publish
+# through Athom's action from the `homey` environment, then assert the
+# packaged bundles the CLI's post-copy build must have emitted (the
+# com.melcloud #1404 class — packing happens inside the action, so the
+# check is post-hoc and fails the workflow loudly right after the
+# upload). Derived from the three publish.yml files the apps carried
+# (2026-09-14), identical but for the bundle list and the stamped page,
+# which are the two inputs. The `homey` environment travels with the
+# job, as `npm` does in reusable-publish.yml; the caller grants
+# `contents: read` and `packages: read` and passes its HOMEY_PAT.
+concurrency:
+  cancel-in-progress: false
+  group: publish
+jobs:
+  publish:
+    environment: homey
+    name: Publish app on Homey
+    permissions:
+      contents: read
+      packages: read
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-and-install
+        with:
+          cache: none
+          node-version: '22'
+          npm-token: ${{ secrets.GITHUB_TOKEN }}
+          # setup-node writes the registry auth to its user config only
+          # when given a registry — the `cp` below carries that file into
+          # the workspace for the publish action's container.
+          registry-url: https://npm.pkg.github.com
+          require-npm-token: 'true'
+          scope: '@olivierzal'
+      - run: cp "$NPM_CONFIG_USERCONFIG" "$GITHUB_WORKSPACE/.npmrc"
+      - id: publish
+        name: Publish
+        uses: athombv/github-action-homey-app-publish@48be66b7f2f870c22b6117d7bb84dfa06c4fc309 # v1
+        with:
+          personal_access_token: ${{ secrets.HOMEY_PAT }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # The inputs reach the shell through the environment, never
+      # interpolated into the script.
+      - name: Assert the packaged bundles
+        env:
+          BUNDLES: ${{ inputs.bundles }}
+          STAMPED_PAGE: ${{ inputs.stamped-page }}
+        run: |
+          while IFS= read -r file; do
+            [ -n "$file" ] || continue
+            if [ ! -s ".homeybuild/$file" ]; then
+              echo "::error::Missing packaged bundle: .homeybuild/$file"
+              exit 1
+            fi
+          done <<<"$BUNDLES"
+          if ! grep -q 'index\.js?v=' ".homeybuild/$STAMPED_PAGE"; then
+            echo "::error::Packaged page is unstamped: .homeybuild/$STAMPED_PAGE"
+            exit 1
+          fi
+      - name: URL
+        env:
+          URL: ${{ steps.publish.outputs.url }}
+        run: echo "Manage your app at $URL" >> "$GITHUB_STEP_SUMMARY"
+    timeout-minutes: 30
+name: Reusable Homey publish
+on:
+  workflow_call:
+    inputs:
+      bundles:
+        description: The packaged bundles the CLI's post-copy build must emit, one path per line, relative to .homeybuild.
+        required: true
+        type: string
+      stamped-page:
+        default: settings/index.html
+        description: The packaged page whose script reference must carry the freshness stamp.
+        required: false
+        type: string
+    secrets:
+      HOMEY_PAT:
+        description: The Homey developer token the publish action authenticates with.
+        required: true
+permissions: {}
