@@ -8,6 +8,10 @@
  * re-read that release's notes, adopt or refuse what it adds in the
  * tables, and move the entry in the same pull request. A patch bump
  * passes without ceremony.
+ *
+ * A FULL reading — every rule of every plugin against the tables, not a
+ * release's delta — was done on 2026-09-15 against exactly these
+ * versions (CLAUDE.md, plugin triage); the next one is the next minor.
  */
 export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@eslint/css': '2.0',

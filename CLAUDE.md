@@ -446,9 +446,18 @@ adopted; 8.70 `no-generated-empty-object-type`, arriving through
 CSS-wide keywords and duplicate `@keyframes` selectors, behaviour only;
 @eslint/json 2.1, perfectionist 5.11, eslint 10.10, jsdoc 64.3–64.4 and
 package-json 1.8.1 adding nothing to configure); every other package
-sat on the version the 5.0.0 triage read. Maintenance is a gate —
-an unmaintained plugin is refused regardless of coverage — but none of
-the three below fails it: all are active under eslint-community.
+sat on the version the 5.0.0 triage read. A FULL reading followed on
+2026-09-15 — every rule of every installed plugin against the tables,
+not only the release deltas: 1,334 rules, of which 160 unconfigured and
+72 deprecated-but-referenced (all `off` through eslint-config-prettier),
+judged one by one, each verdict measured by a real run on melcloud-api
+and com.melcloud and challenged by two independent re-readings before
+it entered the tables — 30 rules adopted or tightened, six refusals
+recorded at their rule sites, the rest refused as owned by TypeScript,
+Prettier or another rule. The ledger's versions did not move.
+Maintenance is a gate — an unmaintained plugin is refused regardless of
+coverage — but none of the three below fails it: all are active under
+eslint-community.
 
 - **eslint-plugin-n — REFUSED, owned by the CI matrix and real
   coverage.** The fleet measurement put every device on the same Node
@@ -502,9 +511,8 @@ measured against the installed plugin, it disables 358 rules and
 ledger, entry by entry, each naming which of two reasons retires it:
 
 - **redundant** — Prettier's output already satisfies the rule
-  (`class-spacing`, `element-newline`, `lowercase`,
-  `no-extra-spacing-text`, `no-multiple-empty-lines`,
-  `no-trailing-spaces`, `quotes`);
+  (`class-spacing`, `element-newline`, `no-extra-spacing-text`,
+  `no-multiple-empty-lines`, `no-trailing-spaces`, `quotes`);
 - **conflicting** — Prettier's output VIOLATES the rule, so keeping it
   would fail every formatted file (`attrs-newline`; `indent`, Prettier
   indents two where the rule wants four; `no-extra-spacing-tags` and
@@ -522,6 +530,20 @@ one that deserved an argument rather than a reflex: its name suggests
 validity, but the spec makes a trailing slash on a void element
 meaningless, not invalid — both spellings parse to the same DOM, so it
 is style, and style is Prettier's.
+
+`lowercase` left the redundant list on 2026-09-15: Prettier lowercases
+only the element and attribute names it knows (its own output keeps
+`onClick`, `DATA-FOO`, `<MY-ELEMENT>`), so it neither guarantees nor
+contradicts the rule, which is kept at `error` like `head-order`. The
+same audit adopted five more, none of them formatting: `require-attrs`
+(`defer` on every external script) and `no-restricted-attr-values`
+(`type="module"`), the two halves of the cold-boot verdict every page
+documents; `no-restricted-attrs` (inline handlers) and
+`no-restricted-tags` (`<style>`), the two doors out of the TypeScript
+bundle and the `css/` table; and `use-baseline` at the CSS rule's year.
+The two SEO rules (`require-meta-description`,
+`require-open-graph-protocol`) are `off` with their reason: a Homey
+webview is never crawled.
 
 `tests/unit/presets.test.ts` locks it with a real `format` call, both
 ways: Prettier's own output must lint clean, a misformatted page must
