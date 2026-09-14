@@ -43,7 +43,7 @@ export const linterOptionsBlock: Config = {
   },
 }
 
-// unicorn 74 ships `expiring-todo-comments` hollow: `checkDates` and
+// unicorn 74 ships its comment-expiry rule hollow: `checkDates` and
 // `allowWarningComments` default to false/true, so a dated warning
 // comment never expired and an undated one was never a report. Stated
 // wherever the rule runs (the main table, Markdown, HTML, CSS — a
