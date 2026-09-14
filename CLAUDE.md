@@ -360,16 +360,21 @@ longer turns it off with a reason that was false twice over.
   named so the assertion cannot pass over an empty set, and `files`
   carries the directory callers read. Static, because no run from here
   could ever fail.
-- What it does NOT cover is a caller that never copied
-  `.github/actions/setup-node-and-install`; that stays a known blind
-  spot, cheap to detect (the run fails immediately) and not worth a
-  cross-repo probe.
+- Since 6.1.0 the reusables reach `.github/actions/setup-node-and-install`
+  through `$/`, GitHub's self-repository syntax (2026-07-30: a `uses:`
+  starting with `$/` resolves in the repository that DEFINES the
+  workflow, at the commit that is running, no checkout needed), so a
+  caller carries no copy of the action and the former blind spot — a
+  caller that never copied it — is gone. `./` in a reusable resolved
+  against the CALLER's checkout, which is why every repository carried
+  a byte-identical copy and why zizmor's `self-repository` audit flagged
+  each such line; a copy left behind in a caller is inert.
 - `reusable-docs.yml` and `reusable-publish.yml` (5.0.0) are the
   release-only reusables, derived from the four identical files the
   libraries carried (one dead env entry fewer), and they sit squarely
   in this blind spot: this repo builds no docs site and publishes once
   per release. Two mitigations, neither a proof. `publish.yml` here calls
-  `reusable-publish.yml` through `./`, so that path runs on every
+  `reusable-publish.yml` through `$/`, so that path runs on every
   release of this package — the caller's shape exactly, minus the
   scoped install. `reusable-docs.yml` takes `dry-run`, which builds and
   packs without deploying, so an adopter dispatches it by hand and
@@ -614,13 +619,13 @@ that content and let the two drift. The obligation the verdict carries is
 that the notes stay substantial — a channel nobody keeps is not a channel.
 
 `ci.yml` and `publish.yml` call this repo's own reusable workflows
-through a local `./` reference (the retired dependabot-fix stub did
-the same). Self-calling was
+through the self-repository reference `$/` (a local `./` until 6.1.0;
+the retired dependabot-fix stub did the same). Self-calling was
 assumed circular; it is not — the caller fires once per completed build
-and the callee resolves from the same commit. `./` is also the honest form
-here: a SHA pin to itself would need rewriting at every release, and
-`check-pins.sh` would police a reference that has no second channel to
-disagree with.
+and the callee resolves from the same commit. `$/` is also the honest
+form here: it names this repository at the running commit, a SHA pin to
+itself would need rewriting at every release, and `check-pins.sh` would
+police a reference that has no second channel to disagree with.
 
 `ci.yml` passes `SONAR_TOKEN` by name rather than `secrets: inherit`.
 `inherit` hands every repository secret to the called workflow; in the

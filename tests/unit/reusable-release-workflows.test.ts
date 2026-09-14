@@ -114,7 +114,7 @@ describe('reusable-publish.yml', () => {
   it('should be what this repo publishes through', () => {
     const publish = jobOf('publish.yml', 'publish')
 
-    expect(publish.uses).toBe('./.github/workflows/reusable-publish.yml')
+    expect(publish.uses).toBe('$/.github/workflows/reusable-publish.yml')
     expect(publish.permissions).toStrictEqual(
       jobOf('reusable-publish.yml', 'publish').permissions,
     )
