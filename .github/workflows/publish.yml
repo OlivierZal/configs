@@ -1,6 +1,7 @@
 # Dogfoods this repo's own reusable publish, the way ci.yml does for the
 # reusable CI: the release path every library calls runs here first,
-# resolved from the same commit through the local `./` reference.
+# resolved from the same commit through the `$/` self-repository
+# reference (this repository at the running commit).
 jobs:
   publish:
     permissions:
@@ -8,7 +9,7 @@ jobs:
       contents: read
       id-token: write
       packages: write
-    uses: ./.github/workflows/reusable-publish.yml
+    uses: $/.github/workflows/reusable-publish.yml
 name: Publish package to GitHub Packages
 on:
   release:
