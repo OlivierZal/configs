@@ -1110,7 +1110,7 @@ const sharedTestRules: NonNullable<Config['rules']> = {
     'error',
     {
       message:
-        "vitest 5: toThrow('') matches any message — name the message or drop the matcher.",
+        "vitest 5: toThrow('') matches any message — name the message or drop the empty-string argument.",
       selector:
         "CallExpression[callee.property.name=/^toThrow(Error)?$/][arguments.0.type='Literal'][arguments.0.value='']",
     },
