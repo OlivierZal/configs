@@ -7,7 +7,6 @@ import { coverageDefaults } from './src/vitest/coverage.ts'
 
 const config: ViteUserConfig = defineConfig({
   test: {
-    clearMocks: true,
     coverage: { ...coverageDefaults, include: ['src/**/*.ts'] },
     include: ['tests/**/*.test.ts'],
   },

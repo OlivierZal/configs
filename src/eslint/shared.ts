@@ -1101,6 +1101,20 @@ const sharedTestRules: NonNullable<Config['rules']> = {
   'max-lines-per-function': 'off',
   'max-nested-callbacks': 'off',
   'max-statements': 'off',
+  // vitest 5 makes `toThrow('')` match ANY message (vitest 4 read it as
+  // an exactly-empty message), so the argument turns the assertion
+  // vacuous while `require-to-throw-message` still sees an argument.
+  // Zero sites in the family (2026-09-15); the selector also meets
+  // `.not.toThrow('')`, where the fix is the same — drop the argument.
+  'no-restricted-syntax': [
+    'error',
+    {
+      message:
+        "vitest 5: toThrow('') matches any message — name the message or drop the matcher.",
+      selector:
+        "CallExpression[callee.property.name=/^toThrow(Error)?$/] > Literal.arguments:first-child[value='']",
+    },
+  ],
   // Mock builders nest factories.
   'unicorn/max-nested-calls': ['error', { max: 4 }],
   // Without options the rule is a no-op; the suites use `.each`
@@ -1112,6 +1126,8 @@ const sharedTestRules: NonNullable<Config['rules']> = {
   'vitest/consistent-test-filename': 'error',
   'vitest/consistent-test-it': ['error', { fn: 'it' }],
   'vitest/consistent-vitest-vi': 'error',
+  // vitest 5 throws on a hoisted API outside the top level; the rule
+  // stays as the static, pre-run signal that names the line.
   'vitest/hoisted-apis-on-top': 'error',
   // Measured codebase ceiling.
   'vitest/max-nested-describe': ['error', { max: 3 }],
@@ -1122,6 +1138,16 @@ const sharedTestRules: NonNullable<Config['rules']> = {
   'vitest/no-disabled-tests': 'error',
   'vitest/no-duplicate-hooks': 'error',
   'vitest/no-large-snapshots': 'error',
+  // vitest 5 clears every mock before each test (`clearMocks` defaults
+  // to true), so a hook-level clear restates the runner; a mid-test
+  // phase boundary is `mock.mockClear()` on the one mock it concerns.
+  'vitest/no-restricted-vi-methods': [
+    'error',
+    {
+      clearAllMocks:
+        'vitest 5 clears every mock before each test; a hook-level clear restates the runner — use mock.mockClear() for a mid-test phase boundary.',
+    },
+  ],
   'vitest/no-test-return-statement': 'error',
   // Union of the seven per-hook `padding-around-*` rules.
   'vitest/padding-around-all': 'error',
@@ -1156,6 +1182,8 @@ const sharedTestRules: NonNullable<Config['rules']> = {
   'vitest/prefer-to-have-been-called-times': 'error',
   'vitest/prefer-to-have-length': 'error',
   'vitest/prefer-vi-mocked': 'error',
+  // An unawaited `expect.poll` has thrown at runtime since vitest 4; the
+  // rule is the static signal.
   'vitest/require-awaited-expect-poll': 'error',
   'vitest/require-mock-type-parameters': [
     'error',
@@ -1170,7 +1198,9 @@ const sharedTestRules: NonNullable<Config['rules']> = {
   // arrow stays accepted. The fixer is right for one site per file and
   // wrong for two or more non-async callbacks in one file (the second
   // gets `await` inside a non-async function), so a multi-site `--fix`
-  // is read before it lands.
+  // is read before it lands. vitest 5 fails an unawaited `resolves`,
+  // `rejects` or `toMatchFileSnapshot` at runtime too; the rule stays as
+  // the static, pre-run signal.
   'vitest/valid-expect': ['error', { alwaysAwait: true }],
   'vitest/warn-todo': 'error',
 }

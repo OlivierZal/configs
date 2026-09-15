@@ -455,6 +455,13 @@ and com.melcloud and challenged by two independent re-readings before
 it entered the tables — 30 rules adopted or tightened, six refusals
 recorded at their rule sites, the rest refused as owned by TypeScript,
 Prettier or another rule. The ledger's versions did not move.
+vitest 5 (the runner, read the same night) moved two defaults the
+tables answer: `clearMocks` is now true, so the five library configs
+drop their restatement, the three apps drop their hook-level
+`vi.clearAllMocks()`, and `vitest/no-restricted-vi-methods` keeps them
+out; `toThrow('')` now matches any message, so a `no-restricted-syntax`
+selector in the test block refuses the vacuous argument. The peer
+floor stays `vitest: '>=4'` until the next major names 5.
 Maintenance is a gate — an unmaintained plugin is refused regardless of
 coverage — but none of the three below fails it: all are active under
 eslint-community.
