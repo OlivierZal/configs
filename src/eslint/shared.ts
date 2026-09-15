@@ -1112,7 +1112,7 @@ const sharedTestRules: NonNullable<Config['rules']> = {
       message:
         "vitest 5: toThrow('') matches any message — name the message or drop the matcher.",
       selector:
-        "CallExpression[callee.property.name=/^toThrow(Error)?$/] > Literal.arguments:first-child[value='']",
+        "CallExpression[callee.property.name=/^toThrow(Error)?$/][arguments.0.type='Literal'][arguments.0.value='']",
     },
   ],
   // Mock builders nest factories.
