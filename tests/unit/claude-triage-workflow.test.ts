@@ -68,10 +68,10 @@ const VERDICT_RESULT = [
 const executionFixture = (result: string | null): string => {
   const workDir = mkdtempSync(path.join(tmpdir(), 'triage-exec-'))
   const file = path.join(workDir, 'execution.json')
-  const messages: unknown[] = [{ type: 'system' }]
-  if (result !== null) {
-    messages.push({ result, type: 'result' })
-  }
+  const messages: unknown[] = [
+    { type: 'system' },
+    ...(result === null ? [] : [{ result, type: 'result' }]),
+  ]
   writeFileSync(file, JSON.stringify(messages))
   return file
 }
