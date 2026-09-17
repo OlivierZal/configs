@@ -488,7 +488,17 @@ day @eslint/css dates it), and the three nesting rules
 `no-unscoped-css-nesting-selector`) — the floor admits no CSS nesting
 and the corpus contains none, so they are inert; they re-enter with the
 floor, which `ios-floor-watch` already guards. unicorn 75 also WIDENED
-two rules the tables already carry, and both bit real code:
+five rules the tables already carry, and the widest of them had to be
+BOUNDED (6.4.1): `prefer-ternary` learned flat return statements, and
+at the preset's `always` default it rewrites a guard clause — `if (x
+=== undefined) { return a } return b` — into a multi-line ternary,
+which is exactly the shape `unicorn/prefer-early-return` exists to
+produce, undone. Measured over the eight repositories: `always` reports
+54 sites and its autofix mangles real early returns (melcloud-api's
+`mergeHomeReportChunks` and `mergeHourlyChartResults` were the
+evidence); `only-single-line` reports 20, each a one-line ternary that
+reads better as one. The tables pin the bounded form. The other four
+bit real code as they should:
 `no-immediate-mutation` now sees a conditional push and `prefer-ternary`
 a flat return — two sites in this repo's own suites, fixed here rather
 than configured away. jsdoc 64.5 adds one rule, `ts-ban-ts-comment`,
