@@ -398,10 +398,30 @@ const cssBlock: Config[] = defineConfig([
         },
       ],
       'unicorn/expiring-todo-comments': expiringTodoComments,
+      // unicorn 75's CSS half, adopted by what it can CATCH here
+      // (measured over the three stylesheets, 2026-09-17): a deprecated
+      // feature, a selector written twice, a font family repeated in one
+      // stack, a mistyped media feature, an annotation that is not one,
+      // and a pseudo-selector the engines do not know.
+      'unicorn/no-deprecated-css-features': 'error',
+      'unicorn/no-duplicate-css-selectors': 'error',
+      'unicorn/no-duplicate-font-family-names': 'error',
       'unicorn/no-empty-file': 'error',
+      'unicorn/no-invalid-media-features': 'error',
       'unicorn/no-missing-local-resource': 'error',
       'unicorn/no-shorthand-property-overrides': 'error',
       'unicorn/no-transition-all': 'error',
+      'unicorn/no-unknown-css-annotations': 'error',
+      // `::-webkit-details-marker` is the ONE pseudo-element the rule's
+      // vocabulary lacks and the three settings pages need: they hide
+      // the native disclosure triangle of `<summary>` to draw their own
+      // chevron, and `list-style: none` alone does not reach the WebKit
+      // the floor admits. An allowance, not a disable — the rule still
+      // catches every other unknown selector.
+      'unicorn/no-unknown-pseudo-selectors': [
+        'error',
+        { allow: ['::-webkit-details-marker'] },
+      ],
       'unicorn/prefer-explicit-viewport-units': 'error',
       'unicorn/text-encoding-identifier-case': 'error',
     },

@@ -23,10 +23,10 @@ export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@vitest/eslint-plugin': '1.6',
   eslint: '10.10',
   'eslint-plugin-import-x': '4.17',
-  'eslint-plugin-jsdoc': '64.4',
+  'eslint-plugin-jsdoc': '64.5',
   'eslint-plugin-package-json': '1.8',
   'eslint-plugin-perfectionist': '5.11',
-  'eslint-plugin-unicorn': '74.0',
+  'eslint-plugin-unicorn': '75.0',
   'eslint-plugin-yml': '3.8',
   'typescript-eslint': '8.70',
 }

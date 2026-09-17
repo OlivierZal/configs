@@ -462,6 +462,41 @@ drop their restatement, the three apps drop their hook-level
 out; `toThrow('')` now matches any message, so a `no-restricted-syntax`
 selector in the test block refuses the vacuous argument. The peer
 floor stays `vitest: '>=4'` until the next major names 5.
+unicorn 75 and jsdoc 64.5 were read on 2026-09-17 (6.4.0). unicorn 75
+adds twenty rules, every one of them in `recommended` — so the ten
+JS/TS ones (`no-async-iterator-callback`,
+`no-unused-builtin-method-return`, `no-unused-iterator-helper`,
+`no-useless-set-construction`, `no-using-resource-escape`,
+`prefer-combined-guards`, `prefer-iterator-zip`, `prefer-json-import`,
+`prefer-temporal-conversion`, `prefer-uint8array-hex`) arrive with the
+bump, measured at ZERO findings across the eight repositories. The CSS
+half does NOT arrive: the `cssBlock` enumerates unicorn's CSS rules
+instead of extending its preset, so each was judged on what it can
+CATCH here (measured over the three settings stylesheets the same day):
+`no-deprecated-css-features`, `no-duplicate-css-selectors`,
+`no-duplicate-font-family-names`, `no-invalid-media-features`,
+`no-unknown-css-annotations` and `no-unknown-pseudo-selectors` adopted
+— the last with `allow: ['::-webkit-details-marker']`, the one
+pseudo-element the three pages need to hide a `<summary>` marker on the
+WebKit the floor admits, an allowance that leaves every other unknown
+selector caught. REFUSED, each with its reason:
+`prefer-media-feature-range-syntax` (no `@media` exists in the family's
+CSS, and the range syntax is Baseline 2023 against the block's 2022
+floor knob — an adoption that would argue with `css/use-baseline` the
+day @eslint/css dates it), and the three nesting rules
+(`no-nesting-with-mixed-specificity`, `no-redundant-nested-style-rules`,
+`no-unscoped-css-nesting-selector`) — the floor admits no CSS nesting
+and the corpus contains none, so they are inert; they re-enter with the
+floor, which `ios-floor-watch` already guards. unicorn 75 also WIDENED
+two rules the tables already carry, and both bit real code:
+`no-immediate-mutation` now sees a conditional push and `prefer-ternary`
+a flat return — two sites in this repo's own suites, fixed here rather
+than configured away. jsdoc 64.5 adds one rule, `ts-ban-ts-comment`,
+REFUSED: `@typescript-eslint/ban-ts-comment` owns that policy under the
+tool-ownership rule, and the family carries no `@ts-` directive
+anywhere in `src` (measured); 64.5.1/64.5.2 only make the `typescript`
+peer optional again.
+
 Maintenance is a gate — an unmaintained plugin is refused regardless of
 coverage — but none of the three below fails it: all are active under
 eslint-community.
