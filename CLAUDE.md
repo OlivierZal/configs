@@ -528,9 +528,19 @@ eslint-community.
   `testing/helpers.ts`, `com.melcloud`'s
   `widgets/ata-group-setting/public/animation.mts` and `com.heatzy`'s
   `settings/index.mts`. The "multiply" trigger has therefore fired and
-  the re-evaluation is owed: adopting a plugin for one rule is a
-  dependency decision taken in its own pull request, against that set
-  rather than a count.
+  the re-evaluation was owed and was RUN on 2026-09-17, against
+  those seven executors — which live in six files — rather than a
+  count: `no-multiple-resolved` (plugin 7.3.0) finds **nothing** in any
+  of them — not in
+  `retry-backoff.ts`'s two abortable sleeps, the shape the verdict
+  named, nor in the kit's three executors, nor in either app's. The
+  rule was proven live in the same run on a synthetic double-resolve
+  (two findings), so the zero is the corpus, not the harness. What the
+  plugin's other unique rules find here is style already owned or
+  unwanted: one `no-promise-in-callback` in api-core, two `param-names`
+  in melcloud-api. The REFUSAL therefore stands, now measured against
+  the set that triggered it; re-run this measurement, never the count,
+  if a future executor lands.
 - **eslint-plugin-security — REFUSED, owned and noisy.** Taint-style
   analysis is owned by CodeQL and SonarCloud, flow-aware where this
   plugin is syntactic. Sonar and CodeQL default setup run on all eight
