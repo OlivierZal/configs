@@ -529,7 +529,9 @@ eslint-community.
   `widgets/ata-group-setting/public/animation.mts` and `com.heatzy`'s
   `settings/index.mts`. The "multiply" trigger has therefore fired and
   the re-evaluation was owed and was RUN on 2026-09-17, against
-  that set rather than a count: `no-multiple-resolved` (plugin 7.3.0) finds **nothing** in any of them — not in
+  those seven executors — which live in six files — rather than a
+  count: `no-multiple-resolved` (plugin 7.3.0) finds **nothing** in any
+  of them — not in
   `retry-backoff.ts`'s two abortable sleeps, the shape the verdict
   named, nor in the kit's three executors, nor in either app's. The
   rule was proven live in the same run on a synthetic double-resolve
