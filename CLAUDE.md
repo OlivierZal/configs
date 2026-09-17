@@ -498,9 +498,9 @@ eslint-community.
   rather than a count.
 - **eslint-plugin-security — REFUSED, owned and noisy.** Taint-style
   analysis is owned by CodeQL and SonarCloud, flow-aware where this
-  plugin is syntactic. Sonar runs on all eight repos; CodeQL default
-  setup is configured on seven — `api-core` is not, measured
-  2026-08-30, and closing that gap is its own task. Only `ci / Sonar`
+  plugin is syntactic. Sonar and CodeQL default setup run on all eight
+  repos (`api-core`, the last gap, configured 2026-09-17 with the
+  siblings' exact settings). Only `ci / Sonar`
   is a required context — CodeQL reports without blocking, and making
   it block is its own decision, not something this entry assumes. Its
   unique remainder is the noise set (`detect-object-injection` flags
