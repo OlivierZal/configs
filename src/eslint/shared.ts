@@ -928,6 +928,15 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // Owned by `@typescript-eslint/prefer-string-starts-ends-with`.
   'unicorn/prefer-string-starts-ends-with': 'off',
   'unicorn/prefer-temporal': 'error',
+  // Bounded to what a ternary makes CLEARER. unicorn 75 taught the
+  // rule flat return statements, and at the preset's `always` default
+  // it then rewrites guard clauses — `if (x === undefined) { return a }
+  // return b` — into multi-line ternaries, which is the shape
+  // `unicorn/prefer-early-return` exists to produce, undone. Measured
+  // 2026-09-17 over the eight repositories: `always` reports 54 sites,
+  // whose autofix mangles real early returns; `only-single-line`
+  // reports 20, each a one-line ternary that reads better as one.
+  'unicorn/prefer-ternary': ['error', 'only-single-line'],
   // Requires Node.js 24 (`Uint8Array#toBase64`).
   'unicorn/prefer-uint8array-base64': 'off',
   // Config-driven string vocabulary with no invariant to encode.
