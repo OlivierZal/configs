@@ -563,6 +563,39 @@ eslint-community.
   route-guard kernels, `detect-non-literal-fs-filename` the manifest
   reader). Re-evaluate only if the CodeQL/Sonar gates ever drop.
 
+### Measuring a candidate before adopting it
+
+A count is not a verdict, and a verdict nobody measured is a guess.
+What a new rule COSTS is read off the family corpus first, rule by
+rule, and the reading is the decision — `unicorn/prefer-ternary` was
+bounded to `only-single-line` because its 54 findings at `always`
+turned out to include guard clauses whose fixer would have flattened
+them, not because 54 is a large number.
+
+The probe is ESLint's own `--rule`, which layers one rule over a
+repo's real config, so the measurement runs against the very
+resolution the consumer runs:
+
+```sh title="probe one rule over a repo's real config"
+npx eslint src --rule '{"<plugin>/<rule>":["error","<option>"]}' -f json \
+  | python3 -c 'import sys,json;d=json.load(sys.stdin);print(sum(len(f["messages"]) for f in d))'
+```
+
+It reaches only plugins the config ALREADY loads (measured 2026-09-18:
+an unloaded one dies with "could not find plugin"), so a whole-plugin
+triage needs its own probe config declaring the plugin instead. Run it
+across the eight repos, read every finding of the widest option, then
+narrow the option until what remains is what the family actually wants
+— and record the measurement with its date at the rule site, so the
+next reader re-runs it rather than trusting the number.
+
+Deliberately NOT a script. A routine that reports "n new rules
+available" answers the cheap half of the question (which release notes
+moved) and leaves the expensive half (is this rule right HERE)
+untouched, while the `audited-versions` ledger already fails CI on the
+cheap half. Building one was proposed and refused on 2026-09-18 as
+overengineering; this recipe is what it would have wrapped.
+
 ## The HTML formatting handover
 
 The family rule everywhere else — the formatter formats, the linter
