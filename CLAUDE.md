@@ -498,10 +498,11 @@ produce, undone. Measured over the eight repositories: `always` reports
 `mergeHomeReportChunks` and `mergeHourlyChartResults` were the
 evidence); `only-single-line` reports 20, each a one-line ternary that
 reads better as one. The tables pin the bounded form. The other four
-bit real code as they should:
-`no-immediate-mutation` now sees a conditional push and `prefer-ternary`
-a flat return — two sites in this repo's own suites, fixed here rather
-than configured away. jsdoc 64.5 adds one rule, `ts-ban-ts-comment`,
+(`prefer-early-return`, `prefer-minimal-ternary`, `no-immediate-mutation`,
+`prefer-continue`) bit real code as they should: `no-immediate-mutation`
+saw a conditional push in this repo's own suites, fixed rather than
+configured away — and the flat return `prefer-ternary` had rewritten
+here under `always` went back to a plain boolean chain with 6.5.0. jsdoc 64.5 adds one rule, `ts-ban-ts-comment`,
 REFUSED: `@typescript-eslint/ban-ts-comment` owns that policy under the
 tool-ownership rule, and the family carries no `@ts-` directive
 anywhere in `src` (measured); 64.5.1/64.5.2 only make the `typescript`
@@ -607,10 +608,14 @@ them, not because 54 is a large number.
 
 The probe is ESLint's own `--rule`, which layers one rule over a
 repo's real config, so the measurement runs against the very
-resolution the consumer runs:
+resolution the consumer runs — over the files that config covers,
+read off the repo's own run (the apps have no `src`, and a root
+target dies, see below):
 
-```sh title="probe one rule over a repo's real config"
-npx eslint src --rule '{"<plugin>/<rule>":["error","<option>"]}' -f json \
+```sh title="probe one rule over the files a repo's own lint covers"
+npm run -s lint -- -f json | python3 -c 'import sys,json;print(" ".join(f["filePath"] for f in json.load(sys.stdin) if f["filePath"].endswith((".ts",".mts"))))' > /tmp/probe-files
+node --max-old-space-size=8192 ./node_modules/eslint/bin/eslint.js $(cat /tmp/probe-files) \
+  --rule '{"<plugin>/<rule>":["error","<option>"]}' -f json \
   | python3 -c 'import sys,json;d=json.load(sys.stdin);print(sum(len(f["messages"]) for f in d))'
 ```
 
