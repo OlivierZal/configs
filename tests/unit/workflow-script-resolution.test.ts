@@ -52,10 +52,11 @@ const jobsOf = (file: string): readonly Job[] => {
 const hasInstallStep = ({ steps }: Job): boolean =>
   steps.some((step) => {
     const { uses } = step
-    return typeof uses === 'string' && uses.endsWith(INSTALL_ACTION)
-      ? asRecord(step.with ?? {}, `${INSTALL_ACTION} inputs`).install !==
-          'false'
-      : false
+    return (
+      typeof uses === 'string' &&
+      uses.endsWith(INSTALL_ACTION) &&
+      asRecord(step.with ?? {}, `${INSTALL_ACTION} inputs`).install !== 'false'
+    )
   })
 
 const hasPackageScriptStep = ({ steps }: Job): boolean =>
