@@ -310,6 +310,23 @@ describe('css baseline floor', () => {
   })
 })
 
+// The one pseudo-element the three settings pages need — hiding a
+// `<summary>` marker on the WebKit the floor admits — is allowed by
+// exact name, and every other unknown selector still reports.
+describe('css unknown pseudo-selectors', () => {
+  it('should allow the details marker by name', async () => {
+    await expect(
+      lintCss('summary::-webkit-details-marker {\n  display: none;\n}\n'),
+    ).resolves.toStrictEqual([])
+  })
+
+  it('should still report any other unknown pseudo-selector', async () => {
+    await expect(lintCss('a::-foo {\n  color: red;\n}\n')).resolves.toContain(
+      'unicorn/no-unknown-pseudo-selectors',
+    )
+  })
+})
+
 // Two fixers of one rule, adopted and refused for the same reason, so
 // only a real `--fix` run can show the line holding: an out-of-order
 // block has exactly one correct arrangement, while an orphan `@param`
@@ -475,6 +492,36 @@ describe.each([
       await expect(
         lintFixture(preset, 'resolver', 'unresolved.ts'),
       ).resolves.toContain('import-x/no-unresolved')
+    },
+  )
+})
+
+// The bound on `prefer-ternary` is pinned by what it DOES, both ways:
+// a guard clause whose value spans lines survives (at the preset's
+// `always` default its autofix flattens it into a multi-line ternary,
+// the shape `prefer-early-return` exists to undo), and the one-line
+// if/else a ternary reads better as is still reported.
+describe.each([
+  { preset: appPreset, presetName: 'homeyApp' },
+  { preset: libraryPreset, presetName: 'library' },
+])('prefer-ternary bound via $presetName', ({ preset }) => {
+  it(
+    'should leave a guard clause with a multi-line value alone',
+    { timeout: 60_000 },
+    async () => {
+      await expect(
+        lintFixture(preset, 'ternary', 'guard.ts'),
+      ).resolves.not.toContain('unicorn/prefer-ternary')
+    },
+  )
+
+  it(
+    'should still report the one-line if/else a ternary reads better as',
+    { timeout: 60_000 },
+    async () => {
+      await expect(
+        lintFixture(preset, 'ternary', 'one-line.ts'),
+      ).resolves.toContain('unicorn/prefer-ternary')
     },
   )
 })
