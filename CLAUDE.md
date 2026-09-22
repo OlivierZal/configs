@@ -506,6 +506,39 @@ REFUSED: `@typescript-eslint/ban-ts-comment` owns that policy under the
 tool-ownership rule, and the family carries no `@ts-` directive
 anywhere in `src` (measured); 64.5.1/64.5.2 only make the `typescript`
 peer optional again.
+The September releases were read on 2026-09-22 (6.5.0), each measured
+over the eight repositories with the version under test PROVEN to be
+the one the preset resolves (the recipe below says why that proof
+exists). unicorn 76 adds no rule: three opt-in options and two
+widenings. `no-break-in-nested-loop`'s `checkContinue` and
+`prefer-combined-guards`' `checkCompoundConditions` measured at zero
+sites and are adopted as latent guards; `no-immediate-mutation`'s
+`checkConditionals` measured at ONE site — api-core's ordered policy
+builder — and is REFUSED at the rule site: the conditional spread it
+asks for is no clearer than the guarded `push` it replaces and, in
+TypeScript, unfixable by the rule's own admission. The widening of
+`prefer-logical-operator-over-ternary` to boolean-literal branches
+costs seven auto-fixable sites family-wide (one here, fixed; homey-kit
+2, com.heatzy 1, com.melcloud 2, api-core 1 — each adoption PR carries
+its own). The `prefer-ternary` bound was RE-MEASURED rather than
+carried: 76's readability boundaries skip a guard only when the merged
+values hold a ternary, a block or a multiline literal, so `always`
+still adds six guard-clause flattenings over the seven consumers —
+`only-single-line` stands. `prefer-minimal-ternary` gained an autofix,
+adopted under the fixer doctrine above (the error determines the
+correction). eslint 10.11 (a labeled `continue` now reaches
+`no-unsafe-finally`; `new-cap` and `object-shorthand` refinements the
+tables do not configure), package-json 1.9 (`restrict-dist-tags`,
+adopted with an EMPTY allow-list — a dependency is a version, never a
+tag) and html-eslint 0.66 (the three rules the app preset configures
+moved into `@html-eslint/core`, ids unchanged, the presets suite
+green) complete the delta. `yml/no-boolean-key` (3.7, in neither
+preset, missed by the full reading) enters at `error` at zero sites —
+the parser reads YAML 1.2, so a workflow's `on:` stays text. The
+rule-bearing patches (jsdoc 64.5.4, typescript-eslint 8.70.1,
+perfectionist 5.11.1) rode along at zero findings. `unplugin-swc` 2.0
+(drops Node 18, below the family floor) is not rule-bearing and lands
+through Dependabot.
 
 Maintenance is a gate — an unmaintained plugin is refused regardless of
 coverage — but none of the three below fails it: all are active under
@@ -588,6 +621,22 @@ across the eight repos, read every finding of the widest option, then
 narrow the option until what remains is what the family actually wants
 — and record the measurement with its date at the rule site, so the
 next reader re-runs it rather than trusting the number.
+
+Two more limits, measured 2026-09-22 on the unicorn 76 reading. Give
+the run FILES, never the repository root: `.`, `**/*.ts` and
+`**/*.{yml,yaml}` all died with "could not find plugin" before linting
+anything (the plugin lives in a `files`-scoped block, and the rule
+object `--rule` adds has no `files`), while `src`, `src/**/*.ts` and
+explicit paths ran — the file list a previous `-f json` run reported
+is the exact scope. And in a consumer, the version under test is NOT
+the one at the top of `node_modules`: when the preset's range does not
+admit it (`^75` against 76, `^0.65` against 0.66.1),
+`npm install --no-save` keeps the old copy nested under
+`node_modules/@olivierzal/configs/node_modules/` and the preset loads
+THAT — a first pass measured seven consumers against the wrong
+unicorn. Prune the nested copy and prove the resolution from the
+preset's directory before trusting a number; a rule's schema accepting
+the new option is the cheapest proof.
 
 Deliberately NOT a script. A routine that reports "n new rules
 available" answers the cheap half of the question (which release notes

@@ -890,6 +890,22 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // Doc-comment formatting is owned by the jsdoc plugin (the house
   // style keeps the `*` line prefix).
   'unicorn/no-asterisk-prefix-in-documentation-comments': 'off',
+  // unicorn 76's `checkContinue` (off by default): an unlabeled
+  // `continue` inside a nested loop, or inside a `switch` within a
+  // loop, reads as ambiguous about what it continues. Measured
+  // 2026-09-22 at zero sites over the eight repositories — adopted as
+  // a latent guard, the way `prefer-rolling-workspace-spec` is.
+  'unicorn/no-break-in-nested-loop': ['error', { checkContinue: true }],
+  // At the `recommended` default. unicorn 76's `checkConditionals`
+  // (off by default) is REFUSED, measured 2026-09-22: one site over
+  // the eight repositories — api-core's `#buildPolicy`, a pipeline
+  // built by three ordered `push` calls, two of them guarded — and the
+  // rewrite it asks for is a conditional spread
+  // (`...(x === undefined ? [] : [x])`), which the rule itself cannot
+  // fix in TypeScript because the spread loses contextual typing. An
+  // imperative builder whose order is the point reads better than
+  // that idiom; re-measure if a second site appears.
+  'unicorn/no-immediate-mutation': 'error',
   // Owned by `@typescript-eslint/naming-convention`.
   'unicorn/no-keyword-prefix': 'off',
   // House comments wrap prose at print width; the heuristic reads
@@ -906,6 +922,15 @@ const staticMainRules: NonNullable<Config['rules']> = {
   'unicorn/no-unnecessary-boolean-comparison': 'off',
   'unicorn/no-unreadable-new-expression': 'error',
   'unicorn/no-unused-properties': 'error',
+  // unicorn 76's `checkCompoundConditions` (off by default): two
+  // consecutive guards whose conditions are compound (`&&`, `??`, a
+  // ternary, a negated group) get combined like simple ones. Measured
+  // 2026-09-22 at zero sites over the eight repositories — adopted as
+  // a latent guard.
+  'unicorn/prefer-combined-guards': [
+    'error',
+    { checkCompoundConditions: true },
+  ],
   'unicorn/prefer-dispose': 'error',
   // Requires Node.js 24 (`Error.isError`).
   'unicorn/prefer-error-is-error': 'off',
@@ -936,6 +961,12 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // 2026-09-17 over the eight repositories: `always` reports 54 sites,
   // whose autofix mangles real early returns; `only-single-line`
   // reports 20, each a one-line ternary that reads better as one.
+  // Re-measured 2026-09-22 under unicorn 76, whose new readability
+  // boundaries skip a guard only when the merged values hold a ternary,
+  // a block or a multiline literal: `always` still adds six sites over
+  // the seven consumers, every one a guard clause flattened into a
+  // multi-line ternary (a `.toString()` hoisted over both branches in
+  // melcloud-api's `home-report.ts`). The bound stands.
   'unicorn/prefer-ternary': ['error', 'only-single-line'],
   // Requires Node.js 24 (`Uint8Array#toBase64`).
   'unicorn/prefer-uint8array-base64': 'off',
@@ -1245,15 +1276,16 @@ export const yamlBlock = (stepKeyOrder: readonly string[]): Config[] =>
             snake_case: true,
           },
         ],
+        // In neither preset (3.8.1): a plain `true:` key (`on:` under YAML
+        // 1.1) reaches readers as a boolean. Zero sites 2026-09-22; YAML 1.2.
+        'yml/no-boolean-key': 'error',
         // Mirrors the core `no-irregular-whitespace` verdict
         // (`skipStrings: false`): an NBSP inside a quoted `run:` or
         // `name:` scalar is reported too.
         'yml/no-irregular-whitespace': ['error', { skipQuotedScalars: false }],
-        // Deliberate override of `ymlConfigs.prettier`: Prettier
-        // preserves float spelling (`1.50` survives a pass, probed
-        // 2026-09-15), so nothing owns this. The fixer retags `x.0` as
-        // the integer `x`, which the workflow and Dependabot scalars the
-        // family writes never carry (versions are quoted).
+        // Overrides `ymlConfigs.prettier`: Prettier keeps float spelling
+        // (`1.50` survives a pass, probed 2026-09-15), so nothing owns
+        // this; the fixer retags `x.0` as `x` (versions here are quoted).
         'yml/no-trailing-zeros': 'error',
         'yml/require-string-key': 'error',
         'yml/sort-keys': [
@@ -1318,6 +1350,12 @@ export const packageJsonBlock = (
           'error',
           { forPackages: ['^@olivierzal/'], rangeType: 'pin' },
         ],
+        // package-json 1.9's rule, with an EMPTY allow-list: a dependency
+        // is a version here, never a dist-tag — `latest` or `next` would
+        // dodge Dependabot's reviewed bump and the exact-pin doctrine
+        // alike. Measured 2026-09-22 at zero sites over the eight
+        // repositories.
+        'package-json/restrict-dist-tags': ['error', { allowed: [] }],
         ...familyRules,
       },
     },
