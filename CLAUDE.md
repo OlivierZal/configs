@@ -497,7 +497,8 @@ produce, undone. Measured over the eight repositories: `always` reports
 54 sites and its autofix mangles real early returns (melcloud-api's
 `mergeHomeReportChunks` and `mergeHourlyChartResults` were the
 evidence); `only-single-line` reports 20, each a one-line ternary that
-reads better as one. The tables pin the bounded form. The other four
+reads better as one. The tables pinned the bounded form until 6.6.0
+(below). The other four
 (`prefer-early-return`, `prefer-minimal-ternary`, `no-immediate-mutation`,
 `prefer-continue`) bit real code as they should: `no-immediate-mutation`
 saw a conditional push in this repo's own suites, fixed rather than
@@ -525,7 +526,7 @@ its own). The `prefer-ternary` bound was RE-MEASURED rather than
 carried: 76's readability boundaries skip a guard only when the merged
 values hold a ternary, a block or a multiline literal, so `always`
 still adds six guard-clause flattenings over the seven consumers —
-`only-single-line` stands. `prefer-minimal-ternary` gained an autofix,
+`only-single-line` stood, until 6.6.0. `prefer-minimal-ternary` gained an autofix,
 adopted under the fixer doctrine above (the error determines the
 correction). eslint 10.11 (a labeled `continue` now reaches
 `no-unsafe-finally`; `new-cap` and `object-shorthand` refinements the
@@ -540,6 +541,26 @@ rule-bearing patches (jsdoc 64.5.4, typescript-eslint 8.70.1,
 perfectionist 5.11.1) rode along at zero findings. `unplugin-swc` 2.0
 (drops Node 18, below the family floor) is not rule-bearing and lands
 through Dependabot.
+Both September verdicts were RETURNED on 2026-09-23 (6.6.0), on the
+owner's challenge and on re-reading the evidence. `checkConditionals`
+is adopted: the base rule was already at `error` and its rewrites had
+been made, so refusing the extension because one site would move was
+inconsistent with strict adoption — and the site, api-core's ordered
+policy builder, rewrites safely into one literal that shows the order
+at a glance (the fixer's abstention in TypeScript concerns the autofix,
+not the resulting code; the explicit array annotation keeps contextual
+typing). `prefer-ternary` returns to the preset's `always`: the 6.4.1
+evidence was unicorn 75's nested-ternary defect, which 76's readability
+boundaries fixed; the 6.5.0 re-measurement judged the fixer's raw
+output rather than the formatted result every adoption produces
+(`format:fix` follows `lint:fix`); and the `prefer-early-return`
+argument conflated a guard before a long body with a two-way value
+selection, which is a ternary's job and what the family already asks
+of `prefer-minimal-ternary` at its stricter setting. Measured cost:
+one site for the option, nine for `always` across the seven consumers,
+every one auto-fixable. The bound was a preference, and a preference
+is not worth a configuration defended release after release; the
+presets suite now pins `always` and the boundary it relies on.
 
 Maintenance is a gate — an unmaintained plugin is refused regardless of
 coverage — but none of the three below fails it: all are active under

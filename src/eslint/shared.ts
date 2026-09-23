@@ -896,16 +896,17 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // 2026-09-22 at zero sites over the eight repositories — adopted as
   // a latent guard, the way `prefer-rolling-workspace-spec` is.
   'unicorn/no-break-in-nested-loop': ['error', { checkContinue: true }],
-  // At the `recommended` default. unicorn 76's `checkConditionals`
-  // (off by default) is REFUSED, measured 2026-09-22: one site over
-  // the eight repositories — api-core's `#buildPolicy`, a pipeline
-  // built by three ordered `push` calls, two of them guarded — and the
-  // rewrite it asks for is a conditional spread
-  // (`...(x === undefined ? [] : [x])`), which the rule itself cannot
-  // fix in TypeScript because the spread loses contextual typing. An
-  // imperative builder whose order is the point reads better than
-  // that idiom; re-measure if a second site appears.
-  'unicorn/no-immediate-mutation': 'error',
+  // unicorn 76's `checkConditionals` (off by default): a value built by
+  // guarded `push` calls right after its initialization is built in its
+  // literal instead, conditional spreads included. One site over the
+  // eight repositories (api-core's ordered policy builder), which
+  // rewrites safely into a literal that shows the order at a glance;
+  // the rule's own abstention from fixing it in TypeScript concerns the
+  // autofix, not the code — an explicit array annotation keeps the
+  // contextual typing. Refused on 2026-09-22 for that one site, adopted
+  // on 2026-09-23: the base rule was already at `error` with its
+  // rewrites made, and the extension asks nothing different.
+  'unicorn/no-immediate-mutation': ['error', { checkConditionals: true }],
   // Owned by `@typescript-eslint/naming-convention`.
   'unicorn/no-keyword-prefix': 'off',
   // House comments wrap prose at print width; the heuristic reads
@@ -953,21 +954,17 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // Owned by `@typescript-eslint/prefer-string-starts-ends-with`.
   'unicorn/prefer-string-starts-ends-with': 'off',
   'unicorn/prefer-temporal': 'error',
-  // Bounded to what a ternary makes CLEARER. unicorn 75 taught the
-  // rule flat return statements, and at the preset's `always` default
-  // it then rewrites guard clauses — `if (x === undefined) { return a }
-  // return b` — into multi-line ternaries, which is the shape
-  // `unicorn/prefer-early-return` exists to produce, undone. Measured
-  // 2026-09-17 over the eight repositories: `always` reports 54 sites,
-  // whose autofix mangles real early returns; `only-single-line`
-  // reports 20, each a one-line ternary that reads better as one.
-  // Re-measured 2026-09-22 under unicorn 76, whose new readability
-  // boundaries skip a guard only when the merged values hold a ternary,
-  // a block or a multiline literal: `always` still adds six sites over
-  // the seven consumers, every one a guard clause flattened into a
-  // multi-line ternary (a `.toString()` hoisted over both branches in
-  // melcloud-api's `home-report.ts`). The bound stands.
-  'unicorn/prefer-ternary': ['error', 'only-single-line'],
+  // At the preset's `always` since 6.6.0. The `only-single-line` bound
+  // of 6.4.1 answered unicorn 75's nested-ternary defect, which 76's
+  // readability boundaries fixed (a guard whose values hold a ternary, a
+  // block or a multiline literal is left alone in both modes); the
+  // 6.5.0 re-measurement judged the fixer's raw output, not the result
+  // `format:fix` produces right after it. A two-way value selection is
+  // a ternary's job — what `prefer-minimal-ternary` above already asks
+  // at its stricter setting — and `prefer-early-return` guards a long
+  // body, not a value. Nine sites over the seven consumers (2026-09-23),
+  // every one auto-fixed.
+  'unicorn/prefer-ternary': 'error',
   // Requires Node.js 24 (`Uint8Array#toBase64`).
   'unicorn/prefer-uint8array-base64': 'off',
   // Config-driven string vocabulary with no invariant to encode.

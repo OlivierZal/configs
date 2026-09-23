@@ -496,32 +496,31 @@ describe.each([
   )
 })
 
-// The bound on `prefer-ternary` is pinned by what it DOES, both ways:
-// a guard clause whose value spans lines survives (at the preset's
-// `always` default its autofix flattens it into a multi-line ternary,
-// the shape `prefer-early-return` exists to undo), and the one-line
-// if/else a ternary reads better as is still reported.
+// `prefer-ternary` at the preset's `always` is pinned by what it DOES:
+// a guard clause that selects a value is reported whether the value
+// spans lines or not, and the readability boundary the setting relies
+// on holds — a guard whose fall-through already holds a ternary is
+// left alone rather than nested.
 describe.each([
   { preset: appPreset, presetName: 'homeyApp' },
   { preset: libraryPreset, presetName: 'library' },
-])('prefer-ternary bound via $presetName', ({ preset }) => {
-  it(
-    'should leave a guard clause with a multi-line value alone',
-    { timeout: 60_000 },
-    async () => {
-      await expect(
-        lintFixture(preset, 'ternary', 'guard.ts'),
-      ).resolves.not.toContain('unicorn/prefer-ternary')
-    },
-  )
+])('prefer-ternary at the preset default via $presetName', ({ preset }) => {
+  it.each([
+    { file: 'guard.ts', shape: 'a guard clause with a multi-line value' },
+    { file: 'one-line.ts', shape: 'a one-line if/else' },
+  ])('should report $shape', { timeout: 60_000 }, async ({ file }) => {
+    await expect(lintFixture(preset, 'ternary', file)).resolves.toContain(
+      'unicorn/prefer-ternary',
+    )
+  })
 
   it(
-    'should still report the one-line if/else a ternary reads better as',
+    'should leave a guard alone when merging would nest ternaries',
     { timeout: 60_000 },
     async () => {
       await expect(
-        lintFixture(preset, 'ternary', 'one-line.ts'),
-      ).resolves.toContain('unicorn/prefer-ternary')
+        lintFixture(preset, 'ternary', 'nested.ts'),
+      ).resolves.not.toContain('unicorn/prefer-ternary')
     },
   )
 })
