@@ -22,13 +22,17 @@ npm install --save-dev --save-exact @olivierzal/configs
 ```
 
 Every family repo's `.nvmrc` names the install floor of its tree —
-22.22.2 once the four libraries' 5.0.0 adoptions land, the apps being
-there already; the lowest Node the tooling this package pulls into every
-consumer installs on — and never a sibling's value or a round number;
-`engines` keeps stating what the code needs where it runs (the device
-floor in the four libraries, that same install floor here and in the
-apps, whose device floor lives in `compatibility`). Re-derive it when
-the tree moves.
+22.23.0 since 7.0.0, from `eslint-plugin-es-x`'s
+`^22.23.0 || ^24.18.0 || >=26.4.0`, the lowest Node the tooling this
+package pulls into every consumer installs on — and never a sibling's
+value or a round number; `engines` keeps stating what the code needs
+where it runs (the device floor in the four libraries, that same install
+floor here and in the apps, whose device floor lives in
+`compatibility`). Below the floor npm still installs, under an
+`EBADENGINE` warning, which is how the apps' 22.20 coverage leg installs
+at all. Re-derive it when the tree moves. The peers are the tools every
+consumer runs: `eslint >=10.6.0` (es-x's own floor), `prettier >=3.5`,
+`vitest >=4`.
 
 ### eslint
 
@@ -89,7 +93,19 @@ its files, never the policy (CLAUDE.md has the drift rationale).
 The eslint plugins ship as dependencies of this package: rule
 evaluations and version bumps happen here once, consumers only bump
 their exact pin. Per-repo ignores and documented rule ledgers stay in
-each consumer (CLAUDE.md: they are verdicts, not shared policy).
+each consumer (CLAUDE.md: they are verdicts, not shared policy). Both
+presets extend, in this order, `@eslint/js` recommended,
+`eslint-plugin-unicorn` recommended, `typescript-eslint`'s strict and
+stylistic type-checked sets, `eslint-plugin-import-x` errors and
+typescript, `@eslint-community/eslint-plugin-eslint-comments`
+recommended, `eslint-plugin-regexp` recommended and, last,
+`eslint-config-prettier`; the family tables layer on top, and the
+scoped blocks add `@stylistic`, `perfectionist`, `jsdoc`, `vitest`,
+`yml`, `package-json`, `@eslint/json`, `@eslint/markdown` — and, for
+the Homey preset, `@eslint/css`, `@html-eslint` and
+`eslint-plugin-es-x`. Every adopted rule runs at `error`; what the
+family refuses is data in `src/eslint/refused-rules.ts`, not a
+disabled line.
 
 Naming is strict-core: properties are camelCase by default, and every
 departure is a scoped opt-out — the Homey preset skips capability-id
@@ -98,9 +114,14 @@ filter-scoped `wireNamingEntries`, and test files widen property
 formats (doubles mirror wire payloads and key mocks by export names).
 
 A library shipping webview-bundled sources composes the runtime floor
-(es2023: no iterator helpers, no `Object.groupBy`, no `v` regex flag)
 rather than restating it — `webviewFloorBlock(files)` is the very
-fragment the Homey preset applies, so it cannot drift from it:
+fragment the Homey preset applies, so it cannot drift from it. The
+floor is the iOS 16.4 WebKit, detected by `eslint-plugin-es-x`'s
+`restrict-to-es2023` table corrected by what that engine actually
+ships (no `Object.groupBy`, `Promise.withResolvers` or iterator
+helpers; `String#isWellFormed` and `Array.fromAsync` pass), plus the
+`v` regex flag stepped down to `u` and `AbortSignal.any()` banned by
+hand. The block carries `extends`, so it goes inside `defineConfig`:
 
 ```ts title="eslint.config.ts (library with webview sources)"
 import { webviewFloorBlock } from '@olivierzal/configs/eslint'

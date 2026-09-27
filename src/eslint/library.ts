@@ -1,14 +1,11 @@
 // The published-library family preset: everything the API clients
 // share. Each library's overlay keeps only its documented verdicts
 // (ignores, `'off'` ledgers) and its wire-protocol naming entry.
+import type { Linter } from 'eslint'
 import { type Config, defineConfig } from 'eslint/config'
-import { flatConfigs as importXConfigs } from 'eslint-plugin-import-x'
-import { configs as tsConfigs, globs as tsGlobs } from 'typescript-eslint'
-import js from '@eslint/js'
+import { globs as tsGlobs } from 'typescript-eslint'
 import stylistic from '@stylistic/eslint-plugin'
-import prettier from 'eslint-config-prettier/flat'
 import perfectionist from 'eslint-plugin-perfectionist'
-import unicorn from 'eslint-plugin-unicorn'
 
 import {
   type NamingConventionOptions,
@@ -19,6 +16,7 @@ import {
   jsdocBlock,
   jsonBlock,
   linterOptionsBlock,
+  mainExtends,
   mainLanguageOptions,
   markdownBlock,
   packageJsonBlock,
@@ -67,21 +65,20 @@ const libraryMainBlock = ({
 }: LibraryOptions): Config[] =>
   defineConfig([
     {
-      extends: [
-        js.configs.recommended,
-        unicorn.configs.recommended,
-        tsConfigs.strictTypeChecked,
-        tsConfigs.stylisticTypeChecked,
-        importXConfigs.errors,
-        importXConfigs.typescript,
-        // Last: it neutralizes formatting rules from the presets above.
-        prettier,
-      ],
+      extends: mainExtends,
       files: [tsGlobs.ts, '*.config.{js,mjs}'],
       languageOptions: mainLanguageOptions,
       plugins: { '@stylistic': stylistic, perfectionist },
       rules: {
         ...sharedMainRules(libraryMainRuleOptions(wireNamingEntries)),
+        // A namespace import hides which names a module uses; the
+        // libraries import by name. The app preset OMITS it: com.melcloud
+        // disambiguates the two wire vocabularies with `import * as
+        // Classic/Home from '@olivierzal/melcloud-api/{classic,home}'` —
+        // 86 sites in 70 files, 56 of them type-only (2026-09-27), the
+        // consumption melcloud-api's `src/classic.ts` documents — and the
+        // rule's only option is `ignore` globs, with no type-only
+        // exemption.
         'import-x/no-namespace': 'error',
         // `src/temporal.ts` is the single sanctioned polyfill entry
         // point.
@@ -125,7 +122,10 @@ const decoratorsBlock: Config = {
     ],
     // The replacement methods must be `function` expressions: the
     // decorator protocol rebinds `this` at call time, which an arrow
-    // cannot receive.
+    // cannot receive. LIVE, not dead: the rule does report a function
+    // expression declaring a `this:` parameter — its `hasThisParameter`
+    // check withholds only the SUGGESTION — five sites across the three
+    // libraries' decorators without this off (measured 2026-09-28).
     'unicorn/consistent-function-style': 'off',
   },
 }
@@ -137,6 +137,27 @@ const temporalBlock: Config = {
     // allowed to import it.
     'no-restricted-imports': 'off',
   },
+}
+
+// The vitest-concurrent pattern destructures the test-context `expect`
+// (required for exact assertion counts), shadowing the module import by
+// design. The other two options restate the main table's: dropping
+// `hoist: 'all'` here had silently loosened the test block to the rule's
+// `functions` default until 7.0.0.
+const libraryTestShadow: Linter.RuleEntry = [
+  'error',
+  { allow: ['expect', 'Intl', 'Temporal'], builtinGlobals: true, hoist: 'all' },
+]
+
+const libraryPackageJsonRules: NonNullable<Config['rules']> = {
+  'package-json/require-homepage': 'error',
+  'package-json/require-keywords': 'error',
+  // A scoped package published to a non-default registry declares it:
+  // three of the five libraries already carry
+  // `{ registry: 'https://npm.pkg.github.com' }` (2026-09-27); the other
+  // two gain it with their 7.0.0 adoption.
+  'package-json/require-publishConfig': 'error',
+  'package-json/require-types': 'error',
 }
 
 const libraryYamlStepOrder = [
@@ -168,7 +189,8 @@ export const library = ({
     }),
     // After the main block, so the scoped files win the override.
     ...(isScoped ? [wireNamingBlock(wireNamingFiles, naming)] : []),
-    configTsBlock(['*.config.{js,mjs,mts,ts}']),
+    // The core policy, never the wire's: a config file speaks no wire.
+    configTsBlock(['*.config.{js,mjs,mts,ts}'], libraryNaming([])),
     configJsBlock,
     jsonBlock(),
     markdownBlock,
@@ -177,19 +199,9 @@ export const library = ({
     temporalBlock,
     testsBlock({
       ...testNamingRules(naming),
-      // The vitest-concurrent pattern destructures the test-context
-      // `expect` (required for exact assertion counts), shadowing the
-      // module import by design.
-      '@typescript-eslint/no-shadow': [
-        'error',
-        { allow: ['expect', 'Intl', 'Temporal'], builtinGlobals: true },
-      ],
+      '@typescript-eslint/no-shadow': libraryTestShadow,
     }),
     yamlBlock(libraryYamlStepOrder),
-    packageJsonBlock({
-      'package-json/require-homepage': 'error',
-      'package-json/require-keywords': 'error',
-      'package-json/require-types': 'error',
-    }),
+    packageJsonBlock(libraryPackageJsonRules),
   ])
 }

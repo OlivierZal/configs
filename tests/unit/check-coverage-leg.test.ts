@@ -122,7 +122,7 @@ describe('the reusable CI workflow', () => {
       .join('\n')
 
     expect(runs).toContain('check-coverage-leg.sh')
-    expect(runs).toMatch(/^\s*bash "\$script" "\$NODE_VERSIONS"$/mv)
+    expect(runs).toMatch(/^ *bash "\$script" "\$NODE_VERSIONS"$/mv)
   })
 
   // A caller that passes nothing still has to get coverage, so the

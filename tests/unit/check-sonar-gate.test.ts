@@ -187,7 +187,7 @@ describe('the reusable CI workflow', () => {
       .join('\n')
 
     expect(runs).toContain('check-sonar-gate.sh')
-    expect(runs).toMatch(/^\s*bash "\$script"$/mv)
+    expect(runs).toMatch(/^ *bash "\$script"$/mv)
   })
 
   // Load-bearing rather than ordering hygiene: a rejected gate fails

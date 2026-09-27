@@ -49,17 +49,25 @@ both channels — bump once, release once.
   `^22.22.2 || >=24.15.0`, so the long-standing `>=22.19.0` declared a
   floor this package could not actually install on, and `.nvmrc` sent
   every fresh clone there. Both now name the derived value; re-derive it
-  when the tree moves rather than nudging it by hand.
+  when the tree moves rather than nudging it by hand — as 7.0.0 did
+  (2026-09-27): `eslint-plugin-es-x` requires
+  `^22.23.0 || ^24.18.0 || >=26.4.0`, and the intersection with
+  package-json's range, `^22.23.0 || ^24.18.0 || >=26.4.0`, is what
+  `engines` names now.
 - `.nvmrc` is the INSTALL floor, in every repo of the family, and it is
   derived HERE: the lowest Node the tree this package imposes on every
-  consumer installs on — 22.22.2 today, from
-  `eslint-plugin-package-json`'s `^22.22.2 || >=24.15.0`. It is not
-  `engines`. The four libraries keep `engines` at the device floor
-  (22.20, what their code needs where it runs) and still cannot install
-  below 22.22.2, which is the one thing a fresh clone must know; this
-  package and the three apps derive `engines` the same way and state
-  the device floor elsewhere. Recorded 2026-09-07 with the libraries'
-  move to 22.22.2 (their 5.0.0 adoption); re-derive when the tree moves,
+  consumer installs on — 22.23.0 since 7.0.0, from
+  `eslint-plugin-es-x`'s `^22.23.0 || ^24.18.0 || >=26.4.0` (22.22.2
+  before it, from `eslint-plugin-package-json`'s
+  `^22.22.2 || >=24.15.0`). It is not `engines`. The four libraries keep
+  `engines` at the device floor (22.20, what their code needs where it
+  runs); below the install floor npm still installs, but only under an
+  `EBADENGINE` warning — which is why the apps' 22.20 coverage leg
+  installs at all, and why a fresh clone must be told the install floor
+  rather than meet it as a warning. This package and the three apps
+  derive `engines` the same way and state the device floor elsewhere.
+  Recorded 2026-09-07 with the libraries' move to 22.22.2 (their 5.0.0
+  adoption), moved 2026-09-27 with es-x; re-derive when the tree moves,
   never nudge by hand.
 
 ## Naming doctrine
@@ -454,7 +462,39 @@ judged one by one, each verdict measured by a real run on melcloud-api
 and com.melcloud and challenged by two independent re-readings before
 it entered the tables — 30 rules adopted or tightened, six refusals
 recorded at their rule sites, the rest refused as owned by TypeScript,
-Prettier or another rule. The ledger's versions did not move.
+Prettier or another rule. The ledger's versions did not move. That
+last clause was re-measured in FULL on 2026-09-27 (7.0.0): seven
+repos, 533 files, 253 candidate rules — every unconfigured rule of
+every installed plugin enabled at its defaults over each tree, then
+adversarially verified — and 13 had no owner at all. ADOPTED, each at
+`error` with its reason at the rule site: `no-restricted-exports`
+(`then`), `@typescript-eslint/no-restricted-types` (`Date`, the type
+half of `unicorn/prefer-temporal`), `prefer-enum-initializers`,
+`no-proto`, `no-iterator`, `no-unnecessary-qualifier`,
+`capitalized-comments` (fixed by hand, never by its fixer, which is
+unsafe on identifiers), `import-x/no-commonjs`, the four
+`eslint-recommended` rules the JS config files had no owner for
+(`no-var`, `prefer-const`, `prefer-rest-params`, `prefer-spread`),
+`vitest/prefer-mock-return-shorthand`, `vitest/prefer-todo`,
+`import-x/extensions` (app preset only; TS2835 owns it under
+`nodenext`) and the `package-json` verdicts of the ownership section
+below. REFUSED, with the reason: `strict` (owned by
+`unicorn/prefer-module`); `no-div-regex` (taste); `max-lines` — at
+1000 it would fit the largest file, and a `max` loosened ABOVE its
+default to fit the corpus is the corpus-derived option the doctrine
+refuses, every family ceiling tightening BELOW its default;
+`vitest/require-hook` — 93 of 96 sites are the parametrised-contract
+suite factories, so fitting it needs a curated allow-list, the shape
+that drifts; `import-x/max-dependencies`, for the same reason;
+`unicorn/no-missing-local-resource` on TypeScript and
+`jsdoc/imports-as-dependencies`, inert by construction; the
+`unicorn/consistent-boolean-name` split, which covers nothing
+(`checkFunctions` reaches only `function` declarations and the family
+writes arrows); `package-json/require-devEngines` (no options schema
+to shape it); `package-json/restrict-top-level-properties` (a
+corpus-derived allow-list). A refusal of a rule no preset turns on
+lives in `src/eslint/refused-rules.ts`, never as an `'off'` line (the
+refusal doctrine under Process).
 vitest 5 (the runner, read the same night) moved two defaults the
 tables answer: `clearMocks` is now true, so the five library configs
 drop their restatement, the three apps drop their hook-level
@@ -463,13 +503,32 @@ out; `toThrow('')` now matches any message, so a `no-restricted-syntax`
 selector in the test block refuses the vacuous argument. The peer
 floor stays `vitest: '>=4'` until the next major names 5.
 unicorn 75 and jsdoc 64.5 were read on 2026-09-17 (6.4.0). unicorn 75
-adds twenty rules, every one of them in `recommended` — so the ten
-JS/TS ones (`no-async-iterator-callback`,
+adds twenty rules; of its ten JS/TS ones, eight are in `recommended`
+(`true` or `'unopinionated'` in the rule metadata, both of which the
+preset enables) and arrive with the bump (`no-async-iterator-callback`,
 `no-unused-builtin-method-return`, `no-unused-iterator-helper`,
 `no-useless-set-construction`, `no-using-resource-escape`,
-`prefer-combined-guards`, `prefer-iterator-zip`, `prefer-json-import`,
-`prefer-temporal-conversion`, `prefer-uint8array-hex`) arrive with the
-bump, measured at ZERO findings across the eight repositories. The CSS
+`prefer-combined-guards`, `prefer-iterator-zip`,
+`prefer-temporal-conversion`) arrive with the bump, measured at ZERO
+findings across the eight repositories. Two were recorded here as
+arriving and never did: `prefer-json-import` and
+`prefer-uint8array-hex` ship `recommended: false` in 75 AND 76 (re-read
+2026-09-27), so the zero this entry once claimed for them was never
+live. Both now sit in the refusal ledger (`src/eslint/refused-rules.ts`)
+with their reasons — `prefer-json-import` as DOMAIN (neither tsconfig
+base sets `resolveJsonModule`, and the rewrite to an import attribute
+changes resolution, caching and error timing, which is why unicorn keeps
+it opt-in), `prefer-uint8array-hex` as FLOOR (`Uint8Array#toHex` is a
+Node 26 API and the device runs 22). Two more refusals of that
+plugin's opt-in rules were corrected in the same pass and live there
+too: `no-keyword-prefix` is NOT owned by `naming-convention` as the
+old `off` claimed — the family's option checks formats and boolean
+prefixes, never a forbidden prefix — and is refused as VOCABULARY (87
+sites would fire, `newSettings` ×29, `className` ×8, the DOM's own
+property); `no-manually-wrapped-comments` is refused as CONFLICTING,
+not as noise: its fixer JOINS a wrapped group into one `//` line
+without reflowing it (read in the rule source), which would destroy the
+print-width convention on every `--fix` run. The CSS
 half does NOT arrive: the `cssBlock` enumerates unicorn's CSS rules
 instead of extending its preset, so each was judged on what it can
 CATCH here (measured over the three settings stylesheets the same day):
@@ -563,8 +622,10 @@ is not worth a configuration defended release after release; the
 presets suite now pins `always` and the boundary it relies on.
 
 Maintenance is a gate — an unmaintained plugin is refused regardless of
-coverage — but none of the three below fails it: all are active under
-eslint-community.
+coverage — but none of the plugins below fails it: the three
+long-standing refusals are active under eslint-community, and so are
+two of the three admitted in 7.0.0 (es-x, eslint-comments), the third
+(regexp) under its author beside them.
 
 - **eslint-plugin-n — REFUSED, owned by the CI matrix and real
   coverage.** The fleet measurement put every device on the same Node
@@ -617,6 +678,88 @@ eslint-community.
   every computed access; `detect-non-literal-regexp` would condemn the
   route-guard kernels, `detect-non-literal-fs-filename` the manifest
   reader). Re-evaluate only if the CodeQL/Sonar gates ever drop.
+- **eslint-plugin-es-x — ADOPTED 7.0.0, narrowed to the webview floor
+  block.** Its `flat/restrict-to-es2023` table replaces the hand
+  selectors that named three features and missed a fourth
+  (`Promise.withResolvers`, Safari 17.4, was named in the block's own
+  docstring and banned nowhere). The edition preset alone is the wrong
+  SHAPE for this floor, which is an ENGINE: the table says es2024 for
+  five features the iOS 16.4 WebKit ships, so five rules are LIVE offs
+  at the block with browser-compat-data 6.1.5 as the reason
+  (`no-string-prototype-iswellformed`, `-towellformed`,
+  `no-atomics-waitasync`, `no-array-fromasync`,
+  `no-resizable-and-growable-arraybuffers`; `ArrayBuffer#transfer`,
+  17.4, stays banned by its own rule), `no-regexp-v-flag` is off as the
+  twin of `require-unicode-regexp` at `u`, and the one Web API the
+  floor excludes — `AbortSignal.any`, 17.4 — is banned by hand, since
+  es-x is ES-only. Applied to the floor files alone, never
+  family-wide: nothing else in the family runs below Node 22. Its cost
+  is the install floor: es-x requires `^22.23.0 || ^24.18.0 || >=26.4.0`,
+  which moved `.nvmrc` and `engines` (the boundary above).
+- **eslint-plugin-regexp — ADOPTED 7.0.0, narrowed.** `flat/recommended`
+  in both main blocks before `prettier`, its six `warn` rules raised to
+  `error` (zero-warning policy, now mechanical: a presets test resolves
+  every representative file and fails on any rule at `warn`),
+  `no-useless-escape` off as owned by the core rule (double report
+  measured), four more at `error` (`no-super-linear-move`,
+  `prefer-result-array-groups` for `noUncheckedIndexedAccess`,
+  `prefer-named-replacement`, `prefer-named-backreference`), and four
+  refused as owned (`prefer-regexp-exec`, `prefer-regexp-test`,
+  `require-unicode-regexp`, `prefer-named-capture-group`). Its unique
+  value here is coverage no other tool has: its `no-invalid-regexp`
+  caught 10/10 invalid LITERALS that TypeScript and the parser accept
+  (measured 2026-09-27), which is why the three core rules the preset
+  turns off for its own are accepted. Zero findings on the family's 103
+  literals; the family's `prefer-regex-literals` options survive the
+  preset's bare `'error'` because the table applies after `extends`
+  (pinned by a test).
+- **@eslint-community/eslint-plugin-eslint-comments — ADOPTED 7.0.0,
+  narrowed.** `recommended` (from the `/configs` subpath) in both main
+  blocks, then `require-description` at `error` with the default
+  `ignore: []` — an `eslint-enable` needs a description too; of the
+  family's 46 directives, the seven undescribed enables get theirs with
+  the adoptions — and `no-restricted-disable` on
+  `@typescript-eslint/naming-convention`, the naming doctrine
+  mechanised (anything of our own naming gets renamed, not excused).
+  Two LIVE offs: `no-unlimited-disable` is owned by
+  `unicorn/no-abusive-eslint-disable` (both fire on the three directive
+  forms, measured), `no-unused-enable` by
+  `linterOptions.reportUnusedDisableDirectives: 'error'`.
+- **eslint-plugin-compat — REFUSED, blind to the breach.** Its API
+  table holds no `AbortSignal` static, so the one Web API the floor
+  actually excludes is exactly what it cannot see; the floor's
+  detection is es-x plus the hand entry above.
+- **eslint-plugin-de-morgan — REFUSED, style.** The one non-trivial
+  rewrite it proposes in the family reads worse than the original.
+- **eslint-plugin-node-dependencies — REFUSED, unsound offline.**
+  `compat-engines` reads the registry at lint time and passes green
+  when it cannot, and its local resolver is defeated by `exports` maps.
+- **eslint-plugin-sonarjs — REFUSED, owned.** SonarCloud runs the same
+  implementations on every pull request; a second TypeScript copy of
+  the same verdicts.
+- **eslint-plugin-no-unsanitized — REFUSED, owned** by
+  `unicorn/no-unsafe-dom-html`.
+- **eslint-plugin-erasable-syntax-only — REFUSED, owned** by the
+  tsconfig flag of the same name, which both bases set.
+- **Refused on 2026-09-27, one line each:** `depend` (a package
+  blocklist is dependency policy, owned by `dependency-review.yml` and
+  Dependabot); `math` (owned by `no-bitwise`,
+  `prefer-exponentiation-operator` and unicorn's `prefer-math-*`
+  rules); `jsonc` (owned by `@eslint/json` and Prettier); `tsdoc` (the
+  jsdoc plugin already runs in its `flat/recommended-tsdoc-error`
+  mode, a second parser of the same comments); `boundaries` (a
+  per-repo element map for packages that have one layer;
+  `import-x/no-cycle` and `no-restricted-imports` cover what exists);
+  `array-func` (owned by unicorn's array rules); `no-only-tests` (owned
+  by `vitest/no-focused-tests`); `github-action` (workflows are read
+  by zizmor and the `yml/` table already); `i18n-json` (the apps'
+  `locales/*.json` are the Homey CLI's to validate, and the JSON block
+  ignores them by design); `total-functions` (owned by
+  `noUncheckedIndexedAccess`, `strict-boolean-expressions`,
+  `switch-exhaustiveness-check` and `no-unsafe-type-assertion`);
+  `functional` (immutability by decree fights the class-based SDK
+  design; `prefer-readonly` and `no-param-reassign` own the wanted
+  half).
 
 ### Measuring a candidate before adopting it
 
@@ -664,6 +807,19 @@ unicorn. Prune the nested copy and prove the resolution from the
 preset's directory before trusting a number; a rule's schema accepting
 the new option is the cheapest proof.
 
+Three more, measured 2026-09-27 on the 7.0.0 audit. (a) ESLint accepts
+`'off'` for a rule name that does not exist — `rules: { 'no-such-rule':
+'off' }` lints without a word — so a refusal written as an `off` on a
+rule no preset enables is never validated and rots in silence; that is
+why refusals are data (`src/eslint/refused-rules.ts`) proven by a test.
+(b) With `-c <file>` ESLint's base path is the CWD: a file outside it is
+silently ignored, even with `basePath` set, so a probe config must run
+from the tree it measures. (c) A type-aware probe over ONE tsconfig
+costs about two seconds and well under 4 GB — the 8 GB figure the lint
+scripts reserve is the full `projectService` run over every project —
+so a perimeter probe may run typed, and the type-aware rules (es-x's
+iterator helpers, `no-unsafe-*`) measure honestly.
+
 Deliberately NOT a script. A routine that reports "n new rules
 available" answers the cheap half of the question (which release notes
 moved) and leaves the expensive half (is this rule right HERE)
@@ -677,8 +833,8 @@ The family rule everywhere else — the formatter formats, the linter
 lints — reaches HTML too, and reaches it BY HAND.
 `eslint-config-prettier` is what normally performs the handover;
 measured against the installed plugin, it disables 358 rules and
-**zero** `html/` ones. So the `html/` split lives in `homey-app`'s
-ledger, entry by entry, each naming which of two reasons retires it:
+**zero** `html/` ones. So the `html/` split is hand-maintained, entry
+by entry, each naming which of two reasons retires it:
 
 - **redundant** — Prettier's output already satisfies the rule
   (`class-spacing`, `element-newline`, `no-extra-spacing-text`,
@@ -688,6 +844,16 @@ ledger, entry by entry, each naming which of two reasons retires it:
   indents two where the rule wants four; `no-extra-spacing-tags` and
   `require-closing-tags`, both tripped by the ` />` Prettier writes on
   void elements).
+
+The classification stays; since 7.0.0 WHERE an entry lives follows
+whether it is live. A rule `html/recommended` turns on is a LIVE `off`
+at the block in `homey-app.ts` (the four conflicting ones,
+`element-newline` and `quotes`), validated by the preset that enables
+it. A rule the recommended set never enables — the four other
+redundant ones and the two SEO refusals — is an entry in
+`src/eslint/refused-rules.ts`, class `redundant` or `domain`, because
+an `off` on a rule nothing turns on validates nothing (ESLint accepts
+it for a rule that does not exist).
 
 The conflicting half is the load-bearing discovery: one Prettier pass
 over a settings page that lints clean today raised 78 errors, from
@@ -712,14 +878,40 @@ documents; `no-restricted-attrs` (inline handlers) and
 `no-restricted-tags` (`<style>`), the two doors out of the TypeScript
 bundle and the `css/` table; and `use-baseline` at the CSS rule's year.
 The two SEO rules (`require-meta-description`,
-`require-open-graph-protocol`) are `off` with their reason: a Homey
-webview is never crawled.
+`require-open-graph-protocol`) are refused in the ledger, class
+`domain`, with their reason: a Homey webview is never crawled — never
+on in `html/recommended`, so the `off` they had at the block was dead.
 
 `tests/unit/presets.test.ts` locks it with a real `format` call, both
 ways: Prettier's own output must lint clean, a misformatted page must
 raise nothing, and an invalid ARIA role must still be reported. Adding
 an `html/` rule means classifying it the same way — and one that
 Prettier neither guarantees nor contradicts belongs at `error`.
+
+## The package.json order handover
+
+Field and collection order in `package.json` are the FORMATTER's, and
+7.0.0 made the presets say so: `package-json/order-properties` (from
+the plugin's `stylistic` set) and `package-json/sort-collections` (from
+`recommended`) are LIVE offs in `packageJsonBlock`. Both wrap
+`sort-package-json`, as does `prettier-plugin-packagejson` in the
+family's prettier preset — three readers of one table whose orders are
+identical today but move in minors and ride two different Dependabot
+groups. Nor are they identical everywhere: `sort-collections` sorts the
+top-level keys of `exports` code-unit-wise while `sort-package-json`
+keeps path order and moves `default` last, so on a condition-keyed
+`exports: { types, default }` ESLint writes `{ default, types }` —
+TypeScript then stops seeing `types` — and the next Prettier pass
+restores it, a fight reproduced 2026-09-27. One owner, the formatter.
+The same release settled the app/library split of the plugin's
+`require-*` rules on the machine-readable fact: a Homey app is never
+published, so `require-private` and `restrict-private-properties` run
+at `error` in the app preset (never its fixer — it writes
+`"private": false`), and the plugin's `require-exports`,
+`require-files`, `require-homepage`… self-skip on a private package,
+which retired the two app-side offs; the libraries add
+`require-publishConfig`, the scoped package's declaration of its
+registry.
 
 ## Consumers & adoption
 
@@ -743,10 +935,43 @@ release is left red for a human to classify, never auto-fixed.
 Lives in homey-kit since 6.1.0 (`ios-floor-watch.yml`, monthly and on
 dispatch; its issue lands where the webview-floor doctrine is). The
 `homey-app` preset's `webviewFloorBlock` and `css/use-baseline` year
-derive from the value that workflow records (16.4, read 2026-08-11), so
-a move it reports is re-derived HERE, in the preset, and the two
-restatements — the preset's docstring and the workflow's recorded value
-— move together across the two repositories.
+derive from the value that workflow records (16.4, read 2026-08-11 and
+RE-ATTESTED 2026-09-27 on Homey 10.1.1 of 2026-09-02, through both the
+App Store page and the iTunes Lookup API), so a move it reports is
+re-derived HERE, in the preset, and the two restatements — the preset's
+docstring and the workflow's recorded value — move together across the
+two repositories. Context, not derivation: iOS 16 is the ceiling of the
+iPhone 8, 8 Plus and X, under about one per cent of devices per
+TelemetryDeck and Statista (2026-06 to 2026-08); the floor stays
+derived from the store minimum, never from a share.
+
+What the block enforces since 7.0.0, and why each line is there. The
+detection is `eslint-plugin-es-x`'s `flat/restrict-to-es2023`, the
+maintained edition table, in place of hand selectors that named three
+features (`Object.groupBy`, `Map.groupBy`, the `v` flag, iterator
+helpers by a member-name regex) and missed `Promise.withResolvers`,
+which the docstring called out as Safari 17.4 and nothing banned. The
+floor is an ENGINE, so the table is corrected by browser-compat-data
+(6.1.5, read 2026-09-27) where the iOS 16.4 WebKit ships an es2024
+feature: five LIVE offs (`String#isWellFormed` and `toWellFormed`,
+`Atomics.waitAsync`, `Array.fromAsync`, resizable and growable
+`ArrayBuffer`s), while `ArrayBuffer#transfer` (17.4) stays banned by
+its own rule. The `v` flag is refused ONCE: `require-unicode-regexp` at
+`{ requireFlag: 'u' }` reports it, `es-x/no-regexp-v-flag` is off as
+its twin (two errors per literal before, and only the core rule reaches
+`new RegExp(x, 'v')`). es-x is ES-only, so the one Web API the floor
+excludes is banned by hand — `no-restricted-properties` on
+`AbortSignal.any`, Safari 17.4 per caniuse, with the hand-composition
+(`AbortSignal.timeout` plus a listener, both Safari 16) in the message.
+`import-x/no-nodejs-modules` rides along at zero sites: in the two
+libraries' floor files no bundler stands between the source and the
+browser, so the lint is the only guard. Without type information the
+iterator-helper rules report only what they can prove is an iterator;
+the presets' project service gives them the types, and the suite proves
+it on a fixture project (a Map iterator's `.map` reports, an array's
+`.map` over `Object.entries` does not). The block carries `extends`, so
+it is a `defineConfig` input — the shape every consumer already feeds
+it to.
 
 ## Agent workflows — reads in the agent, writes in deterministic steps
 
@@ -863,8 +1088,34 @@ family lacks: `package-json/prefer-rolling-workspace-spec` runs at
 reason and drop condition at the rule site (`src/eslint/shared.ts`,
 recorded 2026-08-30). The plugin-triage doctrine adopts strictly and
 records refusals, so dropping that rule is a refusal: it either stays
-adopted or lands in a ledger as `'off'` with its reason — a policy
-verdict for a release, never a silent deletion under this paragraph.
+adopted or lands in the refusal ledger with its class and reason — a
+policy verdict for a release, never a silent deletion under this
+paragraph.
+
+The ledger is `src/eslint/refused-rules.ts` (7.0.0), and a refusal
+never lands as a dead `'off'` again. ESLint accepts `'off'` for a rule
+name that does not exist (verified 2026-09-27), so an `off` on a rule
+no extended preset turns on is never validated: the plugin renames or
+drops the rule and the line rots in silence, still claiming a verdict —
+sixteen such lines stood in the tables, one of them dead twice over
+(`@stylistic/max-len`, with no `@stylistic` preset extended AND
+eslint-config-prettier already listing it). The presets carry only LIVE
+settings: a rule some preset enables and the family disables stays an
+`'off'` at its rule site with its reason, validated by the preset that
+enables it (`unicorn/no-this-assignment`, the `html/` conflicting set,
+the es-x BCD corrections); every refusal of a rule that was never on is
+an entry in the ledger — class (`owned`, `conflicting`, `redundant`,
+`domain`, `floor`, `vocabulary`), reason, the owner when there is one,
+the device-floor major a `floor` refusal waits on — and
+`tests/unit/refused-rules.test.ts` proves each entry against the
+installed plugins: the rule exists and is not deprecated, it is off or
+absent wherever its plugin runs, its owner runs at `error`, and a
+`floor` refusal goes red the day `DEVICE_NODE_FLOOR` reaches the API it
+waits for, forcing the adoption. Absence of a use case is not a
+refusal of a practice: the three offs on `unicorn/comment-content`,
+`string-content` and `id-match` — rules that enforce only what their
+options declare, and the family declares nothing — were deleted
+outright rather than ledgered.
 
 Dependabot's commit prefixes are pinned to `build(deps)` /
 `build(deps-dev)` rather than inferred. The **subject** casing cannot

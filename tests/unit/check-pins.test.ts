@@ -43,7 +43,7 @@ describe('the pin check', () => {
       expected: 'one version covers both channels',
       fixture: 'channel-mismatch',
     },
-    // homey-kit is the second two-channel package (6.1.0 hosts the
+    // `homey-kit` is the second two-channel package (6.1.0 hosts the
     // apps' process workflows): the same obligation, the same message.
     {
       expected: 'the @olivierzal/homey-kit pin `6.0.0` disagree',

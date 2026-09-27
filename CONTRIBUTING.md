@@ -6,8 +6,10 @@ workflow expected before opening a pull request.
 ## Prerequisites
 
 - Node.js matching `engines.node` in [`package.json`](package.json) —
-  currently `^22.22.2 || >=24.15.0`, the floor the installed tree itself
-  imposes rather than a round number
+  currently `^22.23.0 || ^24.18.0 || >=26.4.0`, the floor the installed
+  tree itself imposes (`eslint-plugin-es-x`'s own range intersected
+  with `eslint-plugin-package-json`'s) rather than a round number;
+  `.nvmrc` names its lowest member
 - npm 10+
 
 No registry token is needed: this package has no `@olivierzal` scoped

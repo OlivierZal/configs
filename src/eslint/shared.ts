@@ -3,14 +3,20 @@
 // vocabularies) live in the presets; per-repo verdicts (documented
 // `'off'` ledgers, ignores) stay in each consumer's overlay.
 import type { Linter } from 'eslint'
+import { recommended as commentsRecommended } from '@eslint-community/eslint-plugin-eslint-comments/configs'
 import { type Config, defineConfig } from 'eslint/config'
+import { flatConfigs as importXConfigs } from 'eslint-plugin-import-x'
 import { jsdoc } from 'eslint-plugin-jsdoc'
 import { configs as packageJsonConfigs } from 'eslint-plugin-package-json'
 import { Alphabet } from 'eslint-plugin-perfectionist/alphabet'
+import { configs as regexpConfigs } from 'eslint-plugin-regexp'
 import { configs as ymlConfigs } from 'eslint-plugin-yml'
+import { configs as tsConfigs } from 'typescript-eslint'
+import js from '@eslint/js'
 import json from '@eslint/json'
 import markdown from '@eslint/markdown'
 import vitest from '@vitest/eslint-plugin'
+import prettier from 'eslint-config-prettier/flat'
 import unicorn from 'eslint-plugin-unicorn'
 
 import {
@@ -43,9 +49,37 @@ export const linterOptionsBlock: Config = {
   },
 }
 
-// unicorn 74 ships its comment-expiry rule hollow: `checkDates` and
-// `allowWarningComments` default to false/true, so a dated warning
-// comment never expired and an undated one was never a report. Stated
+// `eslint/config` exports `defineConfig` but not the type of what it
+// accepts, and the flat `Config` it exports has no `extends`: a block
+// that extends is typed as one element of `defineConfig`'s own
+// parameter, which is exactly where a consumer passes it.
+export type ConfigWithExtends = Exclude<
+  Parameters<typeof defineConfig>[number],
+  readonly unknown[]
+>
+
+// The third-party presets both family main blocks extend, in this
+// order. `regexp` sits before `prettier` and, like every preset here,
+// before the family table: the table's `prefer-regex-literals` options
+// must win over the preset's bare `'error'` (rules apply after extends;
+// pinned by a test). `prettier` is last so it can neutralize formatting
+// rules from the presets above it.
+export const mainExtends: NonNullable<ConfigWithExtends['extends']> = [
+  js.configs.recommended,
+  unicorn.configs.recommended,
+  tsConfigs.strictTypeChecked,
+  tsConfigs.stylisticTypeChecked,
+  importXConfigs.errors,
+  importXConfigs.typescript,
+  commentsRecommended,
+  regexpConfigs['flat/recommended'],
+  prettier,
+]
+
+// `eslint-plugin-unicorn` 74 ships its comment-expiry rule hollow:
+// `checkDates` and `allowWarningComments` default to false/true, so a
+// dated warning comment never expired and an undated one was never a
+// report. Stated
 // wherever the rule runs (the main table, Markdown, HTML, CSS — a
 // severity-only entry falls back to the plugin defaults), so every
 // warning term names its expiry. Measured 2026-09-15: zero such
@@ -177,10 +211,11 @@ const jsdocRules: NonNullable<Config['rules']> = {
   'jsdoc/no-defaults': ['error', { noOptionalParamNames: true }],
   'jsdoc/normalize-see-links': 'error',
   'jsdoc/prefer-import-tag': 'error',
-  // The house style keeps the `*` line prefix (the reason
-  // `unicorn/no-asterisk-prefix-in-documentation-comments` is off);
-  // until 2026-09-15 nothing checked it. Fixable; adoption cost 39
-  // lines in homey-kit, 0 elsewhere.
+  // The house style keeps the `*` line prefix (the refusal ledger names
+  // this rule as the owner of
+  // `unicorn/no-asterisk-prefix-in-documentation-comments`); until
+  // 2026-09-15 nothing checked it. Fixable; adoption cost 39 lines in
+  // homey-kit, 0 elsewhere.
   'jsdoc/require-asterisk-prefix': ['error', 'always'],
   // Every documented surface carries prose: the default contexts are
   // the three function kinds, so a tags-only block on a class, a type
@@ -425,16 +460,25 @@ export interface SharedMainRulesOptions {
 // share verbatim — a table, split from the option-driven entries the
 // factory below merges in.
 const staticMainRules: NonNullable<Config['rules']> = {
-  // Refused with the measured reasons rather than the config-prettier
-  // reflex: the `code` axis conflicts with Prettier's own output (nine
-  // declarations in melcloud-api and seven in com.melcloud the printer
-  // cannot break below 80), and the `comments` axis — the one Prettier
-  // leaves alone — would cost 195 hand-wrapped prose lines family-wide
-  // behind a `code` sentinel the rule needs, having no comments-only
-  // mode. House comments wrap at print width by convention; measured
-  // 2026-09-15 the convention is not held, and a rule that cannot fix
-  // what it reports is not what would hold it.
-  '@stylistic/max-len': 'off',
+  // The naming doctrine, mechanised — anything of our own naming gets
+  // renamed, not excused (CLAUDE.md) — so a directive that disables
+  // `naming-convention` is itself the report; a wire vocabulary enters
+  // through a scoped entry, never through a comment.
+  '@eslint-community/eslint-comments/no-restricted-disable': [
+    'error',
+    '@typescript-eslint/naming-convention',
+  ],
+  // Owned by `unicorn/no-abusive-eslint-disable`: both report a
+  // directive that names no rule, on all three directive forms (double
+  // report measured 2026-09-27).
+  '@eslint-community/eslint-comments/no-unlimited-disable': 'off',
+  // Owned by `linterOptions.reportUnusedDisableDirectives: 'error'`,
+  // which reaches `eslint-enable` too.
+  '@eslint-community/eslint-comments/no-unused-enable': 'off',
+  // Every directive says why, `eslint-enable` included (the default
+  // `ignore: []`): the seven undescribed enables in the consumers get
+  // their description with the 7.0.0 adoptions (2026-09-27).
+  '@eslint-community/eslint-comments/require-description': 'error',
   // `checkJSDoc` stays at its default (false): it would rewrite `/** */`
   // blocks into line comments, which the jsdoc plugin and typedoc
   // cannot read.
@@ -478,7 +522,6 @@ const staticMainRules: NonNullable<Config['rules']> = {
   '@typescript-eslint/max-params': 'error',
   '@typescript-eslint/method-signature-style': 'error',
   '@typescript-eslint/no-base-to-string': ['error', { checkUnknown: true }],
-  '@typescript-eslint/no-explicit-any': 'error',
   '@typescript-eslint/no-floating-promises': [
     'error',
     {
@@ -509,6 +552,22 @@ const staticMainRules: NonNullable<Config['rules']> = {
       checksVoidReturn: true,
     },
   ],
+  // `unicorn/prefer-temporal` owns the VALUE half (`new Date()`,
+  // `Date.now()`); the type position is its complement, unowned until
+  // now — a `Date` parameter or field invites the value back in. Zero
+  // sites in linted sources, eight in melcloud-api's ignored `scripts/`
+  // (2026-09-27).
+  '@typescript-eslint/no-restricted-types': [
+    'error',
+    {
+      types: {
+        Date: {
+          message:
+            'Time is Temporal here (unicorn/prefer-temporal, src/temporal.ts): take a Temporal type or an ISO string.',
+        },
+      },
+    },
+  ],
   '@typescript-eslint/no-shadow': [
     'error',
     // `allow` covers deliberate polyfill re-exports (Temporal, Intl).
@@ -518,6 +577,10 @@ const staticMainRules: NonNullable<Config['rules']> = {
     'error',
     { checkTypePredicates: true },
   ],
+  // Ambient namespace residue (`Ns.X` written inside `namespace Ns`),
+  // which TypeScript accepts and the family never writes: a latent
+  // guard at zero sites (2026-09-27).
+  '@typescript-eslint/no-unnecessary-qualifier': 'error',
   '@typescript-eslint/no-unnecessary-type-assertion': [
     'error',
     { checkLiteralConstAssertions: true },
@@ -546,6 +609,13 @@ const staticMainRules: NonNullable<Config['rules']> = {
       enforceForRenamedProperties: false,
     },
   ],
+  // Under `erasableSyntaxOnly` only a `declare enum` can exist, and a
+  // declared enum mirrors an external vocabulary whose numbering is a
+  // fact — an implicit member is a guess about it. It also keeps
+  // `perfectionist/sort-enums` armed, which REFUSES to sort an enum
+  // holding an implicit member, so the sort verdict would lapse in
+  // silence. Zero sites (2026-09-27).
+  '@typescript-eslint/prefer-enum-initializers': 'error',
   '@typescript-eslint/prefer-readonly': 'error',
   '@typescript-eslint/promise-function-async': 'error',
   '@typescript-eslint/require-array-sort-compare': 'error',
@@ -576,6 +646,20 @@ const staticMainRules: NonNullable<Config['rules']> = {
   'accessor-pairs': ['error', { enforceForTSTypes: true }],
   'array-callback-return': ['error', { checkForEach: true }],
   'arrow-body-style': 'error',
+  // The `//` twin of `jsdoc/match-description`'s capital-or-backtick
+  // opener. `ignoreConsecutiveComments` is the rule's documented pairing
+  // for prose wrapped over consecutive lines under
+  // `multiline-comment-style: separate-lines`: only the first line of a
+  // group opens a sentence. 32 sites family-wide (2026-09-27), every one
+  // an identifier to backtick — and the FIXER IS UNSAFE on identifiers
+  // (it would write `Unicorn 76`), so an adoption is fixed BY HAND before
+  // `lint:fix` runs; the rule has no switch to withhold its fixer, which
+  // is why this reason names the trap. No `ignorePattern`.
+  'capitalized-comments': [
+    'error',
+    'always',
+    { ignoreConsecutiveComments: true },
+  ],
   // Measured codebase ceiling.
   complexity: ['error', { max: 10 }],
   // Deliberate override of a config-prettier "special rule": the
@@ -617,6 +701,13 @@ const staticMainRules: NonNullable<Config['rules']> = {
     'error',
     { allowCallExpression: false },
   ],
+  // `module.exports` and `exports.x` in a file that imports nothing —
+  // the residue `no-import-module-exports` (needs an import in the file)
+  // and `@typescript-eslint/no-require-imports` (the `require` half)
+  // leave. `unicorn/prefer-module` is inert on it here: the family
+  // declares no Node globals, so `module` is an unknown identifier to
+  // it. Zero sites (2026-09-27).
+  'import-x/no-commonjs': 'error',
   'import-x/no-cycle': 'error',
   'import-x/no-default-export': 'error',
   'import-x/no-duplicates': ['error', { 'prefer-inline': true }],
@@ -692,6 +783,11 @@ const staticMainRules: NonNullable<Config['rules']> = {
   'no-implicit-coercion': 'error',
   'no-inline-comments': 'error',
   'no-irregular-whitespace': ['error', { skipStrings: false }],
+  // `__iterator__` and `__proto__` (`no-proto`) are index-signature
+  // residue TypeScript cannot type away — `record['__proto__']` on a
+  // `Record<string, unknown>` is a legal string index. Latent guards at
+  // zero sites (2026-09-27).
+  'no-iterator': 'error',
   'no-labels': 'error',
   'no-lone-blocks': 'error',
   'no-lonely-if': 'error',
@@ -710,6 +806,12 @@ const staticMainRules: NonNullable<Config['rules']> = {
   'no-object-constructor': 'error',
   'no-param-reassign': 'error',
   'no-promise-executor-return': 'error',
+  // See `no-iterator`.
+  'no-proto': 'error',
+  // A module exporting `then` makes its namespace thenable: `await
+  // import()` unwraps it and hands back the wrong value. Zero sites
+  // (2026-09-27); latent.
+  'no-restricted-exports': ['error', { restrictedNamedExports: ['then'] }],
   // Under `lib: DOM` every `window` property is a bare global
   // TypeScript accepts, so a forgotten local reads `name`, `status`,
   // `length`, `event`, `parent`, `top`… with a plausible type. The
@@ -835,12 +937,6 @@ const staticMainRules: NonNullable<Config['rules']> = {
   'perfectionist/sort-sets': 'error',
   'perfectionist/sort-switch-case': 'error',
   'perfectionist/sort-union-types': ['error', typeSortOptions],
-  // Owned by `one-var: 'never'`: every multi-declarator statement is
-  // split before order matters, and the split keeps evaluation order
-  // where this rule's fixer would reorder side-effecting initialisers.
-  // Its one unowned residue, a multi-declarator `for (;;)` initialiser,
-  // is absent across the eight repos (2026-09-15).
-  'perfectionist/sort-variable-declarations': 'off',
   // `allowUnboundThis: false`: a `function` callback is reported even
   // when it mentions `this` — the stance `func-style`,
   // `unicorn/consistent-function-style` and `prefer-short-arrow-method`
@@ -863,14 +959,42 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // `always`: the explicit radix on every `parseInt`, `Number.parseInt`
   // included.
   radix: ['error', 'always'],
+  // `eslint-plugin-regexp`'s `flat/recommended` (extended by both main
+  // blocks) ships six rules at `warn`; the zero-warning policy raises
+  // them. The preset's value for this family: its `no-invalid-regexp`
+  // catches 10/10 invalid LITERALS that TypeScript and the parser miss
+  // (measured 2026-09-27), which is why the three core rules it turns
+  // off for its own are accepted.
+  'regexp/confusing-quantifier': 'error',
+  'regexp/no-empty-alternative': 'error',
+  'regexp/no-lazy-ends': 'error',
+  'regexp/no-potentially-useless-backreference': 'error',
+  // Beyond the preset: a quantified group that can move in a
+  // super-linear way — the ReDoS shape `no-super-linear-backtracking`
+  // (recommended) does not cover.
+  'regexp/no-super-linear-move': 'error',
+  // Owned by core `no-useless-escape`, which reports the same escape in
+  // the same literal (double report measured 2026-09-27).
+  'regexp/no-useless-escape': 'off',
+  'regexp/no-useless-flag': 'error',
+  'regexp/optimal-lookaround-quantifier': 'error',
+  // Core `prefer-named-capture-group` demands the names; these two make
+  // the consumers use them — `\k<name>` over `\1`, `$<name>` over `$1`.
+  'regexp/prefer-named-backreference': 'error',
+  'regexp/prefer-named-replacement': 'error',
+  // Pairs with `noUncheckedIndexedAccess`: `match.groups.name` is typed
+  // where `match[1]` is `string | undefined` at every site.
+  'regexp/prefer-result-array-groups': 'error',
   'require-atomic-updates': 'error',
   'require-unicode-regexp': ['error', { requireFlag: 'v' }],
   'symbol-description': 'error',
   'unicode-bom': 'error',
-  // Config-driven comment vocabulary with no invariant to encode.
-  'unicorn/comment-content': 'off',
   // Owned by `@typescript-eslint/naming-convention` for variables,
-  // parameters and class properties (identical prefix set).
+  // parameters and class properties (identical prefix set). What the
+  // owner leaves unowned is boolean-RETURNING functions — and the rule's
+  // `checkFunctions` reaches only `function` declarations, while the
+  // family writes arrows (0 declarations returning a boolean,
+  // 2026-09-27), so the split it could add would cover nothing.
   'unicorn/consistent-boolean-name': 'off',
   // Owned by `perfectionist/sort-classes`.
   'unicorn/consistent-class-member-order': 'off',
@@ -878,8 +1002,6 @@ const staticMainRules: NonNullable<Config['rules']> = {
   'unicorn/consistent-function-style': ['error', { default: 'arrow-function' }],
   'unicorn/custom-error-definition': 'error',
   'unicorn/expiring-todo-comments': expiringTodoComments,
-  // Owned by `@typescript-eslint/naming-convention`.
-  'unicorn/id-match': 'off',
   'unicorn/iteration-fallback-style': 'error',
   // Vocabulary opt-out: the abbreviation renames it forces
   // (`args` -> `arguments_`, ...) fight the domain naming.
@@ -887,18 +1009,16 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // Owned by `import-x/no-anonymous-default-export`.
   'unicorn/no-anonymous-default-export': 'off',
   'unicorn/no-array-front-mutation': 'error',
-  // Doc-comment formatting is owned by the jsdoc plugin (the house
-  // style keeps the `*` line prefix).
-  'unicorn/no-asterisk-prefix-in-documentation-comments': 'off',
-  // unicorn 76's `checkContinue` (off by default): an unlabeled
+  // `eslint-plugin-unicorn` 76's `checkContinue` (off by default): an unlabeled
   // `continue` inside a nested loop, or inside a `switch` within a
   // loop, reads as ambiguous about what it continues. Measured
   // 2026-09-22 at zero sites over the eight repositories — adopted as
   // a latent guard, the way `prefer-rolling-workspace-spec` is.
   'unicorn/no-break-in-nested-loop': ['error', { checkContinue: true }],
-  // unicorn 76's `checkConditionals` (off by default): a value built by
-  // guarded `push` calls right after its initialization is built in its
-  // literal instead, conditional spreads included. One site over the
+  // `eslint-plugin-unicorn` 76's `checkConditionals` (off by default): a
+  // value built by guarded `push` calls right after its initialization
+  // is built in its literal instead, conditional spreads included. One
+  // site over the
   // eight repositories (api-core's ordered policy builder), which
   // rewrites safely into a literal that shows the order at a glance;
   // the rule's own abstention from fixing it in TypeScript concerns the
@@ -907,25 +1027,29 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // on 2026-09-23: the base rule was already at `error` with its
   // rewrites made, and the extension asks nothing different.
   'unicorn/no-immediate-mutation': ['error', { checkConditionals: true }],
-  // Owned by `@typescript-eslint/naming-convention`.
-  'unicorn/no-keyword-prefix': 'off',
-  // House comments wrap prose at print width; the heuristic reads
-  // those wraps as unfinished sentences.
-  'unicorn/no-manually-wrapped-comments': 'off',
   // Owned by `import-x/no-named-default` (imports; the export form it
   // also covers is unused here).
   'unicorn/no-named-default': 'off',
-  'unicorn/no-non-function-verb-prefix': 'error',
   // The Homey SDK and both wire protocols speak `null` — banning null
   // literals fights the domain.
   'unicorn/no-null': 'off',
+  // Owned by `@typescript-eslint/no-this-alias` (same two selectors,
+  // same default filter; recommended and strict-type-checked).
+  'unicorn/no-this-assignment': 'off',
   // Owned by `@typescript-eslint/no-unnecessary-boolean-literal-compare`.
   'unicorn/no-unnecessary-boolean-comparison': 'off',
   'unicorn/no-unreadable-new-expression': 'error',
+  // Shared rather than app-only, for the reason `no-alert` is:
+  // homey-kit's webview sources compile under `lib: DOM` in a
+  // library-preset repo, and the other libraries pay nothing (no
+  // `innerHTML` sink exists without the DOM lib). Moved from the app
+  // preset 2026-09-27.
+  'unicorn/no-unsafe-dom-html': 'error',
   'unicorn/no-unused-properties': 'error',
-  // unicorn 76's `checkCompoundConditions` (off by default): two
-  // consecutive guards whose conditions are compound (`&&`, `??`, a
-  // ternary, a negated group) get combined like simple ones. Measured
+  // `eslint-plugin-unicorn` 76's `checkCompoundConditions` (off by
+  // default): two consecutive guards whose conditions are compound
+  // (`&&`, `??`, a ternary, a negated group) get combined like simple
+  // ones. Measured
   // 2026-09-22 at zero sites over the eight repositories — adopted as
   // a latent guard.
   'unicorn/prefer-combined-guards': [
@@ -933,42 +1057,27 @@ const staticMainRules: NonNullable<Config['rules']> = {
     { checkCompoundConditions: true },
   ],
   'unicorn/prefer-dispose': 'error',
-  // Requires Node.js 24 (`Error.isError`).
-  'unicorn/prefer-error-is-error': 'off',
   // Mutually exclusive twin of `prefer-number-properties`' `checkNaN`:
   // the family picks `Number.NaN` (SonarCloud S7773 is a required gate,
   // and it pairs with the mandated `Number.isNaN`).
   'unicorn/prefer-global-number-constants': 'off',
   'unicorn/prefer-import-meta-properties': 'error',
-  // Requires Node.js 24 (`Iterator.concat`).
-  'unicorn/prefer-iterator-concat': 'off',
   // Stricter than the v72 default: varying-base member accesses stay
   // reported so the shared shape is factored out.
   'unicorn/prefer-minimal-ternary': ['error', { checkVaryingBase: true }],
   // Stricter than the v72 default (see `prefer-global-number-constants`
   // above).
   'unicorn/prefer-number-properties': ['error', { checkNaN: true }],
-  // Requires Node.js 24 (`RegExp.escape`).
-  'unicorn/prefer-regexp-escape': 'off',
   'unicorn/prefer-short-arrow-method': 'error',
   // Owned by `@typescript-eslint/prefer-string-starts-ends-with`.
   'unicorn/prefer-string-starts-ends-with': 'off',
   'unicorn/prefer-temporal': 'error',
-  // At the preset's `always` since 6.6.0. The `only-single-line` bound
-  // of 6.4.1 answered unicorn 75's nested-ternary defect, which 76's
-  // readability boundaries fixed (a guard whose values hold a ternary, a
-  // block or a multiline literal is left alone in both modes); the
-  // 6.5.0 re-measurement judged the fixer's raw output, not the result
-  // `format:fix` produces right after it. A two-way value selection is
-  // a ternary's job — what `prefer-minimal-ternary` above already asks
-  // at its stricter setting — and `prefer-early-return` guards a long
-  // body, not a value. Nine sites over the seven consumers (2026-09-23),
-  // every one auto-fixed.
-  'unicorn/prefer-ternary': 'error',
-  // Requires Node.js 24 (`Uint8Array#toBase64`).
-  'unicorn/prefer-uint8array-base64': 'off',
-  // Config-driven string vocabulary with no invariant to encode.
-  'unicorn/string-content': 'off',
+  // Same move as `no-unsafe-dom-html`. Caveat recorded: the rule flags
+  // ANY one-argument `.postMessage(x)` regardless of receiver, so a
+  // future `MessagePort`, `BroadcastChannel` or `worker_threads` post in
+  // a library would false-positive — the answer then is to rename this
+  // reason to what it really guards, never to disable.
+  'unicorn/require-post-message-target-origin': 'error',
   'unicorn/try-complexity': 'error',
   'use-isnan': ['error', { enforceForIndexOf: true }],
   'valid-typeof': ['error', { requireStringLiterals: true }],
@@ -1033,10 +1142,42 @@ export const perfectionistSettings: Record<string, Record<string, unknown>> = {
   },
 }
 
-export const configTsBlock = (files: string[]): Config => ({
+// The one tool-imposed key shape of the root config files: typedoc keys
+// two of its maps by names it matches VERBATIM — `externalSymbolLinkMappings`
+// by the exported symbol (`Redaction`, `LifecycleEvents`: PascalCase by
+// the family's own `typeLike` format) and `navigationLinks` by the
+// rendered label (`GitHub`). Measured 2026-09-28 over the seven
+// consumers' root config files with the core policy: nine findings,
+// every one such a key, all in the four libraries' `typedoc.config.js`;
+// the apps at zero. Until 7.0.0 the rule was `off` on those files with
+// no recorded reason. The filter is anchored so a quoted key
+// (`'GitHub Packages'`, `'SessionAPI.initialize'`) keeps riding the
+// `requiresQuotes` skip instead of being judged PascalCase.
+const configKeyEntry = {
+  filter: { match: true, regex: '^[A-Z][A-Za-z0-9]*$' },
+  format: ['PascalCase'],
+  selector: 'objectLiteralProperty',
+}
+
+// Root config files (`eslint.config.ts`, `vitest.config.ts`,
+// `typedoc.config.js`, …): the main table applies, with the departures
+// below.
+export const configTsBlock = (
+  files: string[],
+  { extraEntries = [], ...naming }: NamingConventionOptions,
+): Config => ({
   files,
   rules: {
-    '@typescript-eslint/naming-convention': 'off',
+    // The family naming policy restated — the preset's platform entries,
+    // never a wire vocabulary (a config file speaks no wire) — plus the
+    // tool-imposed shape above.
+    '@typescript-eslint/naming-convention': [
+      'error',
+      ...namingConventionEntries({
+        ...naming,
+        extraEntries: [...extraEntries, configKeyEntry],
+      }),
+    ],
     // The `const config = defineConfig(...)` / `export default config`
     // spelling here is DERIVED, not stylistic, and the global
     // `no-anonymous-default-export` tightening is what enforces it.
@@ -1066,6 +1207,14 @@ export const configJsBlock: Config = {
   files: ['*.config.{js,mjs}'],
   rules: {
     '@typescript-eslint/explicit-function-return-type': 'off',
+    // `typescript-eslint`'s `eslint-recommended` layer — what turns these
+    // four on everywhere else — is `files`-scoped to the TypeScript
+    // extensions, so the four `typedoc.config.js` had no owner. Zero
+    // sites (2026-09-27).
+    'no-var': 'error',
+    'prefer-const': 'error',
+    'prefer-rest-params': 'error',
+    'prefer-spread': 'error',
     'unicorn/single-line-block-comment-style': 'off',
   },
 }
@@ -1138,7 +1287,7 @@ const sharedTestRules: NonNullable<Config['rules']> = {
   'max-lines-per-function': 'off',
   'max-nested-callbacks': 'off',
   'max-statements': 'off',
-  // vitest 5 makes `toThrow('')` match ANY message (vitest 4 read it as
+  // `vitest` 5 makes `toThrow('')` match ANY message (vitest 4 read it as
   // an exactly-empty message), so the argument turns the assertion
   // vacuous while `require-to-throw-message` still sees an argument.
   // Zero sites in the family (2026-09-15); the selector also meets
@@ -1163,7 +1312,7 @@ const sharedTestRules: NonNullable<Config['rules']> = {
   'vitest/consistent-test-filename': 'error',
   'vitest/consistent-test-it': ['error', { fn: 'it' }],
   'vitest/consistent-vitest-vi': 'error',
-  // vitest 5 throws on a hoisted API outside the top level; the rule
+  // `vitest` 5 throws on a hoisted API outside the top level; the rule
   // stays as the static, pre-run signal that names the line.
   'vitest/hoisted-apis-on-top': 'error',
   // Measured codebase ceiling.
@@ -1175,7 +1324,7 @@ const sharedTestRules: NonNullable<Config['rules']> = {
   'vitest/no-disabled-tests': 'error',
   'vitest/no-duplicate-hooks': 'error',
   'vitest/no-large-snapshots': 'error',
-  // vitest 5 clears every mock before each test (`clearMocks` defaults
+  // `vitest` 5 clears every mock before each test (`clearMocks` defaults
   // to true), so a hook-level clear restates the runner; a mid-test
   // phase boundary is `mock.mockClear()` on the one mock it concerns.
   'vitest/no-restricted-vi-methods': [
@@ -1210,6 +1359,10 @@ const sharedTestRules: NonNullable<Config['rules']> = {
   'vitest/prefer-importing-vitest-globals': 'error',
   'vitest/prefer-lowercase-title': 'error',
   'vitest/prefer-mock-promise-shorthand': 'error',
+  // Sync twin of `prefer-mock-promise-shorthand`: `mockReturnValue(x)`
+  // over `mockImplementation(() => x)`. Three sites family-wide
+  // (2026-09-27), fixable.
+  'vitest/prefer-mock-return-shorthand': 'error',
   'vitest/prefer-snapshot-hint': 'error',
   'vitest/prefer-spy-on': 'error',
   'vitest/prefer-strict-boolean-matchers': 'error',
@@ -1218,6 +1371,10 @@ const sharedTestRules: NonNullable<Config['rules']> = {
   'vitest/prefer-to-contain': 'error',
   'vitest/prefer-to-have-been-called-times': 'error',
   'vitest/prefer-to-have-length': 'error',
+  // A test with no body is declared pending with the runner's own
+  // marker, not left as an empty callback it reports green. Zero sites
+  // (2026-09-27).
+  'vitest/prefer-todo': 'error',
   'vitest/prefer-vi-mocked': 'error',
   // An unawaited `expect.poll` has thrown at runtime since vitest 4; the
   // rule is the static signal.
@@ -1307,6 +1464,63 @@ export const yamlBlock = (stepKeyOrder: readonly string[]): Config[] =>
     },
   ])
 
+const sharedPackageJsonRules: NonNullable<Config['rules']> = {
+  // Adopted over an ABSENT domain: the family has no monorepo —
+  // no `workspaces` key, no pnpm-workspace.yaml, and zero
+  // `workspace:` specifiers across the eight repos (2026-08-30),
+  // which are eight independent packages pinned to each other by
+  // exact version. It can never fire today, and it is kept at
+  // `error` as a latent guard: the day a workspace appears, the
+  // rolling spec should be the default from the first commit
+  // rather than a later cleanup. Drop it if the family commits to
+  // staying multi-repo for good.
+  // Guards the runtime pins — api-core, homey-kit, melcloud-api,
+  // heatzy-api under `dependencies` — against a committed `file:`,
+  // `link:` or relative pack rehearsal, the shape the 2026-09-07
+  // dry adoptions took. It reads `dependencies` only: the
+  // `@olivierzal/configs` rehearsal lands in `devDependencies`,
+  // where `check-pins.sh` is the guard. A runtime `file:` pin
+  // lints red on this rule until the re-pin — that red is the
+  // point.
+  'package-json/no-local-dependencies': 'error',
+  // Field and collection order are the FORMATTER's:
+  // `prettier-plugin-packagejson` (the family's prettier preset)
+  // and these two rules all wrap `sort-package-json`, whose orders
+  // are identical today but move in minors and ride two different
+  // Dependabot groups. Nor are they identical everywhere:
+  // `sort-collections` sorts the top-level keys of `exports`
+  // code-unit-wise while sort-package-json keeps path order and
+  // moves `default` last, so on a condition-keyed `exports:
+  // { types, default }` ESLint writes `{ default, types }` —
+  // TypeScript then stops seeing `types` — and Prettier restores
+  // it: a fight reproduced 2026-09-27. Formatter owns; both off,
+  // `order-properties` from `stylistic` and `sort-collections`
+  // from `recommended`.
+  'package-json/order-properties': 'off',
+  'package-json/prefer-rolling-workspace-spec': 'error',
+  'package-json/require-author': 'error',
+  'package-json/require-bugs': 'error',
+  'package-json/require-engines': 'error',
+  // The exact-pin doctrine, mechanised for the family packages:
+  // `check-pins.sh` polices the two two-channel packages, this
+  // rule reaches the three single-channel ones (api-core,
+  // melcloud-api, heatzy-api) too. Third-party ranges are caret by
+  // habit, not by verdict, so they stay out; `npm:` aliases and
+  // `file:` specs are not semver ranges and pass.
+  'package-json/restrict-dependency-ranges': [
+    'error',
+    { forPackages: ['^@olivierzal/'], rangeType: 'pin' },
+  ],
+  // `eslint-plugin-package-json` 1.9's rule, with an EMPTY allow-list:
+  // a dependency is a version here, never a dist-tag — `latest` or
+  // `next` would dodge Dependabot's reviewed bump and the exact-pin
+  // doctrine alike. Measured 2026-09-22 at zero sites over the eight
+  // repositories.
+  'package-json/restrict-dist-tags': ['error', { allowed: [] }],
+  // See `order-properties`.
+  'package-json/sort-collections': 'off',
+}
+
 export const packageJsonBlock = (
   familyRules: NonNullable<Config['rules']>,
 ): Config[] =>
@@ -1314,46 +1528,6 @@ export const packageJsonBlock = (
     {
       extends: [packageJsonConfigs.recommended, packageJsonConfigs.stylistic],
       files: ['**/package.json'],
-      rules: {
-        // Adopted over an ABSENT domain: the family has no monorepo —
-        // no `workspaces` key, no pnpm-workspace.yaml, and zero
-        // `workspace:` specifiers across the eight repos (2026-08-30),
-        // which are eight independent packages pinned to each other by
-        // exact version. It can never fire today, and it is kept at
-        // `error` as a latent guard: the day a workspace appears, the
-        // rolling spec should be the default from the first commit
-        // rather than a later cleanup. Drop it if the family commits to
-        // staying multi-repo for good.
-        // Guards the runtime pins — api-core, homey-kit, melcloud-api,
-        // heatzy-api under `dependencies` — against a committed `file:`,
-        // `link:` or relative pack rehearsal, the shape the 2026-09-07
-        // dry adoptions took. It reads `dependencies` only: the
-        // `@olivierzal/configs` rehearsal lands in `devDependencies`,
-        // where `check-pins.sh` is the guard. A runtime `file:` pin
-        // lints red on this rule until the re-pin — that red is the
-        // point.
-        'package-json/no-local-dependencies': 'error',
-        'package-json/prefer-rolling-workspace-spec': 'error',
-        'package-json/require-author': 'error',
-        'package-json/require-bugs': 'error',
-        'package-json/require-engines': 'error',
-        // The exact-pin doctrine, mechanised for the family packages:
-        // `check-pins.sh` polices the two two-channel packages, this
-        // rule reaches the three single-channel ones (api-core,
-        // melcloud-api, heatzy-api) too. Third-party ranges are caret by
-        // habit, not by verdict, so they stay out; `npm:` aliases and
-        // `file:` specs are not semver ranges and pass.
-        'package-json/restrict-dependency-ranges': [
-          'error',
-          { forPackages: ['^@olivierzal/'], rangeType: 'pin' },
-        ],
-        // package-json 1.9's rule, with an EMPTY allow-list: a dependency
-        // is a version here, never a dist-tag — `latest` or `next` would
-        // dodge Dependabot's reviewed bump and the exact-pin doctrine
-        // alike. Measured 2026-09-22 at zero sites over the eight
-        // repositories.
-        'package-json/restrict-dist-tags': ['error', { allowed: [] }],
-        ...familyRules,
-      },
+      rules: { ...sharedPackageJsonRules, ...familyRules },
     },
   ])

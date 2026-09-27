@@ -2,17 +2,16 @@
 // app's overlay keeps only its documented verdicts (ignores, `'off'`
 // ledgers) and the globs below that genuinely differ per app.
 import { type Config, defineConfig } from 'eslint/config'
-import { flatConfigs as importXConfigs } from 'eslint-plugin-import-x'
-import { configs as tsConfigs, globs as tsGlobs } from 'typescript-eslint'
+import { globs as tsGlobs } from 'typescript-eslint'
 import css from '@eslint/css'
-import js from '@eslint/js'
 import html from '@html-eslint/eslint-plugin'
 import stylistic from '@stylistic/eslint-plugin'
-import prettier from 'eslint-config-prettier/flat'
+import esx from 'eslint-plugin-es-x'
 import perfectionist from 'eslint-plugin-perfectionist'
 import unicorn from 'eslint-plugin-unicorn'
 
 import {
+  type ConfigWithExtends,
   type NamingConventionOptions,
   type SharedMainRulesOptions,
   type TemplateExpressionAllowEntry,
@@ -22,6 +21,7 @@ import {
   jsdocBlock,
   jsonBlock,
   linterOptionsBlock,
+  mainExtends,
   mainLanguageOptions,
   markdownBlock,
   packageJsonBlock,
@@ -105,55 +105,80 @@ const lifecycleGroupName = (hook: string): string =>
   `homey-lifecycle-${hook.slice(2).toLowerCase()}`
 
 /**
- * The webview runtime floor as a standalone block: es2023 is the
- * ceiling — no `Object.groupBy`/`Map.groupBy`, no iterator helpers, no
- * `v` regex flag. Derived, not preventive: the Homey mobile app
- * requires iOS 16.4 or later (App Store, read 2026-08-11) and a Homey
+ * The webview runtime floor as a standalone block. Derived, not
+ * preventive: the Homey mobile app requires iOS 16.4 or later — the App
+ * Store minimum, re-attested 2026-09-27 on Homey 10.1.1 of 2026-09-02
+ * through both the store page and the iTunes Lookup API — and a Homey
  * app only ever gets the system WebKit, so the worst legitimate engine
- * is iOS 16.4's — es2023-complete, short of every es2024 gain
- * (`Object.groupBy` and `Promise.withResolvers` need Safari 17.4, the
- * `v` flag 17). es2024 becomes derivable when that App Store minimum
- * reaches 17.4; Android never binds the floor, its System WebView being
- * evergreen. Under a sub-es2024 esbuild target a `v` literal ships as a
- * `new RegExp` call, so an escapee throws at runtime inside the feature
- * that runs it rather than at parse — narrower blast radius, same ban.
+ * is iOS 16.4's. iOS 16 is the ceiling of the iPhone 8, 8 Plus and X,
+ * under about one per cent of devices per TelemetryDeck and Statista
+ * (2026-06 to 2026-08); recorded as context only — the floor stays
+ * derived, not statistical. Android never binds it, its System WebView
+ * being evergreen.
+ *
+ * The detection is `eslint-plugin-es-x`'s `restrict-to-es2023`, the
+ * maintained edition table, in place of the hand selectors that named
+ * three features and missed a fourth: `Promise.withResolvers` (Safari
+ * 17.4) was named in this very comment and banned nowhere until 7.0.0.
+ * The floor is an ENGINE, not an edition, so the edition table is
+ * corrected by browser-compat-data (6.1.5, read 2026-09-27) in both
+ * directions. Five es2024 rules are turned OFF because the iOS 16.4
+ * WebKit ships the feature — `String#isWellFormed` and `toWellFormed`,
+ * `Atomics.waitAsync`, `Array.fromAsync`, resizable and growable
+ * `ArrayBuffer`s (`ArrayBuffer#transfer`, 17.4, stays banned by its own
+ * rule) — and one Web API es-x cannot see is banned by hand:
+ * `AbortSignal.any`, 17.4. The `v` regex flag is refused once, by
+ * `require-unicode-regexp` at `u` — the global config demands `v`, the
+ * floor steps the requirement down, it does not drop it — with es-x's
+ * `no-regexp-v-flag` off as its twin; under a sub-es2024 esbuild target
+ * a `v` literal ships as a `new RegExp` call, so an escapee throws at
+ * runtime inside the feature that runs it rather than at parse, and
+ * only the core rule reaches that `new RegExp(x, 'v')` spelling.
+ * Without type information the iterator-helper rules report only what
+ * they can prove is an iterator; the presets' project service gives
+ * them the types. `import-x/no-nodejs-modules` rides along: nothing
+ * that runs in the webview imports `node:*`, and in the two libraries'
+ * floor files — where no bundler stands between the source and the
+ * browser — the lint is the only guard (the apps' bundle would fail
+ * anyway). Zero sites in every perimeter (2026-09-27).
+ *
  * The tsconfig `lib` cannot express this (one project, two runtimes),
  * so the constraint lives here. Exported for consumers that need the
- * floor without the full app preset (e.g. a library shipping
- * webview-bundled sources).
+ * floor without the full app preset (a library shipping webview-bundled
+ * sources). es2024 becomes derivable when the App Store minimum reaches
+ * 17.4 — homey-kit's `ios-floor-watch.yml` records the value, and the
+ * CSS block's Baseline year moves with it.
  * @param files - Globs of the sources that run in the phone webview.
- * @returns The config block carrying the floor.
+ * @returns The config block carrying the floor; it carries `extends`, so
+ * it is consumed inside `defineConfig([...])`.
  */
-export const webviewFloorBlock = (files: readonly string[]): Config => ({
+export const webviewFloorBlock = (
+  files: readonly string[],
+): ConfigWithExtends => ({
+  extends: [esx.configs['flat/restrict-to-es2023']],
   files: [...files],
   rules: {
+    // BCD 6.1.5 (2026-09-27): shipped by Safari iOS 16.4, the floor's
+    // own engine — the edition table says es2024, the engine says yes.
+    'es-x/no-array-fromasync': 'off',
+    'es-x/no-atomics-waitasync': 'off',
+    // Owned by `require-unicode-regexp` below: one report per literal,
+    // and only the core rule reaches `new RegExp(x, 'v')`.
+    'es-x/no-regexp-v-flag': 'off',
+    'es-x/no-resizable-and-growable-arraybuffers': 'off',
+    'es-x/no-string-prototype-iswellformed': 'off',
+    'es-x/no-string-prototype-towellformed': 'off',
+    // Nothing that runs in the webview imports Node (see the docstring).
+    'import-x/no-nodejs-modules': 'error',
+    // `es-x` is ES-only and cannot see Web APIs: the one the floor
+    // excludes is banned by hand.
     'no-restricted-properties': [
       'error',
       {
         message:
-          'es2024, above the derived floor: the iOS 16.4 WebKit lacks it (CLAUDE.md webview floor).',
-        object: 'Object',
-        property: 'groupBy',
-      },
-      {
-        message:
-          'es2024, above the derived floor: the iOS 16.4 WebKit lacks it (CLAUDE.md webview floor).',
-        object: 'Map',
-        property: 'groupBy',
-      },
-    ],
-    'no-restricted-syntax': [
-      'error',
-      {
-        message:
-          'The `v` regex flag is es2024, above the derived floor: the iOS 16.4 WebKit throws on it (CLAUDE.md webview floor). Use `u`.',
-        selector: 'Literal[regex.flags=/v/]',
-      },
-      {
-        message:
-          'Iterator helpers are es2025, above the derived floor: the iOS 16.4 WebKit lacks them (CLAUDE.md webview floor). Spread into an array first.',
-        selector:
-          "CallExpression[callee.type='MemberExpression'][callee.property.name=/^(drop|every|filter|find|flatMap|forEach|map|reduce|some|take|toArray)$/][callee.object.type='CallExpression'][callee.object.callee.type='MemberExpression'][callee.object.callee.property.name=/^(entries|keys|matchAll|values)$/][callee.object.callee.object.name!='Object']",
+          'Web API above the derived floor: AbortSignal.any() is Safari iOS 17.4 (caniuse, read 2026-09-27), the iOS 16.4 WebKit throws. Compose the signals by hand (listener + AbortSignal.timeout, both Safari 16).',
+        object: 'AbortSignal',
+        property: 'any',
       },
     ],
     // The global config requires the `v` regex flag; the floor caps
@@ -166,14 +191,20 @@ export const webviewFloorBlock = (files: readonly string[]): Config => ({
 // Every rule turned off below is owned by Prettier (formatter formats,
 // linter lints) — the family rule for every other language, reaching
 // HTML by hand because `eslint-config-prettier` disables 358 rules and
-// ZERO `html/` ones. Each entry names which of two reasons retires it:
-// REDUNDANT, Prettier's output already satisfies it, so keeping it only
-// duplicates the formatter; or CONFLICTING, Prettier's output VIOLATES
-// it, measured rather than assumed — one Prettier pass over a settings
-// page that lints clean today raises 78 errors, from the four
-// conflicting rules and nothing else. The quality rules come through
-// that same pass untouched, which is what makes the split safe:
-// Prettier moves whitespace, it never invents an ARIA role.
+// ZERO `html/` ones. Each off here is LIVE — `html/recommended` turns
+// the rule on — and names which of two reasons retires it: REDUNDANT,
+// Prettier's output already satisfies it, so keeping it only duplicates
+// the formatter; or CONFLICTING, Prettier's output VIOLATES it,
+// measured rather than assumed — one Prettier pass over a settings page
+// that lints clean today raises 78 errors, from the four conflicting
+// rules and nothing else. The REDUNDANT rules the recommended set never
+// turns on (`class-spacing`, `no-extra-spacing-text`,
+// `no-multiple-empty-lines`, `no-trailing-spaces`) and the two SEO
+// refusals live in the refusal ledger (`refused-rules.ts`), not here: an
+// `off` on a rule nothing enables validates nothing. The quality rules
+// come through that same Prettier pass untouched, which is what makes
+// the split safe: Prettier moves whitespace, it never invents an ARIA
+// role.
 const htmlBlock: Config[] = defineConfig([
   {
     extends: ['html/recommended'],
@@ -185,8 +216,6 @@ const htmlBlock: Config[] = defineConfig([
       // past a COUNT, Prettier keeps them inline while they fit the
       // print WIDTH.
       'html/attrs-newline': 'off',
-      // REDUNDANT
-      'html/class-spacing': 'off',
       'html/css-no-empty-blocks': 'error',
       // REDUNDANT
       'html/element-newline': 'off',
@@ -212,16 +241,12 @@ const htmlBlock: Config[] = defineConfig([
       // CONFLICTING: Prettier writes the space in `<meta … />` that
       // this rule rejects.
       'html/no-extra-spacing-tags': 'off',
-      // REDUNDANT
-      'html/no-extra-spacing-text': 'off',
       'html/no-heading-inside-button': 'error',
       'html/no-ineffective-attrs': 'error',
       'html/no-inline-styles': 'error',
       'html/no-invalid-attr-value': 'error',
       'html/no-invalid-entity': 'error',
       'html/no-invalid-role': 'error',
-      // REDUNDANT
-      'html/no-multiple-empty-lines': 'off',
       'html/no-nested-interactive': 'error',
       'html/no-non-scalable-viewport': 'error',
       'html/no-positive-tabindex': 'error',
@@ -266,8 +291,6 @@ const htmlBlock: Config[] = defineConfig([
       'html/no-script-style-type': 'error',
       'html/no-skip-heading-levels': 'error',
       'html/no-target-blank': 'error',
-      // REDUNDANT
-      'html/no-trailing-spaces': 'off',
       'html/no-whitespace-only-children': 'error',
       'html/prefer-https': 'error',
       // REDUNDANT
@@ -302,13 +325,7 @@ const htmlBlock: Config[] = defineConfig([
       'html/require-frame-title': 'error',
       'html/require-input-label': 'error',
       'html/require-meta-charset': 'error',
-      // SEO, both: a Homey settings page or widget renders inside the
-      // Homey app and no crawler reads it. The `<meta name="description">`
-      // tags the apps carry are cargo (2024-09, no recorded reason), free
-      // to leave.
-      'html/require-meta-description': 'off',
       'html/require-meta-viewport': 'error',
-      'html/require-open-graph-protocol': 'off',
       // Kept: attribute ORDER reads like formatting, but Prettier
       // preserves the order it is given — no formatter enforces this, so
       // dropping it would drop the convention itself.
@@ -326,12 +343,6 @@ const htmlBlock: Config[] = defineConfig([
       'unicorn/expiring-todo-comments': expiringTodoComments,
       'unicorn/no-empty-file': 'error',
       'unicorn/no-invalid-file-input-accept': 'error',
-      // The referenced module bundles are gitignored build outputs (CI
-      // lints without building); their existence is guaranteed harder
-      // by the bundling script, which hashes every local reference and
-      // throws when one is missing (the guarantee lands through the
-      // validate workflow's CLI build).
-      'unicorn/no-missing-local-resource': 'off',
       'unicorn/text-encoding-identifier-case': 'error',
     },
   },
@@ -344,6 +355,12 @@ const cssBlock: Config[] = defineConfig([
     language: 'css/css',
     plugins: { unicorn },
     rules: {
+      // `allowUnknownVariables`: the pages consume custom properties the
+      // linter never sees — Homey's runtime-injected stylesheet defines
+      // the `--homey-…` set and the pages only read it: 79
+      // `var(--homey-…)` references across the three apps' stylesheets
+      // (com.melcloud 65, com.heatzy 4, com.melcloud.extension 10;
+      // counted 2026-09-28). Every other invalid property still reports.
       'css/no-invalid-properties': ['error', { allowUnknownVariables: true }],
       'css/prefer-logical-properties': 'error',
       'css/relative-font-units': 'error',
@@ -398,11 +415,11 @@ const cssBlock: Config[] = defineConfig([
         },
       ],
       'unicorn/expiring-todo-comments': expiringTodoComments,
-      // unicorn 75's CSS half, adopted by what it can CATCH here
-      // (measured over the three stylesheets, 2026-09-17): a deprecated
-      // feature, a selector written twice, a font family repeated in one
-      // stack, a mistyped media feature, an annotation that is not one,
-      // and a pseudo-selector the engines do not know.
+      // `eslint-plugin-unicorn` 75's CSS half, adopted by what it can
+      // CATCH here (measured over the three stylesheets, 2026-09-17): a
+      // deprecated feature, a selector written twice, a font family
+      // repeated in one stack, a mistyped media feature, an annotation
+      // that is not one, and a pseudo-selector the engines do not know.
       'unicorn/no-deprecated-css-features': 'error',
       'unicorn/no-duplicate-css-selectors': 'error',
       'unicorn/no-duplicate-font-family-names': 'error',
@@ -481,17 +498,7 @@ const appMainBlock = ({
 }): Config[] =>
   defineConfig([
     {
-      extends: [
-        js.configs.recommended,
-        unicorn.configs.recommended,
-        tsConfigs.strictTypeChecked,
-        tsConfigs.stylisticTypeChecked,
-        importXConfigs.errors,
-        importXConfigs.typescript,
-        // Last, so it can neutralize formatting rules from the presets
-        // above.
-        prettier,
-      ],
+      extends: mainExtends,
       files: [tsGlobs.ts, '*.config.{js,mjs}'],
       languageOptions: mainLanguageOptions,
       plugins: { '@stylistic': stylistic, perfectionist },
@@ -503,11 +510,19 @@ const appMainBlock = ({
             naming,
           ),
         ),
+        // Under `module: preserve` an extensionless relative import of a
+        // `.mts` module is already TS2307, so what the rule covers is the
+        // `.ts` test and config files vitest and jiti resolve leniently:
+        // the family's explicit-extension convention
+        // (`rewriteRelativeImportExtensions`) held everywhere, zero sites
+        // (2026-09-27). The library preset omits it: TS2835 under
+        // `module: nodenext` owns it there.
+        'import-x/extensions': [
+          'error',
+          'always',
+          { checkTypeImports: true, ignorePackages: true },
+        ],
         'perfectionist/sort-classes': ['error', appSortClassesOptions],
-        // Settings and widget sources run in the Homey webview: DOM rules
-        // apply.
-        'unicorn/no-unsafe-dom-html': 'error',
-        'unicorn/require-post-message-target-origin': 'error',
       },
       settings: perfectionistSettings,
     },
@@ -548,10 +563,18 @@ const appTestsBlock = (naming: NamingConventionOptions): Config[] =>
   })
 
 const appPackageJsonBlock: Config[] = packageJsonBlock({
-  // A Homey app is not a published library: no exports, files,
-  // keywords or types fields.
-  'package-json/require-exports': 'off',
-  'package-json/require-files': 'off',
+  // A Homey app is never published to npm, and `private: true` is the
+  // machine-readable form of that fact (npm refuses `publish`). The
+  // plugin's `require-exports`, `require-files`, `require-homepage`…
+  // self-skip on a private package (`ignorePrivateDefault`), so the two
+  // offs that stood here until 7.0.0 are gone with it;
+  // `restrict-private-properties` then refuses the fields a private
+  // package has no use for (`files`, `publishConfig` by default). NEVER
+  // run `require-private`'s fixer: it writes `"private": false`
+  // (measured 2026-09-28) — an adoption sets `true` by hand first. No
+  // `enforceForPrivate`.
+  'package-json/require-private': 'error',
+  'package-json/restrict-private-properties': 'error',
 })
 
 export const homeyApp = ({
@@ -582,11 +605,16 @@ export const homeyApp = ({
     {
       files: [...defaultExportFiles],
       rules: {
+        // Platform-imposed: the Homey loader reads `export default class`
+        // from the app, driver, device and api modules — a named export
+        // is not found.
         'import-x/no-default-export': 'off',
         'import-x/prefer-default-export': ['error', { target: 'any' }],
       },
     },
-    configTsBlock(['*.config.{js,mjs,mts,ts}']),
+    // The platform entries, never the wire's: a config file speaks no
+    // wire.
+    configTsBlock(['*.config.{js,mjs,mts,ts}'], appNaming([])),
     configJsBlock,
     htmlBlock,
     jsonBlock(['app.json', 'locales/*.json']),
