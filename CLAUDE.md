@@ -118,15 +118,17 @@ both channels — bump once, release once.
 
 ## The eslint entry point
 
-`./eslint` publishes the two presets, their option types (`HomeyAppOptions`, `LibraryOptions`, `TemplateExpressionAllowEntry`), `webviewFloorBlock` and, since 7.0.0, the `ConfigWithExtends` type it returns (one `defineConfig` input, so a consumer can name it) — nothing else since 5.0.0. Nineteen fragment
-re-exports and two option types rode out for "the day a repo genuinely
-fits neither family": measured 2026-09-07, no consumer imported any of
-them, and the set could not have assembled a third family anyway
-(`mainLanguageOptions`, `wireNamingBlock` and `testNamingRules` were
-never exported). The verdict is the naming doctrine's own: a repo fits
-one of the two families, or the family gains a preset HERE — never a
-hand-assembled third, which is the copy that drifts. The fragments stay
-module-internal in `shared.ts` and `helpers.ts`.
+`./eslint` publishes the two presets, their option types (`HomeyAppOptions`,
+`LibraryOptions`, `TemplateExpressionAllowEntry`), `webviewFloorBlock` and,
+since 7.0.0, the `ConfigWithExtends` type it returns (one `defineConfig` input,
+so a consumer can name it) — nothing else since 5.0.0. Nineteen fragment
+re-exports and two option types rode out for "the day a repo genuinely fits
+neither family": measured 2026-09-07, no consumer imported any of them, and the
+set could not have assembled a third family anyway (`mainLanguageOptions`,
+`wireNamingBlock` and `testNamingRules` were never exported). The verdict is the
+naming doctrine's own: a repo fits one of the two families, or the family gains
+a preset HERE — never a hand-assembled third, which is the copy that drifts. The
+fragments stay module-internal in `shared.ts` and `helpers.ts`.
 
 Pinned by a runtime test of the barrel's export names, because the
 rule that would report an unused export cannot:
