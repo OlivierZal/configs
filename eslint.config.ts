@@ -13,13 +13,14 @@ const config: Config[] = defineConfig([
     wireNamingEntries: [
       // This repo's domain vocabulary: rule options keyed by
       // tool-imposed names (AST node types for `prefer-destructuring`,
-      // case-style names for `unicorn/filename-case`) and the typedoc
-      // navigation label the contract tests exercise.
+      // case-style names for `unicorn/filename-case`, the `Date` type
+      // `no-restricted-types` bans) and the typedoc navigation label the
+      // contract tests exercise.
       {
         filter: {
           match: true,
           regex:
-            '^(?:AssignmentExpression|VariableDeclarator|SCREAMING_SNAKE_CASE|snake_case|GitHub)$',
+            '^(?:AssignmentExpression|VariableDeclarator|SCREAMING_SNAKE_CASE|snake_case|GitHub|Date)$',
         },
         format: null,
         selector: 'objectLiteralProperty',

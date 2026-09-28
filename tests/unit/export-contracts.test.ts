@@ -42,10 +42,13 @@ describe('export contracts', () => {
   // A library shipping webview-bundled sources composes the floor from
   // the barrel instead of hand-copying it, so this import path is a
   // contract: a repo that re-derives the policy watches it drift.
+  // Since 7.0.0 the block `extends` es-x's edition table, so it is a
+  // `defineConfig` input — the shape every consumer already feeds it to.
   it('should expose the webview floor as a composable fragment', () => {
     const block = webviewFloorBlock(['src/webview/**/*.ts'])
 
     expect(block.files).toStrictEqual(['src/webview/**/*.ts'])
+    expect(block.extends).toHaveLength(1)
     expect(block.rules?.['require-unicode-regexp']).toStrictEqual([
       'error',
       { requireFlag: 'u' },
@@ -75,7 +78,7 @@ describe('export contracts', () => {
     expect(config).toMatchSnapshot()
   })
 
-  // typedoc loads each plugin by name from the consumer's tree, so the
+  // `typedoc` loads each plugin by name from the consumer's tree, so the
   // list the preset emits is a dependency claim on the four consumers
   // that document — and it is declared in NO field the installer
   // reads. The optional peer that would be the textbook place is not

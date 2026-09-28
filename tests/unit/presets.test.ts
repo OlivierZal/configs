@@ -1,13 +1,14 @@
 import { fileURLToPath } from 'node:url'
 
 import type { Config } from 'eslint/config'
-import { ESLint, Linter } from 'eslint'
+import { ESLint } from 'eslint'
 import { format } from 'prettier'
 import { describe, expect, it } from 'vitest'
 
 import { homeyApp } from '../../src/eslint/homey-app.ts'
 import { library } from '../../src/eslint/library.ts'
 import { jsdocBlock, mainLanguageOptions } from '../../src/eslint/shared.ts'
+import { asRecord } from '../helpers.ts'
 
 const appPreset = homeyApp({
   bundledSourceGlobs: ['settings/**'],
@@ -61,12 +62,91 @@ const homeyAppWith = (
     wireNamingFiles,
   })
 
+// The floor block's own table; its `extends` lands as a sibling entry
+// carrying the same files.
 const floorEntry = appPreset.find(
   (entry) =>
     entry.rules !== undefined &&
-    Object.hasOwn(entry.rules, 'no-restricted-syntax') &&
+    Object.hasOwn(entry.rules, 'require-unicode-regexp') &&
     entry.files?.includes('settings/**/*.mts') === true,
 )
+
+// Each preset with files standing for every block it carries (`app.json`
+// and `locales/*.json` are ignored by design and resolve to nothing, so
+// they are not listed).
+const presets = [
+  {
+    files: [
+      'app.mts',
+      'api.mts',
+      'lib/homey.mts',
+      'lib/device.mts',
+      'settings/index.mts',
+      'settings/index.html',
+      'settings/index.css',
+      'package.json',
+      'README.md',
+      '.github/workflows/ci.yml',
+      'tests/unit/x.test.ts',
+      'tests/unit/app.test.ts',
+      'eslint.config.ts',
+      'typedoc.config.js',
+    ],
+    preset: appPreset,
+    presetName: 'homeyApp',
+  },
+  {
+    files: [
+      'src/index.ts',
+      'src/decorators/x.ts',
+      'src/temporal.ts',
+      'package.json',
+      'tsconfig.json',
+      'README.md',
+      'CHANGELOG.md',
+      '.github/workflows/ci.yml',
+      'tests/unit/x.test.ts',
+      'eslint.config.ts',
+      'typedoc.config.js',
+    ],
+    preset: libraryPreset,
+    presetName: 'library',
+  },
+]
+
+const representativeCases = presets.flatMap(({ files, preset, presetName }) =>
+  files.map((file) => ({ file, preset, presetName })),
+)
+
+const resolvedCwd = fileURLToPath(
+  new URL('../fixtures/resolved/', import.meta.url),
+)
+
+const resolveRules = async (
+  preset: Config[],
+  file: string,
+): Promise<Record<string, unknown>> => {
+  const eslint = new ESLint({
+    cwd: resolvedCwd,
+    overrideConfig: preset,
+    overrideConfigFile: true,
+  })
+  return asRecord(
+    asRecord(
+      await eslint.calculateConfigForFile(file),
+      `the resolved config of ${file}`,
+    ).rules,
+    'rules',
+  )
+}
+
+const severityOf = (entry: unknown): unknown =>
+  Array.isArray(entry) ? entry[0] : entry
+
+const warnRules = (rules: Record<string, unknown>): string[] =>
+  Object.entries(rules)
+    .filter(([, entry]) => severityOf(entry) === 1)
+    .map(([ruleId]) => ruleId)
 
 // The type-checked main block is the one that enables the project
 // service; scoped blocks legitimately override it for their own files.
@@ -138,46 +218,26 @@ describe(homeyApp, () => {
     ])
   })
 
-  // Real lint runs, because the floor is a selector string: only the
-  // parser can say what it matches. `String#matchAll` returns an
-  // iterator, so helpers chained onto it are 2025-era too — the
-  // selector missed it until a consumer's hand-copied floor proved it
-  // did. `Object.entries` returns an array, so its `.map` is ES5 and
-  // must stay legal, or the floor rejects the idiom it exists to allow.
-  it.each([
-    { code: 'items.entries().map(toRow)', expected: 'Iterator helpers' },
-    { code: 'text.matchAll(/x/u).map(toRow)', expected: 'Iterator helpers' },
-    { code: 'const re = /x/v', expected: 'regex flag' },
-  ])('should flag `$code`', ({ code, expected }) => {
-    const linter = new Linter()
-    const report = linter.verify(`${code}\n`, {
-      rules: {
-        'no-restricted-syntax':
-          floorEntry?.rules?.['no-restricted-syntax'] ?? 'off',
-      },
-    })
+  // The floor is an ENGINE, not an edition: es-x's es2023 table is
+  // corrected where the iOS 16.4 WebKit ships a later-edition feature
+  // (four es2024, `Array.fromAsync` es2026 in the table), the `v`
+  // flag is refused once (by `require-unicode-regexp`, the twin off), a
+  // Web API es-x cannot see is banned by hand, and the hand selectors the
+  // table replaced are gone.
+  it('should correct the edition table by the engine', () => {
+    const rules = floorEntry?.rules ?? {}
 
-    expect(report).toHaveLength(1)
-    expect(report[0]?.message).toContain(expected)
-  })
-
-  it('should leave array helpers on Object.entries alone', () => {
-    const linter = new Linter()
-    const report = linter.verify('Object.entries(source).map(toRow)\n', {
-      rules: {
-        'no-restricted-syntax':
-          floorEntry?.rules?.['no-restricted-syntax'] ?? 'off',
-      },
-    })
-
-    expect(report).toHaveLength(0)
-  })
-
-  it('should keep the DOM rules that only apply to webview code', () => {
-    const rules = mainRulesOf(appPreset)
-
-    expect(rules['unicorn/no-unsafe-dom-html']).toBe('error')
-    expect(rules['unicorn/require-post-message-target-origin']).toBe('error')
+    expect(rules['es-x/no-array-fromasync']).toBe('off')
+    expect(rules['es-x/no-atomics-waitasync']).toBe('off')
+    expect(rules['es-x/no-regexp-v-flag']).toBe('off')
+    expect(rules['es-x/no-resizable-and-growable-arraybuffers']).toBe('off')
+    expect(rules['es-x/no-string-prototype-iswellformed']).toBe('off')
+    expect(rules['es-x/no-string-prototype-towellformed']).toBe('off')
+    expect(rules['import-x/no-nodejs-modules']).toBe('error')
+    expect(JSON.stringify(rules['no-restricted-properties'])).toContain(
+      'AbortSignal',
+    )
+    expect(rules).not.toHaveProperty('no-restricted-syntax')
   })
 
   it('should pin the main rule inventory', () => {
@@ -361,6 +421,20 @@ export const label = (name) => \`\${name}\`
   })
 })
 
+// The two DOM rules moved from the app preset to the shared table in
+// 7.0.0, for the reason `no-alert` is there: homey-kit's webview sources
+// compile under `lib: DOM` in a library-preset repo. The one that has
+// only JSX and HTML visitors stays in the HTML block.
+describe.each(presets)('the DOM rules via $presetName', ({ preset }) => {
+  it('should carry the DOM rules in the main table', () => {
+    const rules = mainRulesOf(preset)
+
+    expect(rules['unicorn/no-unsafe-dom-html']).toBe('error')
+    expect(rules['unicorn/require-post-message-target-origin']).toBe('error')
+    expect(rules['unicorn/no-invalid-file-input-accept']).toBeUndefined()
+  })
+})
+
 describe(library, () => {
   it('should carry no webview floor anywhere', () => {
     // Plugin objects are circular; rule maps are the floor's only home.
@@ -369,9 +443,8 @@ describe(library, () => {
     )
 
     expect(allRuleIds).not.toContain('no-restricted-properties')
-    expect(
-      mainRulesOf(libraryPreset)['unicorn/no-unsafe-dom-html'],
-    ).toBeUndefined()
+    expect(allRuleIds).not.toContain('import-x/no-nodejs-modules')
+    expect(allRuleIds.some((ruleId) => ruleId.startsWith('es-x/'))).toBe(false)
   })
 
   it('should route the polyfill through the sanctioned entry point', () => {
@@ -436,59 +509,202 @@ const lintFixture = async (
   return results.flatMap(({ messages }) => messages.map(({ ruleId }) => ruleId))
 }
 
-describe.each([
-  { preset: appPreset, presetName: 'homeyApp' },
-  { preset: libraryPreset, presetName: 'library' },
-])('root js config linting via $presetName', ({ preset }) => {
-  it(
-    'should type-lint a root js config through the default project',
-    { timeout: 60_000 },
-    async () => {
-      await expect(
-        lintFixture(preset, 'config-js/invalid', 'typedoc.config.js'),
-      ).resolves.toContain('@typescript-eslint/no-floating-promises')
+// Real lint runs through the fixture project: the es-x iterator rules
+// report only what type information proves to be an iterator, so the
+// array `.map` on `Object.entries` stays legal (or the floor rejects the
+// idiom it exists to allow), and only a run shows the `v` flag reported
+// ONCE — by `require-unicode-regexp`, es-x's twin being off — and a
+// feature the iOS 16.4 WebKit ships passing through an off.
+describe('webview floor', () => {
+  it.each([
+    {
+      file: 'with-resolvers.mts',
+      ruleId: 'es-x/no-promise-withresolvers',
+      shape: '`Promise.withResolvers()`',
     },
-  )
+    {
+      file: 'group-by.mts',
+      ruleId: 'es-x/no-object-groupby',
+      shape: '`Object.groupBy()`',
+    },
+    {
+      file: 'iterator-helper.mts',
+      ruleId: 'es-x/no-iterator-prototype-map',
+      shape: 'a helper on a Map iterator',
+    },
+    {
+      file: 'abort-any.mts',
+      ruleId: 'no-restricted-properties',
+      shape: '`AbortSignal.any()`',
+    },
+    {
+      file: 'node-import.mts',
+      ruleId: 'import-x/no-nodejs-modules',
+      shape: 'a `node:` import',
+    },
+    {
+      file: 'v-flag.mts',
+      ruleId: 'require-unicode-regexp',
+      shape: 'the `v` regex flag, once',
+    },
+  ])('should report $shape', { timeout: 60_000 }, async ({ file, ruleId }) => {
+    await expect(
+      lintFixture(appPreset, 'floor', `settings/${file}`),
+    ).resolves.toStrictEqual([ruleId])
+  })
 
-  it(
-    'should keep a conforming js config clean',
+  it.each([
+    { file: 'array-map.mts', shape: 'array helpers on `Object.entries`' },
+    {
+      file: 'well-formed.mts',
+      shape: '`String#isWellFormed`, which the iOS 16.4 WebKit ships',
+    },
+  ])('should leave $shape alone', { timeout: 60_000 }, async ({ file }) => {
+    await expect(
+      lintFixture(appPreset, 'floor', `settings/${file}`),
+    ).resolves.toStrictEqual([])
+  })
+})
+
+// Zero-warning policy, made mechanical: a preset's `warn` is raised in
+// the tables or the rule is off with a reason, never left as a warning
+// nobody gates. Resolved from the fixture root, where the
+// `allowDefaultProject` globs have a project to resolve against.
+describe('zero-warning policy', () => {
+  it.each(representativeCases)(
+    'should resolve $file to no rule at warn via $presetName',
     { timeout: 60_000 },
-    async () => {
-      await expect(
-        lintFixture(preset, 'config-js/valid', 'typedoc.config.js'),
-      ).resolves.toStrictEqual([])
+    async ({ file, preset }) => {
+      const rules = await resolveRules(preset, file)
+
+      expect(warnRules(rules)).toStrictEqual([])
     },
   )
 })
+
+// What the presets RESOLVE to, file by file — the layer where an extended
+// preset's value and the family table's meet.
+describe.each(presets)('resolved config via $presetName', ({ preset }) => {
+  // `no-this-alias` (recommended and strict) owns what unicorn's twin
+  // would report twice.
+  it(
+    'should leave this-aliasing to the typescript-eslint owner',
+    { timeout: 60_000 },
+    async () => {
+      const rules = await resolveRules(preset, 'src/index.ts')
+
+      expect(severityOf(rules['@typescript-eslint/no-this-alias'])).toBe(2)
+      expect(severityOf(rules['unicorn/no-this-assignment'])).toBe(0)
+    },
+  )
+
+  // The regexp preset sets a bare `'error'`; the family table's option
+  // must survive it, which is why the preset is extended before the
+  // table applies.
+  it(
+    'should keep the prefer-regex-literals option over the regexp preset',
+    { timeout: 60_000 },
+    async () => {
+      const rules = await resolveRules(preset, 'src/index.ts')
+
+      expect(rules['prefer-regex-literals']).toStrictEqual([
+        2,
+        { disallowRedundantWrapping: true },
+      ])
+    },
+  )
+
+  // The test block restates `no-shadow` to allow the destructured
+  // `expect`; it must restate the whole option, `hoist: 'all'` included,
+  // or the block silently loosens to the rule's default.
+  it(
+    'should keep hoist all in the test block',
+    { timeout: 60_000 },
+    async () => {
+      const rules = await resolveRules(preset, 'tests/unit/x.test.ts')
+
+      expect(rules['@typescript-eslint/no-shadow']).toStrictEqual([
+        2,
+        expect.objectContaining({ builtinGlobals: true, hoist: 'all' }),
+      ])
+    },
+  )
+})
+
+describe.each(presets)(
+  'root js config linting via $presetName',
+  ({ preset }) => {
+    it(
+      'should type-lint a root js config through the default project',
+      { timeout: 60_000 },
+      async () => {
+        await expect(
+          lintFixture(preset, 'config-js/invalid', 'typedoc.config.js'),
+        ).resolves.toContain('@typescript-eslint/no-floating-promises')
+      },
+    )
+
+    it(
+      'should keep a conforming js config clean',
+      { timeout: 60_000 },
+      async () => {
+        await expect(
+          lintFixture(preset, 'config-js/valid', 'typedoc.config.js'),
+        ).resolves.toStrictEqual([])
+      },
+    )
+  },
+)
 
 // The import rules resolve through `eslint-import-resolver-typescript`,
 // which no file names: `importXConfigs.typescript` sets
 // `settings['import-x/resolver']` to `{ typescript: true }` and import-x
 // loads the package from that name. A `.js` specifier standing for a
-// `.ts` neighbour — the `nodenext` form every consumer writes — is what
+// `.ts` neighbour — the `nodenext` form the libraries write — is what
 // the node fallback cannot follow, so the resolving half fails without
 // the package (every import then reports a resolve error) and the
 // missing-module half proves the rule still reports through it. The
 // resolving half demands a fully clean run rather than the absence of
 // one rule: a parse failure or a misnamed path reports no rule either.
-describe.each([
-  { preset: appPreset, presetName: 'homeyApp' },
-  { preset: libraryPreset, presetName: 'library' },
-])('import resolution via $presetName', ({ preset }) => {
-  it(
-    'should resolve a js specifier to its ts neighbour',
+// The app family writes the real extension instead
+// (`rewriteRelativeImportExtensions`), which `import-x/extensions` holds
+// since 7.0.0 — so on the `.js` stand-in the app preset reports that one
+// rule, naming the `.ts` the resolver reached: a report that could not
+// exist without the resolution, and the only one.
+describe('import resolution', () => {
+  it.each([
+    {
+      file: 'resolved.ts',
+      preset: libraryPreset,
+      presetName: 'library',
+      reports: [],
+    },
+    {
+      file: 'resolved-app.ts',
+      preset: appPreset,
+      presetName: 'homeyApp',
+      reports: [],
+    },
+    {
+      file: 'resolved.ts',
+      preset: appPreset,
+      presetName: 'homeyApp',
+      reports: ['import-x/extensions'],
+    },
+  ])(
+    'should resolve $file to its ts neighbour via $presetName',
     { timeout: 60_000 },
-    async () => {
+    async ({ file, preset, reports }) => {
       await expect(
-        lintFixture(preset, 'resolver', 'resolved.ts'),
-      ).resolves.toStrictEqual([])
+        lintFixture(preset, 'resolver', file),
+      ).resolves.toStrictEqual(reports)
     },
   )
 
-  it(
-    'should still report a module that exists under no extension',
+  it.each(presets)(
+    'should still report a module that exists under no extension via $presetName',
     { timeout: 60_000 },
-    async () => {
+    async ({ preset }) => {
       await expect(
         lintFixture(preset, 'resolver', 'unresolved.ts'),
       ).resolves.toContain('import-x/no-unresolved')
@@ -501,29 +717,29 @@ describe.each([
 // spans lines or not, and the readability boundary the setting relies
 // on holds — a guard whose fall-through already holds a ternary is
 // left alone rather than nested.
-describe.each([
-  { preset: appPreset, presetName: 'homeyApp' },
-  { preset: libraryPreset, presetName: 'library' },
-])('prefer-ternary at the preset default via $presetName', ({ preset }) => {
-  it.each([
-    { file: 'guard.ts', shape: 'a guard clause with a multi-line value' },
-    { file: 'one-line.ts', shape: 'a one-line if/else' },
-  ])('should report $shape', { timeout: 60_000 }, async ({ file }) => {
-    await expect(lintFixture(preset, 'ternary', file)).resolves.toContain(
-      'unicorn/prefer-ternary',
-    )
-  })
+describe.each(presets)(
+  'prefer-ternary at the preset default via $presetName',
+  ({ preset }) => {
+    it.each([
+      { file: 'guard.ts', shape: 'a guard clause with a multi-line value' },
+      { file: 'one-line.ts', shape: 'a one-line if/else' },
+    ])('should report $shape', { timeout: 60_000 }, async ({ file }) => {
+      await expect(lintFixture(preset, 'ternary', file)).resolves.toContain(
+        'unicorn/prefer-ternary',
+      )
+    })
 
-  it(
-    'should leave a guard alone when merging would nest ternaries',
-    { timeout: 60_000 },
-    async () => {
-      await expect(
-        lintFixture(preset, 'ternary', 'nested.ts'),
-      ).resolves.not.toContain('unicorn/prefer-ternary')
-    },
-  )
-})
+    it(
+      'should leave a guard alone when merging would nest ternaries',
+      { timeout: 60_000 },
+      async () => {
+        await expect(
+          lintFixture(preset, 'ternary', 'nested.ts'),
+        ).resolves.not.toContain('unicorn/prefer-ternary')
+      },
+    )
+  },
+)
 
 const namingRule = '@typescript-eslint/naming-convention'
 
@@ -541,10 +757,7 @@ describe('strict naming core', () => {
     },
   )
 
-  it.each([
-    { preset: appPreset, presetName: 'homeyApp' },
-    { preset: libraryPreset, presetName: 'library' },
-  ])(
+  it.each(presets)(
     'should reject mixed-case and underscore properties via $presetName',
     { timeout: 60_000 },
     async ({ preset }) => {
@@ -554,6 +767,28 @@ describe('strict naming core', () => {
       await expect(
         lintFixture(preset, 'naming', 'underscore-property.ts'),
       ).resolves.toContain(namingRule)
+    },
+  )
+
+  // Config files hold the core. The library preset adds the one
+  // tool-imposed shape — typedoc keys its maps by exported symbol names
+  // and rendered labels, so the PascalCase `GitHub` passes there — and
+  // the app preset, where typedoc never runs, keeps the bare core, so
+  // the same key reports. A `Legacy_key` of ours reports under both.
+  it.each([
+    {
+      expected: [namingRule, namingRule],
+      preset: appPreset,
+      presetName: 'homeyApp',
+    },
+    { expected: [namingRule], preset: libraryPreset, presetName: 'library' },
+  ])(
+    'should hold config keys to the core, typedoc names excepted in a library, via $presetName',
+    { timeout: 60_000 },
+    async ({ expected, preset }) => {
+      await expect(
+        lintFixture(preset, 'config-js/naming', 'typedoc.config.js'),
+      ).resolves.toStrictEqual(expected)
     },
   )
 })

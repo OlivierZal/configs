@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "lib": ["dom", "esnext"],
+    "module": "nodenext",
+    "strict": true,
+    "target": "esnext",
+    "types": ["node"]
+  },
+  "include": ["settings/**/*.mts"]
+}

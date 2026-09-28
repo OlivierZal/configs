@@ -10,6 +10,9 @@ import packageJson from '../../package.json' with { type: 'json' }
 const majorMinor = (version: string): string =>
   version.split('.').slice(0, 2).join('.')
 
+const byLocale = (first: string, second: string): number =>
+  first.localeCompare(second, 'en')
+
 const installedVersion = (name: string): string => {
   const { version } = asRecord(
     JSON.parse(
@@ -33,7 +36,11 @@ const installedVersion = (name: string): string => {
 // entry in the same pull request. Patches pass.
 describe('audited plugin versions', () => {
   // Every plugin the presets load is audited, and nothing else is: the
-  // resolver and the prettier bridge carry no rules.
+  // resolver and the prettier bridge carry no rules. The SET is the
+  // contract; the ledger's own order is perfectionist's (the family
+  // alphabet places `/` before `-`, so `@eslint/…` precedes
+  // `@eslint-community/…`), which is why both sides sort the same way
+  // here.
   it('should cover exactly the rule-bearing packages', () => {
     const ruleBearing = Object.keys({
       ...packageJson.dependencies,
@@ -46,9 +53,11 @@ describe('audited plugin versions', () => {
           name.startsWith('@eslint/') ||
           name.includes('eslint-plugin'),
       )
-      .toSorted((first, second) => first.localeCompare(second, 'en'))
+      .toSorted(byLocale)
 
-    expect(Object.keys(AUDITED_PLUGIN_VERSIONS)).toStrictEqual(ruleBearing)
+    expect(
+      Object.keys(AUDITED_PLUGIN_VERSIONS).toSorted(byLocale),
+    ).toStrictEqual(ruleBearing)
   })
 
   it.each(Object.entries(AUDITED_PLUGIN_VERSIONS))(

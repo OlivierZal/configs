@@ -10,25 +10,30 @@
  * passes without ceremony.
  *
  * A FULL reading — every rule of every plugin against the tables, not a
- * release's delta — was done on 2026-09-15 (CLAUDE.md, plugin triage).
- * Entries have since moved by DELTA readings of their release notes,
- * each measured over the eight repositories before it moved
- * (2026-09-22: eslint 10.11, unicorn 76, package-json 1.9,
- * html-eslint 0.66).
+ * release's delta — was done on 2026-09-15 and again on 2026-09-27
+ * (CLAUDE.md, plugin triage; the second one measured every unconfigured
+ * rule over the seven consumers and admitted three plugins: es-x,
+ * regexp, eslint-comments). Between the two, entries moved by DELTA
+ * readings of their release notes, each measured over the eight
+ * repositories before it moved (2026-09-22: eslint 10.11, unicorn 76,
+ * package-json 1.9, html-eslint 0.66).
  */
 export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@eslint/css': '2.0',
   '@eslint/js': '10.0',
   '@eslint/json': '2.1',
   '@eslint/markdown': '8.0',
+  '@eslint-community/eslint-plugin-eslint-comments': '4.8',
   '@html-eslint/eslint-plugin': '0.66',
   '@stylistic/eslint-plugin': '5.10',
   '@vitest/eslint-plugin': '1.6',
   eslint: '10.11',
+  'eslint-plugin-es-x': '10.0',
   'eslint-plugin-import-x': '4.17',
   'eslint-plugin-jsdoc': '64.5',
   'eslint-plugin-package-json': '1.9',
   'eslint-plugin-perfectionist': '5.11',
+  'eslint-plugin-regexp': '3.3',
   'eslint-plugin-unicorn': '76.0',
   'eslint-plugin-yml': '3.8',
   'typescript-eslint': '8.70',
