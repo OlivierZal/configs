@@ -26,6 +26,7 @@ import {
   sharedMainRules,
   testNamingRules,
   testsBlock,
+  typedocKeyEntry,
   wireNamingBlock,
   yamlBlock,
 } from './shared.ts'
@@ -189,8 +190,13 @@ export const library = ({
     }),
     // After the main block, so the scoped files win the override.
     ...(isScoped ? [wireNamingBlock(wireNamingFiles, naming)] : []),
-    // The core policy, never the wire's: a config file speaks no wire.
-    configTsBlock(['*.config.{js,mjs,mts,ts}'], libraryNaming([])),
+    // The core policy, never the wire's (a config file speaks no wire),
+    // plus the one tool-imposed shape of a library's root configs: the
+    // typedoc map keys. Library-only — typedoc never runs on an app.
+    configTsBlock(['*.config.{js,mjs,mts,ts}'], {
+      ...libraryNaming([]),
+      extraEntries: [typedocKeyEntry],
+    }),
     configJsBlock,
     jsonBlock(),
     markdownBlock,

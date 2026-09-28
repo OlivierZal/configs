@@ -79,11 +79,10 @@ export const mainExtends: NonNullable<ConfigWithExtends['extends']> = [
 // `eslint-plugin-unicorn` 74 ships its comment-expiry rule hollow:
 // `checkDates` and `allowWarningComments` default to false/true, so a
 // dated warning comment never expired and an undated one was never a
-// report. Stated
-// wherever the rule runs (the main table, Markdown, HTML, CSS — a
-// severity-only entry falls back to the plugin defaults), so every
-// warning term names its expiry. Measured 2026-09-15: zero such
-// comments across the eight repos, so the guard is latent. ESLint
+// report. Stated wherever the rule runs (the main table, Markdown,
+// HTML, CSS — a severity-only entry falls back to the plugin defaults),
+// so every warning term names its expiry. Measured 2026-09-15: zero
+// such comments across the eight repos, so the guard is latent. ESLint
 // 10.10 + unicorn 74 report a term anywhere in a comment (the doc tag
 // of that name included), word-bounded — this very comment names none;
 // `ignore` is the escape hatch should placeholder prose ever need one.
@@ -1009,23 +1008,22 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // Owned by `import-x/no-anonymous-default-export`.
   'unicorn/no-anonymous-default-export': 'off',
   'unicorn/no-array-front-mutation': 'error',
-  // `eslint-plugin-unicorn` 76's `checkContinue` (off by default): an unlabeled
-  // `continue` inside a nested loop, or inside a `switch` within a
-  // loop, reads as ambiguous about what it continues. Measured
-  // 2026-09-22 at zero sites over the eight repositories — adopted as
-  // a latent guard, the way `prefer-rolling-workspace-spec` is.
+  // `eslint-plugin-unicorn` 76's `checkContinue` (off by default): an
+  // unlabeled `continue` inside a nested loop, or inside a `switch`
+  // within a loop, reads as ambiguous about what it continues. Measured
+  // 2026-09-22 at zero sites over the eight repositories — adopted as a
+  // latent guard, the way `prefer-rolling-workspace-spec` is.
   'unicorn/no-break-in-nested-loop': ['error', { checkContinue: true }],
   // `eslint-plugin-unicorn` 76's `checkConditionals` (off by default): a
   // value built by guarded `push` calls right after its initialization
   // is built in its literal instead, conditional spreads included. One
-  // site over the
-  // eight repositories (api-core's ordered policy builder), which
-  // rewrites safely into a literal that shows the order at a glance;
-  // the rule's own abstention from fixing it in TypeScript concerns the
-  // autofix, not the code — an explicit array annotation keeps the
-  // contextual typing. Refused on 2026-09-22 for that one site, adopted
-  // on 2026-09-23: the base rule was already at `error` with its
-  // rewrites made, and the extension asks nothing different.
+  // site over the eight repositories (api-core's ordered policy
+  // builder), which rewrites safely into a literal that shows the order
+  // at a glance; the rule's own abstention from fixing it in TypeScript
+  // concerns the autofix, not the code — an explicit array annotation
+  // keeps the contextual typing. Refused on 2026-09-22 for that one
+  // site, adopted on 2026-09-23: the base rule was already at `error`
+  // with its rewrites made, and the extension asks nothing different.
   'unicorn/no-immediate-mutation': ['error', { checkConditionals: true }],
   // Owned by `import-x/no-named-default` (imports; the export form it
   // also covers is unused here).
@@ -1049,9 +1047,8 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // `eslint-plugin-unicorn` 76's `checkCompoundConditions` (off by
   // default): two consecutive guards whose conditions are compound
   // (`&&`, `??`, a ternary, a negated group) get combined like simple
-  // ones. Measured
-  // 2026-09-22 at zero sites over the eight repositories — adopted as
-  // a latent guard.
+  // ones. Measured 2026-09-22 at zero sites over the eight repositories
+  // — adopted as a latent guard.
   'unicorn/prefer-combined-guards': [
     'error',
     { checkCompoundConditions: true },
@@ -1142,20 +1139,32 @@ export const perfectionistSettings: Record<string, Record<string, unknown>> = {
   },
 }
 
-// The one tool-imposed key shape of the root config files: typedoc keys
-// two of its maps by names it matches VERBATIM — `externalSymbolLinkMappings`
-// by the exported symbol (`Redaction`, `LifecycleEvents`: PascalCase by
-// the family's own `typeLike` format) and `navigationLinks` by the
-// rendered label (`GitHub`). Measured 2026-09-28 over the seven
+// Exempts a SHAPE rather than an origin, the way the app preset's
+// multi-segment snake_case entry does: an uppercase-initial key in a
+// library's root config files. Two tool-imposed origins wear it,
+// neither ours to rename — typedoc matches the keys of
+// `externalSymbolLinkMappings` VERBATIM against the exported symbol
+// (`Redaction`, `LifecycleEvents`: PascalCase by the family's own
+// `typeLike` format) and renders those of `navigationLinks` as labels
+// (`GitHub`, a proper noun). Measured 2026-09-28 over the seven
 // consumers' root config files with the core policy: nine findings,
 // every one such a key, all in the four libraries' `typedoc.config.js`;
-// the apps at zero. Until 7.0.0 the rule was `off` on those files with
-// no recorded reason. The filter is anchored so a quoted key
-// (`'GitHub Packages'`, `'SessionAPI.initialize'`) keeps riding the
-// `requiresQuotes` skip instead of being judged PascalCase.
-const configKeyEntry = {
+// the three apps at zero — and typedoc never runs on an app, so the
+// entry is the library preset's alone and the app preset keeps the
+// bare core on its config files. The rule cannot see which map a key
+// sits in, so the filter stands for the origin and is the whole
+// verdict: `format: null`, like every imposed-name entry of the family
+// (a `format: ['PascalCase']` on it would be inert — typescript-eslint
+// checks "uppercase first, no underscore", which the filter already
+// guarantees). Anchored, so a quoted key (`'GitHub Packages'`,
+// `'SessionAPI.initialize'`) keeps riding the `requiresQuotes` skip and
+// a `Legacy_key` spelling stays on the core, where it reports. Until
+// 7.0.0 the rule was `off` on those files with no recorded reason; the
+// shape over an exact list is a declared verdict (CLAUDE.md, naming
+// doctrine).
+export const typedocKeyEntry: Readonly<Record<string, unknown>> = {
   filter: { match: true, regex: '^[A-Z][A-Za-z0-9]*$' },
-  format: ['PascalCase'],
+  format: null,
   selector: 'objectLiteralProperty',
 }
 
@@ -1164,19 +1173,17 @@ const configKeyEntry = {
 // below.
 export const configTsBlock = (
   files: string[],
-  { extraEntries = [], ...naming }: NamingConventionOptions,
+  naming: NamingConventionOptions,
 ): Config => ({
   files,
   rules: {
     // The family naming policy restated — the preset's platform entries,
     // never a wire vocabulary (a config file speaks no wire) — plus the
-    // tool-imposed shape above.
+    // tool-imposed shape the caller names (the library preset's
+    // `typedocKeyEntry` above; the app preset names none).
     '@typescript-eslint/naming-convention': [
       'error',
-      ...namingConventionEntries({
-        ...naming,
-        extraEntries: [...extraEntries, configKeyEntry],
-      }),
+      ...namingConventionEntries(naming),
     ],
     // The `const config = defineConfig(...)` / `export default config`
     // spelling here is DERIVED, not stylistic, and the global

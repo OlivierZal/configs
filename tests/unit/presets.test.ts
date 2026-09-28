@@ -219,7 +219,8 @@ describe(homeyApp, () => {
   })
 
   // The floor is an ENGINE, not an edition: es-x's es2023 table is
-  // corrected where the iOS 16.4 WebKit ships an es2024 feature, the `v`
+  // corrected where the iOS 16.4 WebKit ships a later-edition feature
+  // (four es2024, `Array.fromAsync` es2026 in the table), the `v`
   // flag is refused once (by `require-unicode-regexp`, the twin off), a
   // Web API es-x cannot see is banned by hand, and the hand selectors the
   // table replaced are gone.
@@ -769,16 +770,25 @@ describe('strict naming core', () => {
     },
   )
 
-  // Config files hold the core plus one tool-imposed shape: typedoc keys
-  // its maps by exported symbol names and rendered labels, PascalCase
-  // (`GitHub` passes); a snake_case key of ours still reports.
-  it.each(presets)(
-    'should hold config keys to the core, PascalCase names excepted, via $presetName',
+  // Config files hold the core. The library preset adds the one
+  // tool-imposed shape — typedoc keys its maps by exported symbol names
+  // and rendered labels, so the PascalCase `GitHub` passes there — and
+  // the app preset, where typedoc never runs, keeps the bare core, so
+  // the same key reports. A `Legacy_key` of ours reports under both.
+  it.each([
+    {
+      expected: [namingRule, namingRule],
+      preset: appPreset,
+      presetName: 'homeyApp',
+    },
+    { expected: [namingRule], preset: libraryPreset, presetName: 'library' },
+  ])(
+    'should hold config keys to the core, typedoc names excepted in a library, via $presetName',
     { timeout: 60_000 },
-    async ({ preset }) => {
+    async ({ expected, preset }) => {
       await expect(
         lintFixture(preset, 'config-js/naming', 'typedoc.config.js'),
-      ).resolves.toStrictEqual([namingRule])
+      ).resolves.toStrictEqual(expected)
     },
   )
 })

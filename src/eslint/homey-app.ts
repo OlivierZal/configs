@@ -122,11 +122,12 @@ const lifecycleGroupName = (hook: string): string =>
  * 17.4) was named in this very comment and banned nowhere until 7.0.0.
  * The floor is an ENGINE, not an edition, so the edition table is
  * corrected by browser-compat-data (6.1.5, read 2026-09-27) in both
- * directions. Five es2024 rules are turned OFF because the iOS 16.4
- * WebKit ships the feature — `String#isWellFormed` and `toWellFormed`,
- * `Atomics.waitAsync`, `Array.fromAsync`, resizable and growable
- * `ArrayBuffer`s (`ArrayBuffer#transfer`, 17.4, stays banned by its own
- * rule) — and one Web API es-x cannot see is banned by hand:
+ * directions. Five rules above es2023 are turned OFF because the iOS
+ * 16.4 WebKit ships the feature — `String#isWellFormed` and
+ * `toWellFormed`, `Atomics.waitAsync`, resizable and growable
+ * `ArrayBuffer`s (es2024; `ArrayBuffer#transfer`, 17.4, stays banned by
+ * its own rule) and `Array.fromAsync` (es2026 in es-x's table) — and
+ * one Web API es-x cannot see is banned by hand:
  * `AbortSignal.any`, 17.4. The `v` regex flag is refused once, by
  * `require-unicode-regexp` at `u` — the global config demands `v`, the
  * floor steps the requirement down, it does not drop it — with es-x's
@@ -159,7 +160,8 @@ export const webviewFloorBlock = (
   files: [...files],
   rules: {
     // BCD 6.1.5 (2026-09-27): shipped by Safari iOS 16.4, the floor's
-    // own engine — the edition table says es2024, the engine says yes.
+    // own engine — the edition table says es2026 for `Array.fromAsync`
+    // and es2024 for the four other offs, the engine says yes to all.
     'es-x/no-array-fromasync': 'off',
     'es-x/no-atomics-waitasync': 'off',
     // Owned by `require-unicode-regexp` below: one report per literal,
@@ -613,7 +615,8 @@ export const homeyApp = ({
       },
     },
     // The platform entries, never the wire's: a config file speaks no
-    // wire.
+    // wire. No typedoc-key shape either (the library preset's): typedoc
+    // never runs on an app, so its config files hold the bare core.
     configTsBlock(['*.config.{js,mjs,mts,ts}'], appNaming([])),
     configJsBlock,
     htmlBlock,

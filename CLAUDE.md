@@ -51,9 +51,10 @@ both channels — bump once, release once.
   every fresh clone there. Both now name the derived value; re-derive it
   when the tree moves rather than nudging it by hand — as 7.0.0 did
   (2026-09-27): `eslint-plugin-es-x` requires
-  `^22.23.0 || ^24.18.0 || >=26.4.0`, and the intersection with
-  package-json's range, `^22.23.0 || ^24.18.0 || >=26.4.0`, is what
-  `engines` names now.
+  `^22.23.0 || ^24.18.0 || >=26.4.0`, package-json's range is the
+  `^22.22.2 || >=24.15.0` above, and their intersection —
+  `^22.23.0 || ^24.18.0 || >=26.4.0`, es-x's own range, the narrower
+  of the two — is what `engines` names now.
 - `.nvmrc` is the INSTALL floor, in every repo of the family, and it is
   derived HERE: the lowest Node the tree this package imposes on every
   consumer installs on — 22.23.0 since 7.0.0, from
@@ -75,7 +76,9 @@ both channels — bump once, release once.
 - Strict core, scoped departures. Properties are camelCase by default;
   the only softenings are the Homey preset's capability-id-shaped keys
   (platform-imposed), each repo's filter-scoped `wireNamingEntries`,
-  and the test block's widened property formats. The core NEVER
+  the library preset's typedoc-key shape on root config files
+  (tool-imposed, below), and the test block's widened property
+  formats. The core NEVER
   loosens family-wide — and no consumer re-derives the policy locally:
   a hand-kept copy is how one app's overlay silently drifted lax while
   claiming to be stricter.
@@ -91,6 +94,27 @@ both channels — bump once, release once.
 - Wire exceptions are exact-name allowlists justified by the protocol
   that imposes them (API field, payload key, platform vocabulary) —
   anything of our own naming gets renamed, not excused.
+- Root config files (`*.config.{js,mjs,mts,ts}`) run the core policy
+  since 7.0.0; the `off` that stood there had no recorded reason.
+  Measured 2026-09-28 over the seven consumers with the core: nine
+  findings, every one a key typedoc matches VERBATIM —
+  `externalSymbolLinkMappings` by the exported symbol (`Redaction`,
+  `LifecycleEvents`, `SessionAPIConfig`, `SyncCallback`, PascalCase by
+  our own `typeLike` format) and `navigationLinks` by the rendered
+  label (`GitHub`) — all in the four libraries' `typedoc.config.js`,
+  the apps at zero. The library preset routes them by SHAPE
+  (`typedocKeyEntry`: anchored `^[A-Z][A-Za-z0-9]*$`, `format: null`,
+  the way the Homey capability shape is routed); the app preset keeps
+  the bare core, typedoc never running on an app. A DECLARED deviation
+  from the 7.0.0 spec, which asked for the exact names: an exact list
+  in a shared preset couples every new symbol mapping in a library to
+  a configs release, and the config block deliberately receives no
+  consumer entries (a config file speaks no wire), so a consumer-kept
+  list would need a new option. The trade is an uppercase-initial key
+  of our own choosing passing unreported in a library's config file —
+  a spelling the family never writes for an option. The owner rules;
+  the exact-name form (a per-library option of typedoc symbol names)
+  is the alternative.
 
 ## The eslint entry point
 
@@ -683,8 +707,9 @@ two of the three admitted in 7.0.0 (es-x, eslint-comments), the third
   selectors that named three features and missed a fourth
   (`Promise.withResolvers`, Safari 17.4, was named in the block's own
   docstring and banned nowhere). The edition preset alone is the wrong
-  SHAPE for this floor, which is an ENGINE: the table says es2024 for
-  five features the iOS 16.4 WebKit ships, so five rules are LIVE offs
+  SHAPE for this floor, which is an ENGINE: the table places above
+  es2023 five features the iOS 16.4 WebKit ships (four in es2024,
+  `Array.fromAsync` in es2026), so five rules are LIVE offs
   at the block with browser-compat-data 6.1.5 as the reason
   (`no-string-prototype-iswellformed`, `-towellformed`,
   `no-atomics-waitasync`, `no-array-fromasync`,
@@ -952,10 +977,11 @@ features (`Object.groupBy`, `Map.groupBy`, the `v` flag, iterator
 helpers by a member-name regex) and missed `Promise.withResolvers`,
 which the docstring called out as Safari 17.4 and nothing banned. The
 floor is an ENGINE, so the table is corrected by browser-compat-data
-(6.1.5, read 2026-09-27) where the iOS 16.4 WebKit ships an es2024
-feature: five LIVE offs (`String#isWellFormed` and `toWellFormed`,
-`Atomics.waitAsync`, `Array.fromAsync`, resizable and growable
-`ArrayBuffer`s), while `ArrayBuffer#transfer` (17.4) stays banned by
+(6.1.5, read 2026-09-27) where the iOS 16.4 WebKit ships a feature the
+table places above es2023: five LIVE offs (`String#isWellFormed` and
+`toWellFormed`, `Atomics.waitAsync`, resizable and growable
+`ArrayBuffer`s — es2024 — and `Array.fromAsync`, es2026 in es-x's
+table), while `ArrayBuffer#transfer` (17.4) stays banned by
 its own rule. The `v` flag is refused ONCE: `require-unicode-regexp` at
 `{ requireFlag: 'u' }` reports it, `es-x/no-regexp-v-flag` is off as
 its twin (two errors per literal before, and only the core rule reaches

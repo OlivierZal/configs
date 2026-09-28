@@ -42,7 +42,16 @@ export interface RefusedRule {
 // `floor` entry below waits on this number.
 export const DEVICE_NODE_FLOOR = 22
 
+// The Node major that ships each waited-on API, measured 2026-09-28 by
+// `typeof` on the toolchain's own runtimes: Node 24.19.0 (V8 13.6) has
+// `Error.isError` and `RegExp.escape` but neither `Iterator.concat` nor
+// `Uint8Array#toBase64`/`#toHex`; Node 26.7.0 (V8 14.6) has all five.
+// The unicorn sources agree wherever they name a target (24 for
+// `prefer-error-is-error` and `prefer-regexp-escape`, 26 for the two
+// `Uint8Array` rules; `prefer-iterator-concat` names none).
 const NODE_24_FLOOR = { deviceNodeFloorAtLeast: 24 }
+
+const NODE_26_FLOOR = { deviceNodeFloorAtLeast: 26 }
 
 const HTML_FILES = ['**/*.html']
 
@@ -131,16 +140,16 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
   {
     class: 'floor',
     reason:
-      "Rewrites to `Error.isError()`, a Node 24 API (the rule's own source: enable when targeting Node.js 24); the Homey Pro runs Node 22.",
+      "Rewrites to `Error.isError()`, a Node 24 API (the rule's own source: enable when the project targets Node.js >=24; a function on Node 24.19.0, `undefined` on 22.23.0, measured 2026-09-28); the Homey Pro runs Node 22.",
     rule: 'unicorn/prefer-error-is-error',
     until: NODE_24_FLOOR,
   },
   {
     class: 'floor',
     reason:
-      "Rewrites to `Iterator.concat()`, a Node 24 API (the rule's own source: enable when targeting Node.js 24); the Homey Pro runs Node 22.",
+      "Rewrites to `Iterator.concat()`, a Node 26 API — `typeof Iterator.concat` is `undefined` on Node 24.19.0 and a function on 26.7.0 (measured 2026-09-28; the rule's source names no Node target); the Homey Pro runs Node 22.",
     rule: 'unicorn/prefer-iterator-concat',
-    until: NODE_24_FLOOR,
+    until: NODE_26_FLOOR,
   },
   {
     class: 'domain',
@@ -151,22 +160,22 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
   {
     class: 'floor',
     reason:
-      "Rewrites to `RegExp.escape()`, a Node 24 API (the rule's own source: enable when targeting Node.js 24); the Homey Pro runs Node 22.",
+      "Rewrites to `RegExp.escape()`, a Node 24 API (the rule's own source: enable when targeting Node.js 24; a function on Node 24.19.0, `undefined` on 22.23.0, measured 2026-09-28); the Homey Pro runs Node 22.",
     rule: 'unicorn/prefer-regexp-escape',
     until: NODE_24_FLOOR,
   },
   {
     class: 'floor',
     reason:
-      "Rewrites to `Uint8Array#toBase64()`, a Node 24 API (the rule's own source: enable when targeting Node.js 24); the Homey Pro runs Node 22.",
+      "Rewrites to `Uint8Array#toBase64()`, a Node 26 API (the rule's own source: enable when targeting Node.js 26; `undefined` on Node 24.19.0, a function on 26.7.0, measured 2026-09-28); the Homey Pro runs Node 22.",
     rule: 'unicorn/prefer-uint8array-base64',
-    until: NODE_24_FLOOR,
+    until: NODE_26_FLOOR,
   },
   {
     class: 'floor',
     reason:
-      "Rewrites to `Uint8Array#toHex()`, a Node 26 API (the rule's own source: enable when targeting Node.js 26); unicorn 75 and 76 ship it `recommended: false`, so it never arrived — CLAUDE.md's unicorn 75 entry recorded it as recommended by mistake.",
+      "Rewrites to `Uint8Array#toHex()`, a Node 26 API (the rule's own source: enable when targeting Node.js 26; `undefined` on Node 24.19.0, a function on 26.7.0, measured 2026-09-28); unicorn 75 and 76 ship it `recommended: false`, so it never arrived — CLAUDE.md's unicorn 75 entry recorded it as recommended by mistake.",
     rule: 'unicorn/prefer-uint8array-hex',
-    until: { deviceNodeFloorAtLeast: 26 },
+    until: NODE_26_FLOOR,
   },
 ]
