@@ -746,8 +746,9 @@ was reached, so their maintenance was not measured.
   narrowed.** `recommended` (from the `/configs` subpath) in both main
   blocks, then `require-description` at `error` with the default
   `ignore: []` — an `eslint-enable` needs a description too; of the
-  family's 46 directives, the seven undescribed enables get theirs with
-  the adoptions — and `no-restricted-disable` on
+  family's 48 directives (eight repositories, 2026-09-28), the eight
+  undescribed enables got theirs with the adoptions — and
+  `no-restricted-disable` on
   `@typescript-eslint/naming-convention`, the naming doctrine
   mechanised (anything of our own naming gets renamed, not excused).
   Two LIVE offs: `no-unlimited-disable` is owned by

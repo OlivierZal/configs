@@ -475,8 +475,9 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // which reaches `eslint-enable` too.
   '@eslint-community/eslint-comments/no-unused-enable': 'off',
   // Every directive says why, `eslint-enable` included (the default
-  // `ignore: []`): the seven undescribed enables in the consumers get
-  // their description with the 7.0.0 adoptions (2026-09-27).
+  // `ignore: []`): of the 48 directives across the eight repositories,
+  // the eight undescribed enables got their description with the 7.0.0
+  // adoptions (measured 2026-09-28).
   '@eslint-community/eslint-comments/require-description': 'error',
   // `checkJSDoc` stays at its default (false): it would rewrite `/** */`
   // blocks into line comments, which the jsdoc plugin and typedoc
