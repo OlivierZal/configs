@@ -99,13 +99,15 @@ presets extend, in this order, `@eslint/js` recommended,
 stylistic type-checked sets, `eslint-plugin-import-x` errors and
 typescript, `@eslint-community/eslint-plugin-eslint-comments`
 recommended, `eslint-plugin-regexp` recommended and, last,
-`eslint-config-prettier`; the family tables layer on top, and the
-scoped blocks add `@stylistic`, `perfectionist`, `jsdoc`, `vitest`,
-`yml`, `package-json`, `@eslint/json`, `@eslint/markdown` — and, for
-the Homey preset, `@eslint/css`, `@html-eslint` and
-`eslint-plugin-es-x`. Every adopted rule runs at `error`; what the
-family refuses is data in `src/eslint/refused-rules.ts`, not a
-disabled line.
+`eslint-config-prettier`; the family tables layer on top, with
+`@stylistic` and `perfectionist` registered as plugins of that same
+main block, and the scoped blocks add `jsdoc`, `vitest`, `yml`,
+`package-json`, `@eslint/json`, `@eslint/markdown` — plus, for the
+Homey preset, `@eslint/css` and `@html-eslint`, and `eslint-plugin-es-x`
+wherever a webview floor block applies (the Homey preset's own, or the
+`webviewFloorBlock` a library composes below). Every adopted rule runs
+at `error`; what the family refuses is data in
+`src/eslint/refused-rules.ts`, not a disabled line.
 
 Naming is strict-core: properties are camelCase by default, and every
 departure is a scoped opt-out — the Homey preset skips capability-id
@@ -132,9 +134,12 @@ export default defineConfig([
 ])
 ```
 
-That is the whole of the `eslint` entry point: the two presets, their option types (`HomeyAppOptions`, `LibraryOptions`, `TemplateExpressionAllowEntry`) and `webviewFloorBlock`. The fragments the presets
-assemble from are not public — a repo fits one of the two families, or
-the family gains a preset here.
+That is the whole of the `eslint` entry point: the two presets, their
+option types (`HomeyAppOptions`, `LibraryOptions`,
+`TemplateExpressionAllowEntry`), `webviewFloorBlock` and the type of
+what it returns (`ConfigWithExtends`, one `defineConfig` input). The
+fragments the presets assemble from are not public — a repo fits one
+of the two families, or the family gains a preset here.
 
 Anchor every `wireNamingEntries` filter (`^…$`): a filtered entry
 outranks the core's `requiresQuotes` skip, so an open-ended pattern

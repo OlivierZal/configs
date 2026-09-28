@@ -118,7 +118,7 @@ both channels — bump once, release once.
 
 ## The eslint entry point
 
-`./eslint` publishes the two presets, their option types (`HomeyAppOptions`, `LibraryOptions`, `TemplateExpressionAllowEntry`) and `webviewFloorBlock` — nothing else since 5.0.0. Nineteen fragment
+`./eslint` publishes the two presets, their option types (`HomeyAppOptions`, `LibraryOptions`, `TemplateExpressionAllowEntry`), `webviewFloorBlock` and, since 7.0.0, the `ConfigWithExtends` type it returns (one `defineConfig` input, so a consumer can name it) — nothing else since 5.0.0. Nineteen fragment
 re-exports and two option types rode out for "the day a repo genuinely
 fits neither family": measured 2026-09-07, no consumer imported any of
 them, and the set could not have assembled a third family anyway
@@ -646,10 +646,12 @@ is not worth a configuration defended release after release; the
 presets suite now pins `always` and the boundary it relies on.
 
 Maintenance is a gate — an unmaintained plugin is refused regardless of
-coverage — but none of the plugins below fails it: the three
-long-standing refusals are active under eslint-community, and so are
-two of the three admitted in 7.0.0 (es-x, eslint-comments), the third
-(regexp) under its author beside them.
+coverage — and the claim is scoped to what was measured: the three
+long-standing refusals (n, promise, security) are active under
+eslint-community, and so are two of the three admitted in 7.0.0 (es-x,
+eslint-comments), the third (regexp) under its author beside them. The
+2026-09-27 refusals further down fell on their merits before the gate
+was reached, so their maintenance was not measured.
 
 - **eslint-plugin-n — REFUSED, owned by the CI matrix and real
   coverage.** The fleet measurement put every device on the same Node
