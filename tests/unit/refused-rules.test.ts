@@ -125,8 +125,12 @@ const resolve = async (
 // `defineConfig` names every entry it flattens out of `extends` as
 // `<parent> > <child>`; the family's own tables are the rest (the jsdoc
 // block spreads the plugin's config, name included, and stays ours).
+// The family names none of its entries, so every named entry is a
+// plugin's own config — a table the plugin owns, not ours: jsdoc's
+// recommended set lists EVERY rule (most at `off`), which is where a
+// refused jsdoc rule legitimately appears without being set by us.
 const ownEntries = [...appPreset, ...libraryPreset].filter(
-  (entry) => !(entry.name ?? '').includes(' > '),
+  (entry) => entry.name === undefined,
 )
 
 const settingEntries = ({ files, rule }: RefusedRule): Config[] =>

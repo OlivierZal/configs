@@ -647,6 +647,36 @@ every one auto-fixable. The bound was a preference, and a preference
 is not worth a configuration defended release after release; the
 presets suite now pins `always` and the boundary it relies on.
 
+The 2026-09-29 releases were read the same way (7.0.1).
+typescript-eslint 8.71 adds `no-unsafe-enum-assignment` (type-aware,
+`recommended: strict`), which `strictTypeChecked` turns on by itself:
+measured at zero sites over the eight repositories with the version
+under test, and it can find nothing here — under `erasableSyntaxOnly`
+only a `declare enum` can exist and the family declares none; the four
+fixes (`unbound-method` on `this: void` class properties,
+`no-misused-promises` on a return outside a function, a stable
+`switch-exhaustiveness-check` order, a clearer
+`no-unnecessary-type-assertion` message) rode along at zero findings.
+jsdoc 65 is a major for one hardening: `check-indentation` now also
+reports a missing space after the asterisk (`allowNoSpaceAfterAsterisk`
+restores 64). The rule was in neither preset nor table, so the hardening
+changes nothing here, but it was measured before being left out. At its
+default it forbids ANY indentation after the asterisk: 18 sites in
+api-core and melcloud-api, 15 of them the continuation lines of a `1.`
+or `-` item indented to the item's content column — the layout Prettier
+itself produces for a Markdown list (`--parser markdown` indents a
+wrapped `-` item by two and a `1.` item by three), and the one typedoc
+renders as the family's docs. The owner's challenge ("odd that the
+maintainer forbids something legitimate") led to its option:
+`allowIndentedSections` keeps tags and the first line flush and lets
+sections indent — the right cut — and clears 17 of the 18, yet still
+reports a well-formed nested list whose items carry an inline `{@link
+…}` (api-core `src/resilience/index.ts`; reproduced, the same block
+passes with the inline tags removed). REFUSED, class `conflicting`, in
+the ledger, until the rule follows Markdown structure; the
+`check-line-alignment` `-any` tag selector is moot under the family's
+`never`.
+
 Maintenance is a gate — an unmaintained plugin is refused regardless of
 coverage — and the claim is scoped to what was measured: the three
 long-standing refusals (n, promise, security) are active under
