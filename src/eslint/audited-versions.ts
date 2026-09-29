@@ -16,7 +16,8 @@
  * regexp, eslint-comments). Between the two, entries moved by DELTA
  * readings of their release notes, each measured over the eight
  * repositories before it moved (2026-09-22: eslint 10.11, unicorn 76,
- * package-json 1.9, html-eslint 0.66).
+ * package-json 1.9, html-eslint 0.66; 2026-09-29: typescript-eslint 8.71,
+ * jsdoc 65).
  */
 export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@eslint/css': '2.0',
@@ -30,11 +31,11 @@ export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   eslint: '10.11',
   'eslint-plugin-es-x': '10.0',
   'eslint-plugin-import-x': '4.17',
-  'eslint-plugin-jsdoc': '64.5',
+  'eslint-plugin-jsdoc': '65.0',
   'eslint-plugin-package-json': '1.9',
   'eslint-plugin-perfectionist': '5.11',
   'eslint-plugin-regexp': '3.3',
   'eslint-plugin-unicorn': '76.0',
   'eslint-plugin-yml': '3.8',
-  'typescript-eslint': '8.70',
+  'typescript-eslint': '8.71',
 }

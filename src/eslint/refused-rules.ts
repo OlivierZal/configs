@@ -93,6 +93,12 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
     rule: 'html/no-trailing-spaces',
   },
   {
+    class: 'conflicting',
+    reason:
+      "Measured before being left out, with jsdoc 65 (2026-09-29). At its default the rule forbids any indentation after the asterisk: 15 of the 18 sites it reports in api-core and melcloud-api are the continuation lines of a `1.` or `-` item, indented to the item's content column — the layout Prettier itself produces for a Markdown list, and the one typedoc renders as the family's docs. `allowIndentedSections`, the option shaped for exactly that distinction (tags and the first line stay flush, sections may indent), clears 17 of the 18 but still reports a well-formed nested list whose items carry an inline `{@link …}` (api-core `src/resilience/index.ts`; reproduced — the same block passes once the inline tags are removed). A doc block would have to bend to the rule's parsing, so the rule waits until it follows Markdown structure.",
+    rule: 'jsdoc/check-indentation',
+  },
+  {
     class: 'domain',
     files: HTML_FILES,
     reason: SEO_HTML,
