@@ -93,7 +93,7 @@
     "eslint-plugin-yml": "^3.8.1",
     "prettier-plugin-packagejson": "^3.0.2",
     "typescript-eslint": "8.71.0",
-    "unplugin-swc": "^1.5.11"
+    "unplugin-swc": "^2.0.0"
   },
   "devDependencies": {
     "@swc/core": "^1.16.1",
