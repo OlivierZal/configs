@@ -6,6 +6,7 @@ import { globs as tsGlobs } from 'typescript-eslint'
 import css from '@eslint/css'
 import html from '@html-eslint/eslint-plugin'
 import stylistic from '@stylistic/eslint-plugin'
+import cssicorn from 'eslint-cssicorn'
 import esx from 'eslint-plugin-es-x'
 import perfectionist from 'eslint-plugin-perfectionist'
 import unicorn from 'eslint-plugin-unicorn'
@@ -355,7 +356,7 @@ const cssBlock: Config[] = defineConfig([
     extends: [css.configs.recommended],
     files: ['**/*.css'],
     language: 'css/css',
-    plugins: { unicorn },
+    plugins: { css, cssicorn, unicorn },
     rules: {
       // `allowUnknownVariables`: the pages consume custom properties the
       // linter never sees — Homey's runtime-injected stylesheet defines
@@ -416,32 +417,91 @@ const cssBlock: Config[] = defineConfig([
           available: 2022,
         },
       ],
-      'unicorn/expiring-todo-comments': expiringTodoComments,
-      // `eslint-plugin-unicorn` 75's CSS half, adopted by what it can
-      // CATCH here (measured over the three stylesheets, 2026-09-17): a
-      // deprecated feature, a selector written twice, a font family
-      // repeated in one stack, a mistyped media feature, an annotation
-      // that is not one, and a pseudo-selector the engines do not know.
-      'unicorn/no-deprecated-css-features': 'error',
-      'unicorn/no-duplicate-css-selectors': 'error',
-      'unicorn/no-duplicate-font-family-names': 'error',
-      'unicorn/no-empty-file': 'error',
-      'unicorn/no-invalid-media-features': 'error',
-      'unicorn/no-missing-local-resource': 'error',
-      'unicorn/no-shorthand-property-overrides': 'error',
-      'unicorn/no-transition-all': 'error',
-      'unicorn/no-unknown-css-annotations': 'error',
+      // `eslint-cssicorn` 0.1 — unicorn's CSS half, moved out by unicorn
+      // 77 (2026-10-09): the seven ids this block carried since 6.4.0
+      // survive there only as deprecated stubs that lint nothing and
+      // REJECT their options, so under 77 the apps' lint would have
+      // exited at config load on the `allow` below while the six
+      // option-less ids went silent. Enumerated rather than extended,
+      // like the rest of this block, so the five floor-bound rules stay
+      // in the refusal ledger and every rule is judged on what it can
+      // CATCH here (the 2026-09-17 reading: a deprecated feature, a
+      // selector written twice, a font family repeated in one stack, a
+      // mistyped media feature, an annotation that is not one, a
+      // pseudo-selector the engines do not know). Measured over the
+      // twelve app stylesheets with 0.1.0: every rule below at zero
+      // except `lowercase` (six `currentColor`, fixable) and
+      // `no-redundant-longhand-properties` (one `column-gap` + `row-gap`
+      // pair that is `gap`), both in com.melcloud.extension and paid by
+      // its adoption pull request.
+      //
+      // Prettier lowercases hex colours only, never a value keyword, so
+      // nothing else owns keyword case; one determinate fix.
+      'cssicorn/lowercase': 'error',
+      'cssicorn/no-deprecated-features': 'error',
+      // Off in cssicorn's own `recommended` for the noise it makes on
+      // large stylesheets; zero sites here, and source order that follows
+      // specificity is what keeps a later, weaker selector from silently
+      // losing to an earlier one — a latent guard at no cost.
+      'cssicorn/no-descending-specificity': 'error',
+      'cssicorn/no-duplicate-font-family-names': 'error',
+      // Not owned: @eslint/css 2.0 checks duplicate imports and
+      // keyframe selectors, never two declarations of one property in a
+      // block.
+      'cssicorn/no-duplicate-properties': 'error',
+      'cssicorn/no-duplicate-selectors': 'error',
+      'cssicorn/no-invalid-media-features': 'error',
+      'cssicorn/no-redundant-longhand-properties': 'error',
+      // `margin: 1px 1px 1px 1px` is `1px`; fixable, and Prettier never
+      // touches a value.
+      'cssicorn/no-redundant-shorthand-values': 'error',
+      'cssicorn/no-self-referencing-custom-properties': 'error',
+      // Off in cssicorn's own `recommended` because `@keyframes` may
+      // live in another file. Each app page ships ONE stylesheet, Homey's
+      // runtime stylesheet injects custom properties (see
+      // `allowUnknownVariables` above), not animations, and the twelve
+      // files declare no `@keyframes` and reference no animation name —
+      // so the guard is latent and honest here; a Homey-injected keyframe
+      // would re-open this reason, never a disable.
+      'cssicorn/no-unknown-animations': 'error',
+      'cssicorn/no-unknown-annotations': 'error',
       // `::-webkit-details-marker` is the ONE pseudo-element the rule's
       // vocabulary lacks and the three settings pages need: they hide
       // the native disclosure triangle of `<summary>` to draw their own
       // chevron, and `list-style: none` alone does not reach the WebKit
       // the floor admits. An allowance, not a disable — the rule still
       // catches every other unknown selector.
-      'unicorn/no-unknown-pseudo-selectors': [
+      'cssicorn/no-unknown-pseudo-selectors': [
         'error',
         { allow: ['::-webkit-details-marker'] },
       ],
-      'unicorn/prefer-explicit-viewport-units': 'error',
+      // `0px` is `0`; fixable.
+      'cssicorn/no-zero-length-unit': 'error',
+      // The rule's default unit is `dvh`; its `unit` option would only
+      // restate it.
+      'cssicorn/prefer-explicit-viewport-units': 'error',
+      // Space-separated colour arguments (`rgb(0 0 0 / 50%)`) and `::`
+      // pseudo-elements — both shipped by every engine years before the
+      // floor (Safari 12.1 and 3), and `css/use-baseline` at 2022 accepts
+      // the output. Fixable.
+      'cssicorn/prefer-modern-syntax': 'error',
+      // Prettier lowercases a hex colour but never shortens it. Fixable.
+      'cssicorn/prefer-short-hex-color': 'error',
+      // `@property` is Baseline 2024 — Safari 16.4, the floor's own
+      // release, shipped it and Firefox 128 dated it — so `css/use-baseline`
+      // rejects the at-rule until the block allows it by name, the day a
+      // page needs one; the descriptor check is live from that day.
+      'cssicorn/require-property-descriptors': 'error',
+      'unicorn/expiring-todo-comments': expiringTodoComments,
+      'unicorn/no-empty-file': 'error',
+      // The CSS twin of core `no-loss-of-precision` (the JSON block
+      // carries the JSON one): a numeric literal that does not survive
+      // binary64. Zero sites (2026-10-09); off in every unicorn 77
+      // preset, so it is enabled here or nowhere.
+      'unicorn/no-loss-of-precision': 'error',
+      'unicorn/no-missing-local-resource': 'error',
+      'unicorn/no-shorthand-property-overrides': 'error',
+      'unicorn/no-transition-all': 'error',
       'unicorn/text-encoding-identifier-case': 'error',
     },
   },

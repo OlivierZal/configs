@@ -1,6 +1,6 @@
 {
   "name": "@olivierzal/configs",
-  "version": "7.0.1",
+  "version": "7.1.0",
   "description": "Shared tooling presets for the OlivierZal repo family: eslint, prettier, tsconfig, typedoc and vitest fragments",
   "keywords": [
     "configs",
@@ -33,6 +33,7 @@
       "types": "./dist/eslint/library.d.ts",
       "default": "./dist/eslint/library.js"
     },
+    "./package.json": "./package.json",
     "./prettier": {
       "types": "./dist/prettier/index.d.ts",
       "default": "./dist/prettier/index.js"
@@ -82,17 +83,18 @@
     "@stylistic/eslint-plugin": "^5.10.0",
     "@vitest/eslint-plugin": "^1.6.27",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-cssicorn": "0.1.0",
     "eslint-import-resolver-typescript": "^4.4.5",
     "eslint-plugin-es-x": "10.0.1",
     "eslint-plugin-import-x": "^4.17.1",
-    "eslint-plugin-jsdoc": "65.0.0",
-    "eslint-plugin-package-json": "^1.9.0",
-    "eslint-plugin-perfectionist": "^5.11.1",
+    "eslint-plugin-jsdoc": "65.2.4",
+    "eslint-plugin-package-json": "1.10.1",
+    "eslint-plugin-perfectionist": "5.12.1",
     "eslint-plugin-regexp": "3.3.1",
-    "eslint-plugin-unicorn": "^76.0.0",
-    "eslint-plugin-yml": "^3.8.1",
+    "eslint-plugin-unicorn": "77.0.0",
+    "eslint-plugin-yml": "3.9.0",
     "prettier-plugin-packagejson": "^3.0.2",
-    "typescript-eslint": "8.71.0",
+    "typescript-eslint": "8.71.1",
     "unplugin-swc": "^2.0.0"
   },
   "devDependencies": {
@@ -100,7 +102,7 @@
     "@types/node": "^26.4.0",
     "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/coverage-v8": "^5.0.0",
-    "eslint": "^10.11.0",
+    "eslint": "10.12.0",
     "jiti": "^2.7.0",
     "prettier": "^3.9.6",
     "publint": "^0.3.24",

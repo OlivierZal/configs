@@ -1,0 +1,11 @@
+# A PATH fixture: the resolved-config suites ask ESLint which config
+# applies here; the body only has to be a valid workflow.
+name: CI
+on:
+  push:
+    branches: [main]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ok

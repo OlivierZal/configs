@@ -55,6 +55,21 @@ const NODE_26_FLOOR = { deviceNodeFloorAtLeast: 26 }
 
 const HTML_FILES = ['**/*.html']
 
+// The app preset's CSS block (`eslint-cssicorn` and unicorn), the shared
+// JSON block (unicorn, loaded for two JSON-capable rules) and the shared
+// YAML block (unicorn's `recommended-yaml`).
+const CSS_FILES = ['**/*.css']
+
+const JSON_FILES = ['**/*.json']
+
+const YAML_FILES = ['**/*.{yaml,yml}']
+
+const CSS_NESTING =
+  "The webview floor is the iOS 16.4 WebKit (`css/use-baseline` at `available: 2022` in the app CSS block), which ships no CSS nesting — Safari 16.5 brought it — and the twelve app stylesheets contain none (0 sites with eslint-cssicorn 0.1.0, 2026-10-09): inert by construction. Re-enters with the floor, which homey-kit's `ios-floor-watch.yml` records. The three nesting rules were refused in prose on 2026-09-17 under their unicorn 75 ids; the ledger can hold them since cssicorn, an installed plugin a `files` block of the suite resolves, carries them."
+
+const REDUNDANT_DATA_LAYOUT =
+  "Layout for the data languages (`comma-spacing` on JSON, `indent` on JSON and CSS): Prettier formats every JSON and CSS file the family lints and already produces this output — 0 hits over the eight repositories at the family's two-space indent (2026-10-09; the rule's default is `tab`, so even its default is not the house output) — and the rule's own docs send JS/TS users to @stylistic. Never on: no unicorn 77 preset enables either, so an `off` would have validated nothing."
+
 const REDUNDANT_HTML =
   "Prettier's output already satisfies it — 0 hits when forced on over com.melcloud's three pages (2026-09-27) — and Prettier formats every page (`format` runs on HTML too). Never on: `html/recommended` does not enable it, so an `off` here validated nothing."
 
@@ -67,6 +82,44 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
     reason:
       "Fights Prettier on both axes. The `code` axis conflicts with the printer's own output — nine declarations in melcloud-api and seven in com.melcloud it cannot break below 80 — and the `comments` axis, the one Prettier leaves alone, would cost 195 hand-wrapped prose lines behind a `code` sentinel the rule needs, having no comments-only mode (measured 2026-09-15). House comments wrap at print width by convention; a rule that cannot fix what it reports is not what would hold it. As an `off` it was dead twice over: no `@stylistic` preset is extended, and eslint-config-prettier already lists the rule at 0.",
     rule: '@stylistic/max-len',
+  },
+  {
+    class: 'conflicting',
+    reason:
+      "TypeScript owns the real case: with `noImplicitReturns` in both tsconfig bases and `@typescript-eslint/explicit-function-return-type` at `error`, a path that genuinely drops off the end of a value-returning function is a compile error. What the rule adds is two false positives (heatzy-api `src/facades/manager.ts:13`, melcloud-api `src/facades/classic-factory.ts:54`; measured 2026-09-27 and 2026-10-09 under eslint 10.12): exhaustive `switch` statements whose end TypeScript proves unreachable, where the only edit that would satisfy the rule — a `default` branch — is exactly what `@typescript-eslint/switch-exhaustiveness-check` forbids under the family's `allowDefaultCaseForExhaustiveSwitch: false` (reproduced on one fixture: the two rules report it one each way). Adopting it would force dead code the house's own rule rejects. Class `conflicting`, not `owned`: the owner is the compiler, which the ledger cannot name.",
+    rule: 'consistent-return',
+  },
+  {
+    class: 'domain',
+    files: CSS_FILES,
+    reason: CSS_NESTING,
+    rule: 'cssicorn/no-declarations-after-nested-rules',
+  },
+  {
+    class: 'domain',
+    files: CSS_FILES,
+    reason: CSS_NESTING,
+    rule: 'cssicorn/no-nesting-with-mixed-specificity',
+  },
+  {
+    class: 'domain',
+    files: CSS_FILES,
+    reason: CSS_NESTING,
+    rule: 'cssicorn/no-redundant-nested-style-rules',
+  },
+  {
+    class: 'domain',
+    files: CSS_FILES,
+    reason: CSS_NESTING,
+    rule: 'cssicorn/no-unscoped-nesting-selector',
+  },
+  {
+    class: 'owned',
+    files: CSS_FILES,
+    owner: 'css/use-baseline',
+    reason:
+      "Mutually exclusive twin at the floor knob: `css/use-baseline` at `available: 2022` reports the range syntax (Baseline 2023, Safari 16.4) this rule would demand on every `@media`, so adopting it would argue with the block the day one appears; no `@media` exists in the twelve app stylesheets (0 sites with eslint-cssicorn 0.1.0, 2026-10-09). Re-enters with the year, or by an exact-name allowance the block's own comment provides for. Refused in prose on 2026-09-17 under its unicorn 75 id.",
+    rule: 'cssicorn/prefer-media-feature-range-syntax',
   },
   {
     class: 'redundant',
@@ -93,12 +146,6 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
     rule: 'html/no-trailing-spaces',
   },
   {
-    class: 'conflicting',
-    reason:
-      "Measured before being left out, with jsdoc 65 (2026-09-29). At its default the rule forbids any indentation after the asterisk: 15 of the 18 sites it reports in api-core and melcloud-api are the continuation lines of a `1.` or `-` item, indented to the item's content column — the layout Prettier itself produces for a Markdown list, and the one typedoc renders as the family's docs. `allowIndentedSections`, the option shaped for exactly that distinction (tags and the first line stay flush, sections may indent), clears 17 of the 18 but still reports a well-formed nested list whose items carry an inline `{@link …}` (api-core `src/resilience/index.ts`; reproduced — the same block passes once the inline tags are removed). A doc block would have to bend to the rule's parsing, so the rule waits until it follows Markdown structure.",
-    rule: 'jsdoc/check-indentation',
-  },
-  {
     class: 'domain',
     files: HTML_FILES,
     reason: SEO_HTML,
@@ -112,17 +159,76 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
   },
   {
     class: 'owned',
+    owner: 'jsdoc/no-types',
+    reason:
+      "Reports Google Closure `{type=}` syntax, which has no surface in the family's TypeScript doc blocks: `jsdoc/no-types` (preset, `error`) strips every type brace from `@param`/`@returns`, and `jsdoc/check-tag-names` under `typed` (preset, `error`) forbids `@typedef`, `@property` and `@type` outright, so the only tag this rule alone could name is `@throws {T=}` — an 'optional thrown type' the house `@throws {@link X} when …` form never produces (0 across the eight repositories on jsdoc 65.2, 2026-10-09). Its 65.1 fixer (`enableFixer`) rewrites `{T=} n` to `{T} [n]`, the bracketed optional `no-defaults` with `noOptionalParamNames` refuses, so the fixer is never the best practice here either.",
+    rule: 'jsdoc/check-syntax',
+  },
+  {
+    class: 'conflicting',
+    reason:
+      "TypeScript owns the semantic half — `new` on a non-constructor is TS2351, a class called without `new` TS2348 — leaving a casing heuristic the house naming rule contradicts: two of its three sites family-wide (api-core `src/testing/index.ts:330`, melcloud-api `tests/unit/classic-facades.test.ts:106`; the third, com.melcloud `tests/unit/create-test-instance.ts:5`, a local cast of one) are constructor PARAMETERS that `@typescript-eslint/naming-convention` MANDATES in camelCase (`selector: 'parameter'`, `format: ['camelCase']`), so the two rules cannot both be green. Its only options are name whitelists (`newIsCapExceptions`, `capIsNewExceptions`), the corpus-derived shape the doctrine refuses. Measured 2026-09-27 and again 2026-10-09 under eslint 10.12 (which reads the first code point, #21357): three sites, unchanged. Class `conflicting`, not `owned`: the owner is the compiler, which the ledger cannot name.",
+    rule: 'new-cap',
+  },
+  {
+    class: 'domain',
+    reason:
+      "Options-only by design — `useConfigurationIf` is required and ESLint rejects a bare `'error'` (`Value [] should NOT have fewer than 1 items`, perfectionist 5.12.1) — because array-literal order is semantic in general, and in this family it is semantic everywhere: the widest selector (`matchesAstSelector: 'ArrayExpression'`) reports 939 sites across the eight repositories (2026-10-09), every sampled one order-bearing — MELCloud display order (melcloud-api `src/facades/classic-device-ata.ts:49`), `Map` entry tuples whose key/value positions the fixer would swap (heatzy-api `src/constants.ts:92`), Homey capability order (com.melcloud `drivers/melcloud_atw/driver.mts:24`), perfectionist group precedence (this package's `src/eslint/helpers.ts:11`), zod union match order, `Promise.all` positions, `it.each` tables. The arrays whose order is not data are already sorted by `sort-sets` and `sort-array-includes` at `error`; a selector naming any other would be an option fitted to the corpus, the shape the doctrine refuses. The author keeps it out of every `recommended-*` preset for the same reason.",
+    rule: 'perfectionist/sort-arrays',
+  },
+  {
+    class: 'conflicting',
+    reason:
+      "A decorator stack encodes composition order, not a list: TC39 decorators apply bottom-up, so in the three stacks it reports (melcloud-api `src/facades/classic-base.ts:291-292`, `classic-base-device.ts:354-355`, `classic-base-zone.ts:32-33`; measured 2026-10-09 with 5.12.1) `classicUpdateDevice(s)` is the inner wrapper that patches the registry models after the method resolves and `syncDevices` the outer one that notifies sync observers after that — observers read patched models (api-core `src/decorators/sync-devices.ts`, melcloud-api `src/decorators/classic-update-devices.ts`). The alphabetical fixer swaps the two lines, inverts the nesting and fires `notifySync` before the patch: a behaviour rewrite shipped as a sort, on every unattended `--fix`. heatzy-api's identical `@syncDevices()` / `@updateDevice` stacks pass only because `s` sorts before `u`. `sortOnMethods: false` would erase the three findings and leave a rule enforcing nothing — no other element in the eight repositories carries two decorators. Not owned: `sort-classes`' `*-decorated-*` groups order members, not the decorators on one member.",
+    rule: 'perfectionist/sort-decorators',
+  },
+  {
+    class: 'owned',
     owner: 'one-var',
     reason:
       "`one-var: 'never'` splits every multi-declarator statement before order matters, and the split keeps evaluation order where this rule's fixer would reorder side-effecting initialisers. Its one unowned residue, a multi-declarator `for (;;)` initialiser, is absent across the eight repos (2026-09-15).",
     rule: 'perfectionist/sort-variable-declarations',
   },
   {
-    class: 'owned',
-    owner: 'jsdoc/require-asterisk-prefix',
+    class: 'redundant',
+    files: JSON_FILES,
+    reason: REDUNDANT_DATA_LAYOUT,
+    rule: 'unicorn/comma-spacing',
+  },
+  {
+    class: 'vocabulary',
+    files: [...JSON_FILES, '**/*.md'],
     reason:
-      'Mutually exclusive twin of the owner: the house style keeps the `*` line prefix in doc blocks, and `jsdoc/require-asterisk-prefix` at `always` enforces exactly what this rule would forbid.',
-    rule: 'unicorn/no-asterisk-prefix-in-documentation-comments',
+      "GitHub's conventional file names — `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `CLAUDE.md`, `.github/pull_request_template.md` — and Homey's `.homeycompose` flow and capability ids (snake_case by the platform's vocabulary) are not the family's to rename: 62 JSON and 37 Markdown sites over the eight repositories (2026-10-09), every one an external name, the constraint com.melcloud already carries for its TS file names in its own overlay. The rule runs at `error` on TS/JS through `recommended` and on YAML with `directoryRoots`; on these two surfaces the whole corpus is external, so no option fits — never on there: the family's JSON and Markdown blocks extend no unicorn preset.",
+    rule: 'unicorn/filename-case',
+  },
+  {
+    class: 'redundant',
+    files: [...JSON_FILES, ...CSS_FILES],
+    reason: REDUNDANT_DATA_LAYOUT,
+    rule: 'unicorn/indent',
+  },
+  {
+    class: 'vocabulary',
+    files: JSON_FILES,
+    reason:
+      "The keys are not the family's to name — Homey's snake_case capability and flow ids in `driver.compose.json` and `.homeycompose/**`, semver version keys in `.homeychangelog.json` that satisfy no case at all, VS Code's dotted settings ids, the `$flow`/`$filter` capability keys in `vendor/`: 357 sites in the family's JSON scope (2026-10-09), and an `ignore` regex fitted to that corpus is the shape the doctrine refuses. Unicorn itself leaves it off in every preset.",
+    rule: 'unicorn/key-name-casing',
+  },
+  {
+    class: 'owned',
+    files: YAML_FILES,
+    owner: 'yml/key-name-casing',
+    reason:
+      "Duplicate of `yml/key-name-casing`, at `error` in the YAML block with the family's four cases (camelCase, kebab-case, SCREAMING_SNAKE_CASE, snake_case): the same five case flags, `ignore` regexes against yml's `ignores`. 469 at its camelCase-only default (GitHub Actions' kebab keys), 0 with the four cases — identical to the owner's 0 (2026-10-09). `recommended-yaml` ships it off, so an off at the block would be dead.",
+    rule: 'unicorn/key-name-casing',
+  },
+  {
+    class: 'vocabulary',
+    files: HTML_FILES,
+    reason:
+      'The main table\'s verdict — a live `\'off\'` where `recommended` enables it, because the abbreviation renames it forces fight the domain naming — reaches HTML through the ledger, since nothing enables the rule on HTML: its two sites are the `id="configuration"` and `id="configuration_summary"` of com.melcloud.extension\'s settings page (2026-10-09). On YAML, where `recommended-yaml` enables it, the same verdict is a live off at the block.',
+    rule: 'unicorn/name-replacements',
   },
   {
     class: 'vocabulary',
@@ -183,5 +289,12 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
       "Rewrites to `Uint8Array#toHex()`, a Node 26 API (the rule's own source: enable when targeting Node.js 26; `undefined` on Node 24.19.0, a function on 26.7.0, measured 2026-09-28); unicorn 75 and 76 ship it `recommended: false`, so it never arrived — CLAUDE.md's unicorn 75 entry recorded it as recommended by mistake.",
     rule: 'unicorn/prefer-uint8array-hex',
     until: NODE_26_FLOOR,
+  },
+  {
+    class: 'conflicting',
+    files: CSS_FILES,
+    reason:
+      "CSS has no line comment, so the MULTILINE default turns a one-line section label — `/* Zone selector */` — into a three-line block: 18 sites over the three apps' stylesheets (com.melcloud 14, com.heatzy 1, com.melcloud.extension 3; 2026-10-09), the shape the family exempts for the JS config files at their block. At `error` on TS/JS through `recommended`, where a line comment exists; on CSS nothing enables it (the CSS block extends no unicorn preset).",
+    rule: 'unicorn/single-line-block-comment-style',
   },
 ]

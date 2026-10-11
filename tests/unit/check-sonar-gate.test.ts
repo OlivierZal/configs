@@ -23,11 +23,10 @@ const inheritedPath = process.env.PATH ?? ''
 const BOT = 'dependabot[bot]'
 
 const run = (
-  script: string,
   env: Readonly<Record<string, string>> = {},
   cwd: string = repoRoot,
 ): RunResult =>
-  runScript(script, {
+  runScript(gateScript, {
     cwd,
     // A clean slate: the ambient SONAR_TOKEN of a developer machine
     // would otherwise decide which branch the gate takes.
@@ -50,10 +49,7 @@ describe('the unanalysed-pull-request branch', () => {
   }
 
   it('accepts a Dependabot pull request it has verified', () => {
-    const { output, status } = run(gateScript, {
-      ...prEnv,
-      COMMIT_AUTHORS: BOT,
-    })
+    const { output, status } = run({ ...prEnv, COMMIT_AUTHORS: BOT })
 
     expect(status).toBe(0)
     expect(output).toContain('no analysable change went unread')
@@ -64,7 +60,7 @@ describe('the unanalysed-pull-request branch', () => {
   // was exactly this — would otherwise reach main having been read by
   // no analysis at all.
   it('rejects a commit nobody analysed on a Dependabot branch', () => {
-    const { output, status } = run(gateScript, {
+    const { output, status } = run({
       ...prEnv,
       COMMIT_AUTHORS: `${BOT}\nclaude[bot]`,
     })
@@ -86,14 +82,14 @@ describe('the unanalysed-pull-request branch', () => {
       what: 'an event with no rule',
     },
   ])('rejects $what', ({ env, expected }) => {
-    const { output, status } = run(gateScript, env)
+    const { output, status } = run(env)
 
     expect(status).toBe(1)
     expect(output).toContain(expected)
   })
 
   it('refuses to run at all without a trigger', () => {
-    const { output, status } = run(gateScript)
+    const { output, status } = run()
 
     expect(status).toBe(1)
     expect(output).toContain('EVENT_NAME is empty')
@@ -111,10 +107,7 @@ describe('the analysed path', () => {
   }
 
   it('accepts a run whose scan had its token', () => {
-    const { output, status } = run(gateScript, {
-      ...pushEnv,
-      SONAR_TOKEN: 'test-token',
-    })
+    const { output, status } = run({ ...pushEnv, SONAR_TOKEN: 'test-token' })
 
     expect(status).toBe(0)
     expect(output).toContain('Olivierzal way')
@@ -123,7 +116,7 @@ describe('the analysed path', () => {
   // The upload step self-arms on the secret, so a missing token skips
   // the analysis rather than failing for it — green legs, no bar.
   it('rejects a run whose scan would have skipped', () => {
-    const { output, status } = run(gateScript, pushEnv)
+    const { output, status } = run(pushEnv)
 
     expect(status).toBe(1)
     expect(output).toContain('the scan step skipped instead of running')
@@ -134,7 +127,6 @@ describe('the analysed path', () => {
   // misconfiguration that would otherwise read as a pass.
   it('accepts a repo that declared no project and holds no token', () => {
     const { output, status } = run(
-      gateScript,
       { EVENT_NAME: 'push', THIS_REPO: 'OlivierZal/configs' },
       scratch,
     )
@@ -145,7 +137,6 @@ describe('the analysed path', () => {
 
   it('rejects a token with no project to verify', () => {
     const { output, status } = run(
-      gateScript,
       {
         EVENT_NAME: 'push',
         SONAR_TOKEN: 'test-token',

@@ -37,9 +37,17 @@ const splitRuleId = (ruleId: string): { name: string; prefix: string } => {
 }
 
 // The plugin objects a resolved config carries are the installed ones
-// the lint run loads — core rules included, under `@`, as a Map.
-const ruleOf = (rules: unknown, name: string): unknown =>
-  rules instanceof Map ? rules.get(name) : asRecord(rules, 'rules')[name]
+// the lint run loads — core rules included, under `@`, whose `rules` is
+// a Proxy over ESLint's lazy-loading rule map with `get` and `has` traps
+// only (eslint/lib/config/default-config.js): it answers a property read
+// but owns no enumerable key, so a spread copies nothing and the lookup
+// reads the live object — which also serves a plugin's plain record.
+const ruleOf = (rules: unknown, name: string): unknown => {
+  if (typeof rules !== 'object' || rules === null) {
+    throw new TypeError('expected the plugin rules to be a mapping')
+  }
+  return Reflect.get(rules, name)
+}
 
 const deprecatedOf = (rule: unknown): unknown => {
   const { meta } = asRecord(rule, 'rule')
@@ -66,11 +74,36 @@ const jsRepresentatives: readonly Representative[] = [
   { file: 'src/index.ts', preset: libraryPreset, presetName: 'library' },
 ]
 
+// One file per preset that carries the block; the CSS and HTML blocks
+// are the app preset's alone.
 const scopedRepresentatives: Readonly<
   Record<string, readonly Representative[]>
 > = {
+  '**/*.css': [
+    { file: 'settings/index.css', preset: appPreset, presetName: 'homeyApp' },
+  ],
   '**/*.html': [
     { file: 'settings/index.html', preset: appPreset, presetName: 'homeyApp' },
+  ],
+  '**/*.json': [
+    { file: 'tsconfig.json', preset: appPreset, presetName: 'homeyApp' },
+    { file: 'tsconfig.json', preset: libraryPreset, presetName: 'library' },
+  ],
+  '**/*.md': [
+    { file: 'README.md', preset: appPreset, presetName: 'homeyApp' },
+    { file: 'README.md', preset: libraryPreset, presetName: 'library' },
+  ],
+  '**/*.{yaml,yml}': [
+    {
+      file: '.github/workflows/ci.yml',
+      preset: appPreset,
+      presetName: 'homeyApp',
+    },
+    {
+      file: '.github/workflows/ci.yml',
+      preset: libraryPreset,
+      presetName: 'library',
+    },
   ],
 }
 

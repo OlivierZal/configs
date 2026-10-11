@@ -174,6 +174,27 @@ const jsdocRules: NonNullable<Config['rules']> = {
   // wrote. Both keep reporting, and the plugin offers its suggestions in
   // the editor regardless of these options, which is where a judgment
   // call belongs.
+  // Tags and the first line flush, Markdown sections may indent — the
+  // cut Prettier's list layout (a wrapped `-` item at +2, a `1.` item
+  // at +3) and typedoc's rendering both need. The DEFAULT stays refused
+  // at this site: it forbids any indentation after the asterisk and
+  // reported 18 sites on jsdoc 65.2 (api-core 10, melcloud-api 8;
+  // re-measured 2026-10-09, identical to 65.0), 15 of them Prettier's
+  // own list continuation lines and the other three wrapped tag
+  // descriptions `check-line-alignment: 'never'` below already accepts
+  // — a doc block would bend to the rule's parsing. Refused in the
+  // ledger on 2026-09-29 for one false positive — a nested list whose
+  // items carry an inline `{@link}` reset the section indent
+  // (gajus/eslint-plugin-jsdoc#1786); jsdoc 65.1.0 anchors the reset to
+  // a line-start block tag, and 65.2.4 measures 0 over the eight
+  // repositories with the option (2026-10-09). Adds what nothing else
+  // owns: a space after every asterisk (`require-asterisk-prefix` tests
+  // only the delimiter), a flush first line, indented tag lines beyond
+  // `check-line-alignment`'s eight tags. Known residual the family does
+  // not write (0 of 290 files): a list item whose first continuation is
+  // an indented code block, then prose at the content column — write
+  // fences at the content column, which pass.
+  'jsdoc/check-indentation': ['error', { allowIndentedSections: true }],
   // `never`: no column-aligned tag blocks, and a wrapped description
   // continues unindented — the house layout measured (2026-09-15).
   // Doc-comment layout is the plugin's because Prettier never enters a
@@ -210,9 +231,9 @@ const jsdocRules: NonNullable<Config['rules']> = {
   'jsdoc/no-defaults': ['error', { noOptionalParamNames: true }],
   'jsdoc/normalize-see-links': 'error',
   'jsdoc/prefer-import-tag': 'error',
-  // The house style keeps the `*` line prefix (the refusal ledger names
-  // this rule as the owner of
-  // `unicorn/no-asterisk-prefix-in-documentation-comments`); until
+  // The house style keeps the `*` line prefix (the main table turns
+  // `unicorn/no-asterisk-prefix-in-documentation-comments`, its
+  // mutually exclusive twin, off as owned by this rule); until
   // 2026-09-15 nothing checked it. Fixable; adoption cost 39 lines in
   // homey-kit, 0 elsewhere.
   'jsdoc/require-asterisk-prefix': ['error', 'always'],
@@ -896,6 +917,18 @@ const staticMainRules: NonNullable<Config['rules']> = {
   ],
   'perfectionist/sort-interfaces': ['error', typeLikeSortOptions],
   'perfectionist/sort-intersection-types': ['error', typeSortOptions],
+  // JSX attributes are the JSX form of the object properties
+  // `sort-objects` keeps sorted. Zero `.tsx`/`.jsx` files across the
+  // eight repositories (2026-10-09), but the TS blocks' `tsGlobs` reach
+  // `**/*.tsx`, so this is a latent guard the way
+  // `prefer-rolling-workspace-spec` is: the day a JSX surface appears
+  // the order is the default from its first commit rather than a later
+  // cleanup. Reads the family `settings.perfectionist` like every
+  // perfectionist rule. In no table nor in the ledger until 7.1.0; the
+  // skeptic lens read it as a `domain` refusal (no JSX in the family),
+  // the doctrine lens as the latent-guard precedent — recorded in
+  // CLAUDE.md.
+  'perfectionist/sort-jsx-props': 'error',
   'perfectionist/sort-maps': 'error',
   'perfectionist/sort-modules': [
     'error',
@@ -1009,6 +1042,15 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // Owned by `import-x/no-anonymous-default-export`.
   'unicorn/no-anonymous-default-export': 'off',
   'unicorn/no-array-front-mutation': 'error',
+  // Owned by `jsdoc/require-asterisk-prefix` at `always`, its mutually
+  // exclusive twin: the house style keeps the `*` line prefix in doc
+  // blocks and this rule's whitespace fixer deletes it — 1633 doc blocks
+  // over the eight repositories (2026-10-09) would be rewritten twice
+  // in opposite directions, and 92 of them sit outside the jsdoc
+  // block's perimeter (tests, scripts), where nothing would restore the
+  // prefix. Lived in the refusal ledger until unicorn 77 put the rule in
+  // `recommended`; a LIVE off since.
+  'unicorn/no-asterisk-prefix-in-documentation-comments': 'off',
   // `eslint-plugin-unicorn` 76's `checkContinue` (off by default): an
   // unlabeled `continue` inside a nested loop, or inside a `switch`
   // within a loop, reads as ambiguous about what it continues. Measured
@@ -1026,6 +1068,16 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // site, adopted on 2026-09-23: the base rule was already at `error`
   // with its rewrites made, and the extension asks nothing different.
   'unicorn/no-immediate-mutation': ['error', { checkConditionals: true }],
+  // REDUNDANT: Prettier never leaves a blank line at the top of a file
+  // on any type the family formats, and `format` runs on every surface
+  // the family lints — 0 sites over the eight repositories on every
+  // surface (TS, CSS, HTML, JSON, Markdown, YAML; 2026-10-09). New in
+  // unicorn 77 (`recommended`, every language); eslint-config-prettier
+  // 10.1.8 predates it and does not list it yet — delete this line the
+  // day it does, as it already lists `number-literal-case`. The YAML
+  // block restates the off, since it extends unicorn's YAML preset
+  // without eslint-config-prettier.
+  'unicorn/no-leading-empty-lines': 'off',
   // Owned by `import-x/no-named-default` (imports; the export form it
   // also covers is unused here).
   'unicorn/no-named-default': 'off',
@@ -1049,10 +1101,15 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // default): two consecutive guards whose conditions are compound
   // (`&&`, `??`, a ternary, a negated group) get combined like simple
   // ones. Measured 2026-09-22 at zero sites over the eight repositories
-  // — adopted as a latent guard.
+  // — adopted as a latent guard. 77's `checkMultiStatementBodies` (off
+  // by default): consecutive guards whose bodies run the same statements
+  // before the same exit are one guard; in TypeScript the rule combines
+  // them only with type information and identical reference types,
+  // which the family's type-aware lint supplies, so the guard is live.
+  // Measured 2026-10-09 at zero sites, syntax-only and type-aware.
   'unicorn/prefer-combined-guards': [
     'error',
-    { checkCompoundConditions: true },
+    { checkCompoundConditions: true, checkMultiStatementBodies: true },
   ],
   'unicorn/prefer-dispose': 'error',
   // Mutually exclusive twin of `prefer-number-properties`' `checkNaN`:
@@ -1234,6 +1291,13 @@ export const jsonBlock = (extraIgnores: readonly string[] = []): Config[] =>
       files: ['**/*.json'],
       ignores: ['**/package-lock.json', '**/package.json', ...extraIgnores],
       language: 'json/json',
+      // Unicorn is loaded for two of its JSON-capable rules, enumerated
+      // the way the Markdown block does: its `recommended-json` preset
+      // would re-open the asterisk-prefix conflict on a second language
+      // and demand kebab-case of Homey's `.homeycompose` ids
+      // (`filename-case`, 62 sites), external names that are not the
+      // family's to change (measured 2026-10-09).
+      plugins: { unicorn },
       rules: {
         'json/sort-keys': [
           'error',
@@ -1241,6 +1305,26 @@ export const jsonBlock = (extraIgnores: readonly string[] = []): Config[] =>
           { caseSensitive: true, natural: true },
         ],
         'json/top-level-interop': 'error',
+        // The JSON twin of core `no-loss-of-precision` (recommended, JS
+        // only): a numeric literal that does not survive binary64 is a
+        // silent value change, and manifest numbers parse into the same
+        // doubles. `json/no-unsafe-values` shares only the past-2^53
+        // integer surface; a decimal that loses digits is covered by
+        // nothing else. Zero sites over the family's JSON (2026-10-09);
+        // off in every unicorn 77 preset, so it is enabled here or
+        // nowhere.
+        'unicorn/no-loss-of-precision': 'error',
+        // The JSON twin of a verdict taken twice already — core
+        // `no-irregular-whitespace` with `skipStrings: false` and
+        // `yml/no-irregular-whitespace` with `skipQuotedScalars: false`:
+        // the raw invisible character is forbidden, its escaped spelling
+        // is byte-identical after the parse, and the fixer writes it.
+        // Not owned: @eslint/json 2.1 ships no whitespace rule. Two
+        // fixable sites family-wide, both com.melcloud (a U+202F in a
+        // French changelog string, a U+00A0 before `%` in a vendored
+        // capability; 2026-10-09); the app preset's `app.json` and
+        // `locales/*.json` ignores keep the locale strings out.
+        'unicorn/prefer-escaped-irregular-whitespace': 'error',
       },
     },
   ])
@@ -1271,6 +1355,20 @@ export const markdownBlock: Config[] = defineConfig([
       'markdown/table-column-count': ['error', { checkMissingCells: true }],
       'unicorn/expiring-todo-comments': expiringTodoComments,
       'unicorn/no-empty-file': 'error',
+      // Not owned: `markdown/no-empty-links` (recommended) checks
+      // DESTINATIONS, this one the link TEXT — `[](url)`, a whitespace
+      // label, a badge image without `alt`. An accessibility guard at
+      // zero sites over the family's 45 Markdown files (2026-10-09);
+      // off in unicorn's `recommended`, on in its `recommended-markdown`,
+      // which this block does not extend (its `filename-case` would
+      // rename README.md and CHANGELOG.md, GitHub's conventional names).
+      'unicorn/no-empty-link-text': 'error',
+      // `javascript:` destinations in links, images, autolinks and
+      // reference definitions. Core `no-script-url` is JS-only, so
+      // nothing owns it, and the family's Markdown IS rendered with live
+      // links (GitHub; typedoc folds the README into the docs). Zero
+      // sites (2026-10-09); off in every unicorn 77 preset.
+      'unicorn/no-javascript-url': 'error',
       'unicorn/no-missing-local-resource': 'error',
     },
   },
@@ -1421,35 +1519,101 @@ export const testsBlock = (
     },
   ])
 
+// The YAML table minus the one entry that takes a family parameter (the
+// step-key order of `yml/sort-keys`). The block runs on ESLint's
+// language API, not a parser: `ymlConfigs.standard` carries
+// `language: 'yml/yaml'` since eslint-plugin-yml 3.0.0 (print-config on
+// a workflow resolves `language: yml/yaml` and a `languageOptions`
+// without parser), and that is what admits unicorn's YAML preset —
+// ESLint (10.11 already) refuses an enabled rule whose `meta.languages`
+// lacks the block's language, so `recommended-yaml` is the only unicorn
+// preset that can be extended there, never `recommended`.
+// eslint-config-prettier stays OUT of the block: its unicorn offs are JS
+// verdicts and would silence `number-literal-case`, which Prettier does
+// not own on YAML (`0XFF` and `1E3` survive a pass; `0xff` → `0xFF` and
+// `1E3` → `1e3` are type-safe under YAML 1.2, measured 2026-10-09).
+// Measured over the family's 115 YAML files with unicorn 77
+// (2026-10-09): every preset rule at zero except `filename-case` and
+// `name-replacements`, restated below.
+const staticYamlRules: NonNullable<Config['rules']> = {
+  // REDUNDANT: Prettier prints `{}` and `[]` for an empty flow mapping
+  // or sequence and formats every YAML file (`format` runs on them); off
+  // by hand because eslint-config-prettier, which owns the same verdict
+  // on JS, is not extended here.
+  'unicorn/empty-brace-spaces': 'off',
+  // The preset's bare `'error'` falls back to the hollow defaults; the
+  // family options are restated wherever the rule runs.
+  'unicorn/expiring-todo-comments': expiringTodoComments,
+  // GitHub mandates the `.github/ISSUE_TEMPLATE` folder name (and
+  // `config.yml` inside it) — the platform-imposed shape the naming
+  // doctrine admits — and leaves the form file names free.
+  // `directoryRoots` exempts exactly that segment and still checks the
+  // names below it, where `ignore` would skip the whole file (the rule
+  // returns before any check once a path segment matches). Six findings
+  // at the preset's bare setting, all that directory in heatzy-api and
+  // melcloud-api; four real renames with the option (`bug_report.yml`,
+  // `feature_request.yml`), paid by their adoption pull requests
+  // (2026-10-09).
+  'unicorn/filename-case': [
+    'error',
+    { directoryRoots: ['.github/ISSUE_TEMPLATE'] },
+  ],
+  // Vocabulary, the main table's verdict carried over: the only YAML
+  // sites are file names — four `docs.yml` workflows and this
+  // repository's `reusable-docs.yml`, a reusable the family pins BY PATH,
+  // which `documentation.yml` would break (2026-10-09).
+  'unicorn/name-replacements': 'off',
+  // REDUNDANT: Prettier strips leading blank lines from YAML too (the
+  // main table's reason, restated because the preset enables it here).
+  'unicorn/no-leading-empty-lines': 'off',
+  // Owned by `yml/no-trailing-zeros` below: on YAML this rule reports a
+  // strict subset (`1.50`, never `1.0`) with byte-identical fixes, so
+  // keeping it would double-report (measured 2026-10-09).
+  'unicorn/no-zero-fractions': 'off',
+  'yml/file-extension': ['error', { extension: 'yml' }],
+  'yml/key-name-casing': [
+    'error',
+    {
+      camelCase: true,
+      'kebab-case': true,
+      SCREAMING_SNAKE_CASE: true,
+      snake_case: true,
+    },
+  ],
+  // In neither preset (3.8.1): a plain `true:` key (`on:` under YAML
+  // 1.1) reaches readers as a boolean. Zero sites 2026-09-22; YAML 1.2.
+  'yml/no-boolean-key': 'error',
+  // Mirrors the core `no-irregular-whitespace` verdict
+  // (`skipStrings: false`): an NBSP inside a quoted `run:` or `name:`
+  // scalar is reported too.
+  'yml/no-irregular-whitespace': ['error', { skipQuotedScalars: false }],
+  // Overrides `ymlConfigs.prettier`: Prettier keeps float spelling
+  // (`1.50` survives a pass, probed 2026-09-15), so nothing owns this;
+  // the fixer retags `x.0` as `x` (versions here are quoted).
+  'yml/no-trailing-zeros': 'error',
+  'yml/require-string-key': 'error',
+  'yml/sort-sequence-values': [
+    'error',
+    {
+      order: { caseSensitive: true, natural: true, type: 'asc' },
+      pathPattern: '^.*$',
+    },
+  ],
+}
+
 export const yamlBlock = (stepKeyOrder: readonly string[]): Config[] =>
   defineConfig([
     {
       // `files` keeps the `yml/*` rules off every non-YAML file.
-      extends: [ymlConfigs.standard, ymlConfigs.prettier],
+      extends: [
+        ymlConfigs.standard,
+        ymlConfigs.prettier,
+        unicorn.configs['recommended-yaml'],
+      ],
       files: ['**/*.{yaml,yml}'],
+      plugins: { unicorn },
       rules: {
-        'yml/file-extension': ['error', { extension: 'yml' }],
-        'yml/key-name-casing': [
-          'error',
-          {
-            camelCase: true,
-            'kebab-case': true,
-            SCREAMING_SNAKE_CASE: true,
-            snake_case: true,
-          },
-        ],
-        // In neither preset (3.8.1): a plain `true:` key (`on:` under YAML
-        // 1.1) reaches readers as a boolean. Zero sites 2026-09-22; YAML 1.2.
-        'yml/no-boolean-key': 'error',
-        // Mirrors the core `no-irregular-whitespace` verdict
-        // (`skipStrings: false`): an NBSP inside a quoted `run:` or
-        // `name:` scalar is reported too.
-        'yml/no-irregular-whitespace': ['error', { skipQuotedScalars: false }],
-        // Overrides `ymlConfigs.prettier`: Prettier keeps float spelling
-        // (`1.50` survives a pass, probed 2026-09-15), so nothing owns
-        // this; the fixer retags `x.0` as `x` (versions here are quoted).
-        'yml/no-trailing-zeros': 'error',
-        'yml/require-string-key': 'error',
+        ...staticYamlRules,
         'yml/sort-keys': [
           'error',
           {
@@ -1459,13 +1623,6 @@ export const yamlBlock = (stepKeyOrder: readonly string[]): Config[] =>
           {
             order: [...stepKeyOrder],
             pathPattern: String.raw`^jobs\.\w+\.steps\[\d+\]$`,
-          },
-        ],
-        'yml/sort-sequence-values': [
-          'error',
-          {
-            order: { caseSensitive: true, natural: true, type: 'asc' },
-            pathPattern: '^.*$',
           },
         ],
       },
@@ -1509,6 +1666,17 @@ const sharedPackageJsonRules: NonNullable<Config['rules']> = {
   'package-json/require-author': 'error',
   'package-json/require-bugs': 'error',
   'package-json/require-engines': 'error',
+  // The manifest subpath, mechanised: once an `exports` map exists Node
+  // hides `package.json` from consumers and linters unless it is
+  // exported explicitly — the four runtime libraries carry
+  // `"./package.json"` by hand and api-core/melcloud-api assert it in
+  // their export-map tests; this package was the one that forgot (its
+  // one site over the eight repositories, 2026-10-09). Conditional on an
+  // `exports` key (`publishConfig.exports` winning), so inert on the
+  // three private apps and live the day one gains a map; in no plugin
+  // preset. No fixer: the suggestion appends at the END of the map where
+  // the house keeps path order — add the line by hand.
+  'package-json/require-package-json-export': 'error',
   // The exact-pin doctrine, mechanised for the family packages:
   // `check-pins.sh` polices the two two-channel packages, this
   // rule reaches the three single-channel ones (api-core,
