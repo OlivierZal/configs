@@ -737,7 +737,7 @@ type-aware, a syntax-only probe sees 7; `prefer-single-object-destructuring`
 3, fixable); `no-leading-empty-lines` (new, every language) is a live
 `off` as REDUNDANT, Prettier never leaving a blank first line on any
 surface the family formats; `prefer-combined-guards` gains
-`checkMultiStatementBodies` as that rule's third latent guard;
+`checkMultiStatementBodies` as that rule's second latent-guard option;
 `prefer-simplified-conditions`' new `negatedConditions: 'expand'` stays
 at its default — `expand` is the De Morgan rewrite the family refused
 with eslint-plugin-de-morgan, three com.melcloud sites of exactly that
@@ -748,7 +748,7 @@ README/CHANGELOG/CLAUDE.md and Homey's `.homeycompose` ids, 99 sites;
 `name-replacements`), inflate 18 one-line CSS section labels
 (`single-line-block-comment-style`) and re-assert rules they ship off
 while the family runs them — EXCEPT `recommended-yaml`, the one legal
-shape for YAML: ESLint 10.12 refuses an enabled rule whose
+shape for YAML: ESLint (10.11 already) refuses an enabled rule whose
 `meta.languages` lacks the block's language, so unicorn can reach
 `**/*.yml` only through that preset, and the YAML block extends it with
 the hollow `expiring-todo-comments` restated, `filename-case` with
@@ -772,9 +772,9 @@ on YAML, where it duplicates the four-case table), `comma-spacing` and
 `indent` (REDUNDANT, Prettier), `filename-case` on JSON and Markdown
 and `name-replacements` on HTML (vocabulary),
 `single-line-block-comment-style` on CSS (conflicting). The YAML block
-was never parser-based, whatever the task that produced this reading
-assumed: `ymlConfigs.standard` has carried `language: 'yml/yaml'`
-since eslint-plugin-yml 3.0.0, and yml 3.9 itself is types-only (#675,
+was never parser-based, whatever this reading's brief assumed:
+`ymlConfigs.standard` has carried `language: 'yml/yaml'` since
+eslint-plugin-yml 3.0.0, and yml 3.9 itself is types-only (#675,
 `exactOptionalPropertyTypes` on the configs; 30 rules, zero schema
 diffs), a ledger move. perfectionist 5.12 configures nothing (23
 rules, schemas, defaults and messages identical, 569 files

@@ -1525,16 +1525,16 @@ export const testsBlock = (
 // `language: 'yml/yaml'` since eslint-plugin-yml 3.0.0 (print-config on
 // a workflow resolves `language: yml/yaml` and a `languageOptions`
 // without parser), and that is what admits unicorn's YAML preset —
-// ESLint 10.12 refuses an enabled rule whose `meta.languages` lacks the
-// block's language, so `recommended-yaml` is the only unicorn preset that
-// can be extended there, never `recommended`. eslint-config-prettier
-// stays OUT of the block: its unicorn offs are JS verdicts and would
-// silence `number-literal-case`, which Prettier does not own on YAML
-// (`0XFF` and `1E3` survive a pass; `0xff` → `0xFF` and `1E3` → `1e3`
-// are type-safe under YAML 1.2, measured 2026-10-09). Measured over the
-// family's 115 YAML files with unicorn 77 (2026-10-09): every preset
-// rule at zero except `filename-case` and `name-replacements`, restated
-// below.
+// ESLint (10.11 already) refuses an enabled rule whose `meta.languages`
+// lacks the block's language, so `recommended-yaml` is the only unicorn
+// preset that can be extended there, never `recommended`.
+// eslint-config-prettier stays OUT of the block: its unicorn offs are JS
+// verdicts and would silence `number-literal-case`, which Prettier does
+// not own on YAML (`0XFF` and `1E3` survive a pass; `0xff` → `0xFF` and
+// `1E3` → `1e3` are type-safe under YAML 1.2, measured 2026-10-09).
+// Measured over the family's 115 YAML files with unicorn 77
+// (2026-10-09): every preset rule at zero except `filename-case` and
+// `name-replacements`, restated below.
 const staticYamlRules: NonNullable<Config['rules']> = {
   // REDUNDANT: Prettier prints `{}` and `[]` for an empty flow mapping
   // or sequence and formats every YAML file (`format` runs on them); off
