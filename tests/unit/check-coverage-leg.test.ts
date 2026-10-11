@@ -27,8 +27,11 @@ const inputs = asRecord(
   'inputs',
 )
 
-const defaultOf = (name: string): string =>
-  asString(asRecord(inputs[name], name).default, `${name}.default`)
+// The one input whose default the suite reads.
+const nodeVersionsDefault = asString(
+  asRecord(inputs['node-versions'], 'node-versions').default,
+  'node-versions.default',
+)
 
 const testJob = asRecord(jobs.test, 'test')
 const checkSteps = asArray(asRecord(jobs.check, 'check').steps, 'steps')
@@ -128,7 +131,7 @@ describe('the reusable CI workflow', () => {
   // A caller that passes nothing still has to get coverage, so the
   // default is fed through the real check rather than eyeballed.
   it('declares a default that carries its own coverage leg', () => {
-    const { status } = check(defaultOf('node-versions'))
+    const { status } = check(nodeVersionsDefault)
 
     expect(status).toBe(0)
   })
@@ -140,7 +143,7 @@ describe('the reusable CI workflow', () => {
   // legitimate — doing so unaware is not.
   it('keeps the leg names its callers require', () => {
     expect(
-      asArray(JSON.parse(defaultOf('node-versions')), 'node-versions').map(
+      asArray(JSON.parse(nodeVersionsDefault), 'node-versions').map(
         (entry) => asRecord(entry, 'leg')['node-version'],
       ),
     ).toStrictEqual(['22', 'latest', 'lts/*'])

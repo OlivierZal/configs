@@ -572,7 +572,10 @@ day @eslint/css dates it), and the three nesting rules
 (`no-nesting-with-mixed-specificity`, `no-redundant-nested-style-rules`,
 `no-unscoped-css-nesting-selector`) — the floor admits no CSS nesting
 and the corpus contains none, so they are inert; they re-enter with the
-floor, which `ios-floor-watch` already guards. unicorn 75 also WIDENED
+floor, which `ios-floor-watch` already guards. (unicorn 77 moved that
+whole CSS half to `eslint-cssicorn`; the 2026-10-09 reading below
+carries both sets forward under their cssicorn ids, the refusals in the
+ledger at last.) unicorn 75 also WIDENED
 five rules the tables already carry, and the widest of them had to be
 BOUNDED (6.4.1): `prefer-ternary` learned flat return statements, and
 at the preset's `always` default it rewrites a guard clause — `if (x
@@ -621,7 +624,8 @@ tag) and html-eslint 0.66 (the three rules the app preset configures
 moved into `@html-eslint/core`, ids unchanged, the presets suite
 green) complete the delta. `yml/no-boolean-key` (3.7, in neither
 preset, missed by the full reading) enters at `error` at zero sites —
-the parser reads YAML 1.2, so a workflow's `on:` stays text. The
+the `yml/yaml` language reads YAML 1.2, so a workflow's `on:` stays
+text. The
 rule-bearing patches (jsdoc 64.5.4, typescript-eslint 8.70.1,
 perfectionist 5.11.1) rode along at zero findings. `unplugin-swc` 2.0
 (drops Node 18, below the family floor) is not rule-bearing and lands
@@ -675,13 +679,163 @@ reports a well-formed nested list whose items carry an inline `{@link
 passes with the inline tags removed). REFUSED, class `conflicting`, in
 the ledger, until the rule follows Markdown structure; the
 `check-line-alignment` `-any` tag selector is moot under the family's
-`never`.
+`never`. The wait was short: jsdoc 65.1.0 fixed that very false
+positive (#1786), and the 2026-10-09 reading below adopted the option.
+
+The 2026-10-09 releases were read the same way (7.1.0), every
+candidate measured over the eight repositories with the new version
+installed in an isolated probe directory before any verdict, and each
+verdict read through two lenses (doctrine, skeptic) whose two
+disagreements are recorded below. eslint 10.12 and typescript-eslint
+8.71.1 configure nothing: no rule, option or default moved (294 and
+137 rule files; `@eslint/js` and the typescript-eslint presets
+byte-identical), and every touched rule measured identical old/new —
+`no-unused-vars` now reports a merged `const` + `type` whose
+unexported value half is used only as a type, the one change that can
+add findings, at zero sites because the family's `erasableSyntaxOnly`
+idiom exports both halves. The two unconfigured core rules the minor
+touched earned ledger rows instead of the prose they had: `new-cap`
+and `consistent-return`, class `conflicting`, because the house's own
+rules forbid the only edits that would satisfy them
+(`naming-convention` mandates camelCase on the constructor PARAMETERS
+`new-cap` reports; `switch-exhaustiveness-check` forbids the `default`
+branch `consistent-return` wants after an exhaustive `switch`) and the
+real cases are the compiler's (TS2351/TS2348, `noImplicitReturns`).
+unicorn 77 is BREAKING for the app preset: its eleven CSS rules moved
+to `eslint-cssicorn` (same author, first release 0.1.0 of 2026-10-03)
+and survive in unicorn only as deprecated stubs that lint nothing and
+REJECT their options — the `allow` on `no-unknown-pseudo-selectors`
+would have killed every app lint at config load, the six option-less
+ids gone silent. The `cssBlock` now loads cssicorn and enumerates it
+the way it enumerated unicorn's CSS half: the seven ids rewritten,
+`lowercase` (six `currentColor`, fixable) and
+`no-redundant-longhand-properties` (one `column-gap`/`row-gap` pair
+that is `gap`) adopted on their merits, nine more at `error` at zero
+sites over the twelve app stylesheets, and the five floor-bound rules
+— the three nesting rules refused in prose on 2026-09-17, their
+`no-declarations-after-nested-rules` sibling,
+`prefer-media-feature-range-syntax` — in the ledger at last, class
+`domain` and `owned` by `css/use-baseline`, scoped to `**/*.css`.
+unicorn 77 also puts `no-asterisk-prefix-in-documentation-comments` in
+`recommended`: 1,633 doc blocks whose fixer would undo
+`jsdoc/require-asterisk-prefix`, so the ledger entry became what the
+doctrine says it must — a LIVE `off` at its rule site. Its twenty
+other new recommended rules (CSP `<meta>` directives, SRI, `Intl`
+options, property descriptors, `Response` options, Temporal
+arithmetic, passive-listener `preventDefault`, `JSON.stringify` of a
+`Map`, `URLSearchParams(fullUrl)`, `TextDecoder` streaming…) arrive at
+zero sites, syntax-only and type-aware; `no-unnecessary-parameters`
+arrives at 14 real ones — 13 test-helper factories whose option no
+caller ever exercised and heatzy-api's `#requestData` `method`, always
+`'get'` — paid by hand in the adoption pull requests (the fixer is
+JS-only; this repo's two are fixed here); three widenings cost what
+they should (`prefer-default-parameters` 22 suggestions on 16 lines,
+six of them null-bearing wire fields where a default parameter would
+change behaviour and keep their `??` under a described directive;
+`no-unnecessary-array-flat-map` 10 hand rewrites — the family's lint is
+type-aware, a syntax-only probe sees 7; `prefer-single-object-destructuring`
+3, fixable); `no-leading-empty-lines` (new, every language) is a live
+`off` as REDUNDANT, Prettier never leaving a blank first line on any
+surface the family formats; `prefer-combined-guards` gains
+`checkMultiStatementBodies` as that rule's third latent guard;
+`prefer-simplified-conditions`' new `negatedConditions: 'expand'` stays
+at its default — `expand` is the De Morgan rewrite the family refused
+with eslint-plugin-de-morgan, three com.melcloud sites of exactly that
+shape. The language presets 77 adds
+(`recommended-css/html/json/markdown/toml/yaml`) are NOT extended —
+each would force live offs on external names (`filename-case` on
+README/CHANGELOG/CLAUDE.md and Homey's `.homeycompose` ids, 99 sites;
+`name-replacements`), inflate 18 one-line CSS section labels
+(`single-line-block-comment-style`) and re-assert rules they ship off
+while the family runs them — EXCEPT `recommended-yaml`, the one legal
+shape for YAML: ESLint 10.12 refuses an enabled rule whose
+`meta.languages` lacks the block's language, so unicorn can reach
+`**/*.yml` only through that preset, and the YAML block extends it with
+the hollow `expiring-todo-comments` restated, `filename-case` with
+`directoryRoots: ['.github/ISSUE_TEMPLATE']` (GitHub's mandated folder
+— the exemption that IS the constraint; `ignore` would skip the whole
+file — leaving four real renames in heatzy-api and melcloud-api) and
+four live offs: `name-replacements` (vocabulary: `docs.yml` ×4 and
+`reusable-docs.yml`, a reusable pinned by path), `no-zero-fractions`
+(owned by `yml/no-trailing-zeros`, a strict superset),
+`empty-brace-spaces` and `no-leading-empty-lines` (Prettier).
+eslint-config-prettier stays OUT of that block: its unicorn offs are JS
+verdicts and would silence `number-literal-case`, which Prettier does
+not own on YAML. Per block, four zero-cost rules the presets leave off
+enter at `error`: `prefer-escaped-irregular-whitespace` on JSON (the
+twin of the core and yml irregular-whitespace verdicts; two fixable
+sites in com.melcloud) and `no-loss-of-precision` on JSON and CSS,
+`no-empty-link-text` and `no-javascript-url` on Markdown; and the
+measured refusals became scoped ledger rows — `key-name-casing`
+(vocabulary on JSON, 357 external keys; owned by `yml/key-name-casing`
+on YAML, where it duplicates the four-case table), `comma-spacing` and
+`indent` (REDUNDANT, Prettier), `filename-case` on JSON and Markdown
+and `name-replacements` on HTML (vocabulary),
+`single-line-block-comment-style` on CSS (conflicting). The YAML block
+was never parser-based, whatever the task that produced this reading
+assumed: `ymlConfigs.standard` has carried `language: 'yml/yaml'`
+since eslint-plugin-yml 3.0.0, and yml 3.9 itself is types-only (#675,
+`exactOptionalPropertyTypes` on the configs; 30 rules, zero schema
+diffs), a ledger move. perfectionist 5.12 configures nothing (23
+rules, schemas, defaults and messages identical, 569 files
+byte-identical old/new); its one behaviour change makes the fixer
+honour a described `eslint-disable` directive — the form
+`require-description` mandates — where 5.11 moved the pinned member
+with the directive riding along (reproduced). Three pre-existing rules
+the ledger had never decided were settled: `sort-arrays`, class
+`domain` (options-only by design, 939 order-bearing sites at the
+widest selector); `sort-decorators`, class `conflicting` (TC39
+decorators compose bottom-up, and the alphabetical fixer would fire
+`syncDevices`' observers before `classicUpdateDevices` patches the
+models, in three melcloud-api stacks); `sort-jsx-props` ADOPTED at
+`error` as a latent guard — zero JSX files, but the TS blocks' globs
+reach `**/*.tsx` — where the skeptic lens read a `domain` refusal: the
+doctrine's own sentence that absence of a use case is not a refusal of
+a practice decided it, as it did for `prefer-rolling-workspace-spec`
+(first disagreement). package-json 1.10 adds one rule,
+`require-package-json-export`, ADOPTED at `error` in the shared table:
+the manifest subpath Node hides once an `exports` map exists, which
+the four libraries export by hand and two assert in tests — and which
+this package had forgotten (its one site; fixed by hand, since the
+suggestion appends out of the house path order; `order-properties`'
+one-report-per-file change is a no-op behind the formatter's live
+off). jsdoc 65.2 re-opened the 2026-09-29 refusal: 65.1.0 fixed the
+very false positive the ledger cited (#1786, the section-indent reset
+now anchored to a line-start block tag; reproduced old → new on
+api-core's `src/resilience/index.ts` and on a fixture), so
+`check-indentation` with `allowIndentedSections: true` measures ZERO
+over the eight repositories — on 65.2.1 and again on the 65.2.4 that
+landed, the three patches between them touching
+`no-undefined-types`, `convert-to-jsdoc-comments` and CRLF handling
+only — and enters `jsdocRules` with the default's refusal recorded at
+the rule site (18 sites, 15 of them Prettier's own list layout);
+`check-syntax` enters the ledger as owned by `jsdoc/no-types` (with
+`check-tag-names` closing the typed tags; its new fixer would write
+the `[name]` form `no-defaults` refuses); `check-alignment`'s new
+`ignoreEmptyLines` is not taken, the blank line it would hand to a
+formatter being already an error under `require-asterisk-prefix`;
+`check-param-names`' fixer now moves a same-line `*/` to its own line,
+strictly better under the family's unattended `--fix`; `require-tags`
+stays unconfigured — the skeptic lens asked for a `domain` ledger row,
+the doctrine's precedent for an options-only rule the family declares
+nothing for (`comment-content`, `string-content`, `id-match`) is
+deletion, and the doctrine lens was followed (second disagreement).
+`npm update source-map-js` (lock only, GHSA-68fv-2mgg-jv7q) rode
+along. Dependabot never carried this bump as one pull request: the
+`eslint` group's #132 held jsdoc 65.0.1, package-json 1.10.1 and
+perfectionist 5.12.1 and was red on the audit ledger by design, and a
+human commit on a Dependabot branch is refused by the Sonar gate — so
+the seven moves land in one hand-made pull request.
 
 Maintenance is a gate — an unmaintained plugin is refused regardless of
 coverage — and the claim is scoped to what was measured: the three
 long-standing refusals (n, promise, security) are active under
 eslint-community, and so are two of the three admitted in 7.0.0 (es-x,
-eslint-comments), the third (regexp) under its author beside them. The
+eslint-comments), the third (regexp) under its author beside them.
+`eslint-cssicorn` (7.1.0) is a first release — 0.1.0, 2026-10-03 — by
+the unicorn author, who moved these exact rules there, so the family
+already trusts the maintenance it relies on for unicorn; the risk is
+0.x churn, which the audit ledger bounds. The
 2026-09-27 refusals further down fell on their merits before the gate
 was reached, so their maintenance was not measured.
 
@@ -971,7 +1125,11 @@ at `error` in the app preset (never its fixer — it writes
 `require-files`, `require-homepage`… self-skip on a private package,
 which retired the two app-side offs; the libraries add
 `require-publishConfig`, the scoped package's declaration of its
-registry.
+registry. package-json 1.10 (7.1.0) added one rule the shared table
+takes at `error`, `require-package-json-export`: once an `exports` map
+exists Node hides the manifest unless `"./package.json"` is exported,
+which the four libraries did by hand and this package had forgotten —
+inert on a private app (no `exports`), live the day one gains a map.
 
 ## Consumers & adoption
 
@@ -1176,7 +1334,9 @@ waits for, forcing the adoption. Absence of a use case is not a
 refusal of a practice: the three offs on `unicorn/comment-content`,
 `string-content` and `id-match` — rules that enforce only what their
 options declare, and the family declares nothing — were deleted
-outright rather than ledgered.
+outright rather than ledgered, and `jsdoc/require-tags` (read with
+65.2) stays unconfigured for the same reason: it requires only the
+tags its options name on every block, and the family names none.
 
 Dependabot's commit prefixes are pinned to `build(deps)` /
 `build(deps-dev)` rather than inferred. The **subject** casing cannot

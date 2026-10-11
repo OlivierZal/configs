@@ -101,11 +101,13 @@ typescript, `@eslint-community/eslint-plugin-eslint-comments`
 recommended, `eslint-plugin-regexp` recommended and, last,
 `eslint-config-prettier`; the family tables layer on top, with
 `@stylistic` and `perfectionist` registered as plugins of that same
-main block, and the scoped blocks add `jsdoc`, `vitest`, `yml`,
-`package-json`, `@eslint/json`, `@eslint/markdown` — plus, for the
-Homey preset, `@eslint/css` and `@html-eslint`, and `eslint-plugin-es-x`
-wherever a webview floor block applies (the Homey preset's own, or the
-`webviewFloorBlock` a library composes below). Every adopted rule runs
+main block, and the scoped blocks add `jsdoc`, `vitest`, `yml` (with
+unicorn's `recommended-yaml`), `package-json`, `@eslint/json`,
+`@eslint/markdown` — plus, for the Homey preset, `@eslint/css` with
+`eslint-cssicorn` (unicorn's CSS half since unicorn 77) and
+`@html-eslint`, and `eslint-plugin-es-x` wherever a webview floor block
+applies (the Homey preset's own, or the `webviewFloorBlock` a library
+composes below). Every adopted rule runs
 at `error`; what the family refuses is data in
 `src/eslint/refused-rules.ts`, not a disabled line.
 

@@ -372,7 +372,10 @@ describe('css baseline floor', () => {
 
 // The one pseudo-element the three settings pages need — hiding a
 // `<summary>` marker on the WebKit the floor admits — is allowed by
-// exact name, and every other unknown selector still reports.
+// exact name, and every other unknown selector still reports. The rule
+// is eslint-cssicorn's since unicorn 77, whose own id is a deprecated
+// stub that lints nothing and rejects the `allow` option — which is
+// what this real run guards against.
 describe('css unknown pseudo-selectors', () => {
   it('should allow the details marker by name', async () => {
     await expect(
@@ -382,7 +385,7 @@ describe('css unknown pseudo-selectors', () => {
 
   it('should still report any other unknown pseudo-selector', async () => {
     await expect(lintCss('a::-foo {\n  color: red;\n}\n')).resolves.toContain(
-      'unicorn/no-unknown-pseudo-selectors',
+      'cssicorn/no-unknown-pseudo-selectors',
     )
   })
 })

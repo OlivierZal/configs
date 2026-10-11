@@ -1,0 +1,4 @@
+# Resolved
+
+A PATH fixture: the resolved-config suites ask ESLint which config applies
+here; the body only has to be valid Markdown.

@@ -40,7 +40,8 @@ describe('audited plugin versions', () => {
   // contract; the ledger's own order is perfectionist's (the family
   // alphabet places `/` before `-`, so `@eslint/…` precedes
   // `@eslint-community/…`), which is why both sides sort the same way
-  // here.
+  // here. `eslint-cssicorn` is the one rule-bearing package whose name
+  // carries no `eslint-plugin` (unicorn's CSS half, named after unicorn).
   it('should cover exactly the rule-bearing packages', () => {
     const ruleBearing = Object.keys({
       ...packageJson.dependencies,
@@ -49,6 +50,7 @@ describe('audited plugin versions', () => {
       .filter(
         (name) =>
           name === 'eslint' ||
+          name === 'eslint-cssicorn' ||
           name === 'typescript-eslint' ||
           name.startsWith('@eslint/') ||
           name.includes('eslint-plugin'),
