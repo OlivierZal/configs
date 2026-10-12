@@ -424,6 +424,31 @@ export const label = (name) => \`\${name}\`
   })
 })
 
+// The unicorn 77 HTML rules, taken one by one rather than through the
+// preset that would drag two ledger refusals along; the build product the
+// pages reference keeps `no-missing-local-resource` out.
+describe('the HTML block and unicorn 77', () => {
+  const htmlRules = Object.fromEntries(
+    htmlBlocks.flatMap((entry) => Object.entries(entry.rules ?? {})),
+  )
+
+  it.each([
+    'unicorn/consistent-compound-words',
+    'unicorn/no-abusive-eslint-disable',
+    'unicorn/no-conflicting-constraints',
+    'unicorn/no-ineffective-csp-directives',
+    'unicorn/no-invalid-integrity',
+    'unicorn/prefer-https',
+    'unicorn/relative-url-style',
+  ])('should run %s at error on HTML', (rule) => {
+    expect(htmlRules[rule]).toBe('error')
+  })
+
+  it('should leave the build product reference to the bundler', () => {
+    expect(htmlRules['unicorn/no-missing-local-resource']).toBeUndefined()
+  })
+})
+
 // The two DOM rules moved from the app preset to the shared table in
 // 7.0.0, for the reason `no-alert` is there: homey-kit's webview sources
 // compile under `lib: DOM` in a library-preset repo. The one that has
