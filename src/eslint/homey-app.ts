@@ -343,9 +343,30 @@ const htmlBlock: Config[] = defineConfig([
       // `eslint-disable-next-line html/use-baseline` naming the Safari
       // release, or by a per-app overlay — never by moving the year.
       'html/use-baseline': ['error', { available: 2022 }],
+      // The HTML half of unicorn 77's `recommended-html`, taken rule by
+      // rule (the preset itself would drag `filename-case` and
+      // `name-replacements`, both ledger refusals): the four below were
+      // already here; the seven that follow were measured at zero sites
+      // on the family's five live pages (2026-10-12) and each names a
+      // real class of mistake a settings page or a widget can carry —
+      // identifier spelling that drifts between the page and its
+      // script, a CSP `<meta>` whose directive the browser ignores there,
+      // a form constraint a CSS query contradicts, a subresource
+      // integrity hash of the wrong shape, an `http:` reference, a
+      // relative URL spelled two ways, and an `eslint-disable` naming no
+      // rule. `no-missing-local-resource` stays out, in the ledger: the
+      // `index.js` every page references is esbuild's output, built at
+      // install time and absent from the tree.
+      'unicorn/consistent-compound-words': 'error',
       'unicorn/expiring-todo-comments': expiringTodoComments,
+      'unicorn/no-abusive-eslint-disable': 'error',
+      'unicorn/no-conflicting-constraints': 'error',
       'unicorn/no-empty-file': 'error',
+      'unicorn/no-ineffective-csp-directives': 'error',
       'unicorn/no-invalid-file-input-accept': 'error',
+      'unicorn/no-invalid-integrity': 'error',
+      'unicorn/prefer-https': 'error',
+      'unicorn/relative-url-style': 'error',
       'unicorn/text-encoding-identifier-case': 'error',
     },
   },

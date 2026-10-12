@@ -771,7 +771,16 @@ measured refusals became scoped ledger rows — `key-name-casing`
 on YAML, where it duplicates the four-case table), `comma-spacing` and
 `indent` (REDUNDANT, Prettier), `filename-case` on JSON and Markdown
 and `name-replacements` on HTML (vocabulary),
-`single-line-block-comment-style` on CSS (conflicting). The YAML block
+`single-line-block-comment-style` on CSS (conflicting). The HTML half
+of `recommended-html` was finished on 2026-10-12, after the owner asked
+whether 77 brought only cssicorn: seven rules the 2026-10-09 reading had
+not judged one by one enter the HTML block at `error`, each at zero
+sites on the five live pages (`consistent-compound-words`,
+`no-abusive-eslint-disable`, `no-conflicting-constraints`,
+`no-ineffective-csp-directives`, `no-invalid-integrity`, `prefer-https`,
+`relative-url-style`), and `no-missing-local-resource` is a scoped
+ledger row (domain: the `index.js` each page references is esbuild's
+output, absent from the tree — 5 sites, all of them that). The YAML block
 was never parser-based, whatever this reading's brief assumed:
 `ymlConfigs.standard` has carried `language: 'yml/yaml'` since
 eslint-plugin-yml 3.0.0, and yml 3.9 itself is types-only (#675,

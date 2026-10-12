@@ -128,6 +128,13 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
     rule: 'html/class-spacing',
   },
   {
+    class: 'domain',
+    files: HTML_FILES,
+    reason:
+      "The one local resource every page references — `<script src=\"index.js\">` — is esbuild's output, written by `scripts/bundle.mts` at build time and absent from the tree, so the rule reports a missing file on each of the family's five live pages (5 sites, 2026-10-12) and would report nothing else: the pages carry no other local reference. A build product is outside what a lint of the source tree can see; the bundler's own failure is the check.",
+    rule: 'unicorn/no-missing-local-resource',
+  },
+  {
     class: 'redundant',
     files: HTML_FILES,
     reason: REDUNDANT_HTML,
