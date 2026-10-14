@@ -22,7 +22,8 @@
  * 1.10, jsdoc 65.2, yml 3.9; 2026-10-14: unicorn 78, eslint-cssicorn
  * 0.2, jsdoc 65.3 — measured with a pack of this package installed in
  * the seven consumers, and a probe config extending each repository's
- * own for the rules no preset turns on).
+ * own for the rules no preset turns on; same day, html-eslint 0.67 and
+ * es-x 10.1, zero sites over the seven consumers).
  */
 export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@eslint/css': '2.0',
@@ -30,12 +31,12 @@ export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@eslint/json': '2.1',
   '@eslint/markdown': '8.0',
   '@eslint-community/eslint-plugin-eslint-comments': '4.8',
-  '@html-eslint/eslint-plugin': '0.66',
+  '@html-eslint/eslint-plugin': '0.67',
   '@stylistic/eslint-plugin': '5.10',
   '@vitest/eslint-plugin': '1.6',
   eslint: '10.12',
   'eslint-cssicorn': '0.2',
-  'eslint-plugin-es-x': '10.0',
+  'eslint-plugin-es-x': '10.1',
   'eslint-plugin-import-x': '4.17',
   'eslint-plugin-jsdoc': '65.3',
   'eslint-plugin-package-json': '1.10',

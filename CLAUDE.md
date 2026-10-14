@@ -900,6 +900,18 @@ against. jsdoc 65.3 is patches plus one option,
 in JavaScript — nothing this TypeScript family writes. typescript-eslint
 8.71.2 rode along.
 
+The same day's html-eslint 0.67 and es-x 10.1 were read for 8.1.1,
+measured the same way: zero new sites over the seven consumers. html-eslint
+0.67 moves three rules into the plugin's core — `require-li-container`,
+already live through `html/recommended`; `id-naming-convention` and
+`no-restricted-tags`, both already enumerated in the `htmlBlock` (the
+former at its `snake_case` default, which every id of the five app pages
+follows) — so nothing new is judged, and es-x 10.1 adds four
+`no-iterator-prototype-*` rules (`windows`, `chunks`, `includes`, `join`:
+Iterator helpers proposals) that `restrict-to-es2023` turns on by
+construction, above the webview floor by two editions. prettier 3.9.10
+rode along. A table move and nothing else: a patch.
+
 Maintenance is a gate — an unmaintained plugin is refused regardless of
 coverage — and the claim is scoped to what was measured: the three
 long-standing refusals (n, promise, security) are active under
