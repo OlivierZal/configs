@@ -912,6 +912,23 @@ Iterator helpers proposals) that `restrict-to-es2023` turns on by
 construction, above the webview floor by two editions. prettier 3.9.10
 rode along. A table move and nothing else: a patch.
 
+8.2.0 (2026-10-15) corrects two verdicts of the 8.1.0 reading, both on
+the owner's challenge. `no-unnecessary-default-arguments` was refused
+family-wide on a reason that only holds in tests; the rule now runs at
+`error` in the main table — an argument restating the callee's default
+couples the caller to a value it does not own, and the sources carried
+zero sites — and is off in the test block, where the explicit value is
+the scenario (the 69 sites), so the refusal lives at its rule site, not
+in the ledger. `prefer-ternary`'s `checkVaryingBase` was left at `false`
+with the claim that `(test ? a : b)(value)` is not a shape the family
+writes — false: `prefer-minimal-ternary` has run with
+`checkVaryingBase: true` since v72, so the family's ternaries already
+take that shape, and an `if`/`else` with a varying callee was the one
+form escaping it. The option is on; `checkComputedMemberAccess` stays
+off on both rules for a tooling reason, not a taste — member names in
+strings escape rename and find-references. Measured before adopting:
+`no-unnecessary-default-arguments` at zero source sites over the eight repositories; `checkVaryingBase` at one, heatzy-api's binding loop, whose `if`/`else` pushed to one of two typed arrays — the fixer's `(test ? dropped : bindings).push(entry)` does not type-check (TypeScript resolves a call on a union of array types against the intersection of their element types), so the loop became two typed `filter` passes in the adoption.
+
 Maintenance is a gate — an unmaintained plugin is refused regardless of
 coverage — and the claim is scoped to what was measured: the three
 long-standing refusals (n, promise, security) are active under

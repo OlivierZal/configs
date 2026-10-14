@@ -285,12 +285,6 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
     rule: 'unicorn/no-manually-wrapped-comments',
   },
   {
-    class: 'conflicting',
-    reason:
-      "House convention: a test states the values of the scenario it exercises, defaults included — a fixture's default moving must not silently change what a test checks. Measured 2026-10-14 over the eight repositories with unicorn 78: 69 sites, every one in a test (`classicBuildingData({ ID: 1 })`, `mockHttpResponse(data, {}, 200)`…), zero in a source. Off in unicorn's own `recommended` for the author's version of the same reason: explicit arguments preserve behaviour when an API's defaults change.",
-    rule: 'unicorn/no-unnecessary-default-arguments',
-  },
-  {
     class: 'domain',
     files: HTML_FILES,
     reason:

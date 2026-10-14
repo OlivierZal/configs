@@ -1095,6 +1095,12 @@ const staticMainRules: NonNullable<Config['rules']> = {
   'unicorn/no-this-assignment': 'off',
   // Owned by `@typescript-eslint/no-unnecessary-boolean-literal-compare`.
   'unicorn/no-unnecessary-boolean-comparison': 'off',
+  // Unicorn 78's second opt-in rule, adopted in the sources (8.2.0): an
+  // argument that restates the callee's default couples the caller to a
+  // value it does not own — the default is the callee's contract. Zero
+  // sites over the eight repositories' sources (2026-10-14); the test
+  // block turns it off, where an explicit value is the scenario.
+  'unicorn/no-unnecessary-default-arguments': 'error',
   'unicorn/no-unreadable-new-expression': 'error',
   // Shared rather than app-only, for the reason `no-alert` is:
   // homey-kit's webview sources compile under `lib: DOM` in a
@@ -1133,6 +1139,14 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // Owned by `@typescript-eslint/prefer-string-starts-ends-with`.
   'unicorn/prefer-string-starts-ends-with': 'off',
   'unicorn/prefer-temporal': 'error',
+  // The statement-side twin of the setting above (unicorn 78 added the
+  // option): an `if`/`else` whose branches differ only by the callee or
+  // the base becomes `(test ? a : b)(value)`, the shape
+  // `prefer-minimal-ternary` already gives the family's ternaries.
+  // `checkComputedMemberAccess` stays off on both rules: `object[test ?
+  // 'a' : 'b']` puts member names in strings, out of reach of rename and
+  // find-references.
+  'unicorn/prefer-ternary': ['error', 'always', { checkVaryingBase: true }],
   // Same move as `no-unsafe-dom-html`. Caveat recorded: the rule flags
   // ANY one-argument `.postMessage(x)` regardless of receiver, so a
   // future `MessagePort`, `BroadcastChannel` or `worker_threads` post in
@@ -1405,6 +1419,12 @@ const sharedTestRules: NonNullable<Config['rules']> = {
   ],
   // Mock builders nest factories.
   'unicorn/max-nested-calls': ['error', { max: 4 }],
+  // A test states the values of the scenario it exercises, defaults
+  // included: a fixture's default moving must not silently change what a
+  // test checks. 69 sites over the eight repositories' suites
+  // (2026-10-14), every one such a value — the author's own reason for
+  // keeping the rule out of `recommended`, met in the one place it holds.
+  'unicorn/no-unnecessary-default-arguments': 'off',
   // Without options the rule is a no-op; the suites use `.each`
   // exclusively.
   'vitest/consistent-each-for': [
