@@ -14,8 +14,8 @@ import unicorn from 'eslint-plugin-unicorn'
 import {
   type ConfigWithExtends,
   type NamingConventionOptions,
-  type SharedMainRulesOptions,
   type TemplateExpressionAllowEntry,
+  configFileGlob,
   configJsBlock,
   configTsBlock,
   expiringTodoComments,
@@ -208,325 +208,321 @@ export const webviewFloorBlock = (
 // come through that same Prettier pass untouched, which is what makes
 // the split safe: Prettier moves whitespace, it never invents an ARIA
 // role.
-const htmlBlock: Config[] = defineConfig([
-  {
-    extends: ['html/recommended'],
-    files: ['**/*.html'],
-    language: 'html/html',
-    plugins: { html, unicorn },
-    rules: {
-      // CONFLICTING: the rule breaks attributes onto their own lines
-      // past a COUNT, Prettier keeps them inline while they fit the
-      // print WIDTH.
-      'html/attrs-newline': 'off',
-      'html/css-no-empty-blocks': 'error',
-      // REDUNDANT
-      'html/element-newline': 'off',
-      // Kept: Prettier never reorders `<head>` children, so no formatter
-      // guarantees this one.
-      'html/head-order': 'error',
-      'html/id-naming-convention': 'error',
-      // CONFLICTING: Prettier indents HTML by two spaces where the
-      // rule expects four, so every nested line fails.
-      'html/indent': 'off',
-      // Kept: Prettier lowercases only the element and attribute names
-      // it knows — its own output keeps `onClick`, `DATA-FOO`,
-      // `<MY-ELEMENT>` — so it neither guarantees nor contradicts this;
-      // SVG camelCase attributes are exempt. One determinate fix.
-      'html/lowercase': 'error',
-      'html/max-element-depth': 'error',
-      'html/no-abstract-roles': 'error',
-      'html/no-accesskey-attrs': 'error',
-      'html/no-aria-hidden-body': 'error',
-      'html/no-aria-hidden-on-focusable': 'error',
-      'html/no-duplicate-class': 'error',
-      'html/no-empty-headings': 'error',
-      // CONFLICTING: Prettier writes the space in `<meta … />` that
-      // this rule rejects.
-      'html/no-extra-spacing-tags': 'off',
-      'html/no-heading-inside-button': 'error',
-      'html/no-ineffective-attrs': 'error',
-      'html/no-inline-styles': 'error',
-      'html/no-invalid-attr-value': 'error',
-      'html/no-invalid-entity': 'error',
-      'html/no-invalid-role': 'error',
-      'html/no-nested-interactive': 'error',
-      'html/no-non-scalable-viewport': 'error',
-      'html/no-positive-tabindex': 'error',
-      'html/no-redundant-role': 'error',
-      // Pins an incident every page documents in its boot comment: a
-      // static `<script type="module">` stalls a cold webview boot and
-      // blocks `onHomeyReady` (proven on-device on com.melcloud), so
-      // bundles ship as classic `defer` scripts. Case-insensitive and
-      // whitespace-tolerant, as the HTML spec matches script types.
-      'html/no-restricted-attr-values': [
-        'error',
-        {
-          attrPatterns: ['^type$'],
-          attrValuePatterns: [String.raw`^\s*[Mm][Oo][Dd][Uu][Ll][Ee]\s*$`],
-          message:
-            'Module scripts stall a cold webview boot: ship bundles as classic defer scripts.',
-        },
-      ],
-      // Inline handlers are JavaScript outside the TypeScript bundle,
-      // the webview floor and the DOM rules; case-insensitive because
-      // browsers read attribute names that way.
-      'html/no-restricted-attrs': [
-        'error',
-        {
-          attrPatterns: ['^[Oo][Nn][A-Za-z]+$'],
-          message:
-            'Inline event handlers bypass the TypeScript bundle: wire listeners from the .mts sources.',
-          tagPatterns: ['.*'],
-        },
-      ],
-      // CSS inside `<style>` reaches none of the `css/` table (Baseline
-      // floor, logical properties, relative units): the element form of
-      // what `no-inline-styles` closes for the attribute.
-      'html/no-restricted-tags': [
-        'error',
-        {
-          message:
-            'CSS lives in .css files, where the css/ table (Baseline floor, logical properties, relative units) sees it.',
-          tagPatterns: ['^style$'],
-        },
-      ],
-      'html/no-script-style-type': 'error',
-      'html/no-skip-heading-levels': 'error',
-      'html/no-target-blank': 'error',
-      'html/no-whitespace-only-children': 'error',
-      'html/prefer-https': 'error',
-      // REDUNDANT
-      'html/quotes': 'off',
-      // The positive half of the boot verdict above: every external
-      // script (8 across the five pages) is a classic `defer` script,
-      // so the head never blocks the webview boot; the `conditions`
-      // clause leaves the inline boot script alone. No `value` — that
-      // is what arms the fixer, which would write `defer=""` out of
-      // `sort-attrs` order.
-      'html/require-attrs': [
-        'error',
-        {
-          attr: 'defer',
-          conditions: [{ attr: 'src', kind: 'present' }],
-          message:
-            'External scripts load as classic defer scripts so the head never blocks the webview boot.',
-          tag: 'script',
-        },
-      ],
-      'html/require-button-type': 'error',
-      // CONFLICTING: Prettier self-closes void elements (`<img … />`),
-      // which is exactly what this rule reports. Its name suggests
-      // validity, but the spec makes a trailing slash on a void element
-      // meaningless, not invalid — both spellings parse to the same
-      // DOM, so the rule is style, and style is Prettier's.
-      'html/require-closing-tags': 'off',
-      'html/require-content': 'error',
-      'html/require-details-summary': 'error',
-      'html/require-explicit-size': 'error',
-      'html/require-form-method': 'error',
-      'html/require-frame-title': 'error',
-      'html/require-input-label': 'error',
-      'html/require-meta-charset': 'error',
-      'html/require-meta-viewport': 'error',
-      // Kept: attribute ORDER reads like formatting, but Prettier
-      // preserves the order it is given — no formatter enforces this, so
-      // dropping it would drop the convention itself.
-      'html/sort-attrs': 'error',
-      'html/svg-require-viewbox': 'error',
-      // Bound to the same iOS 16.4 floor as `css/use-baseline` below,
-      // through the same Baseline year; the default (`widely`) is a
-      // rolling 30-month window already a year past the floor. Unlike
-      // the CSS rule this one has no allow-list, so a feature WebKit had
-      // before the floor that Baseline dates later (`inert`: Safari
-      // 15.5, dated 2023 by Firefox 112) re-enters by an
-      // `eslint-disable-next-line html/use-baseline` naming the Safari
-      // release, or by a per-app overlay — never by moving the year.
-      'html/use-baseline': ['error', { available: 2022 }],
-      // The HTML half of unicorn 77's `recommended-html`, taken rule by
-      // rule (the preset itself would drag `filename-case` and
-      // `name-replacements`, both ledger refusals): the four below were
-      // already here; the seven that follow were measured at zero sites
-      // on the family's five live pages (2026-10-12) and each names a
-      // real class of mistake a settings page or a widget can carry —
-      // identifier spelling that drifts between the page and its
-      // script, a CSP `<meta>` whose directive the browser ignores there,
-      // a form constraint a CSS query contradicts, a subresource
-      // integrity hash of the wrong shape, an `http:` reference, a
-      // relative URL spelled two ways, and an `eslint-disable` naming no
-      // rule. `no-missing-local-resource` stays out, in the ledger: the
-      // `index.js` every page references is esbuild's output, built at
-      // install time and absent from the tree.
-      'unicorn/consistent-compound-words': 'error',
-      'unicorn/expiring-todo-comments': expiringTodoComments,
-      'unicorn/no-abusive-eslint-disable': 'error',
-      'unicorn/no-conflicting-constraints': 'error',
-      'unicorn/no-empty-file': 'error',
-      'unicorn/no-ineffective-csp-directives': 'error',
-      'unicorn/no-invalid-file-input-accept': 'error',
-      'unicorn/no-invalid-integrity': 'error',
-      'unicorn/prefer-https': 'error',
-      'unicorn/relative-url-style': 'error',
-      'unicorn/text-encoding-identifier-case': 'error',
-    },
+const htmlBlock: ConfigWithExtends = {
+  extends: ['html/recommended'],
+  files: ['**/*.html'],
+  language: 'html/html',
+  plugins: { html, unicorn },
+  rules: {
+    // CONFLICTING: the rule breaks attributes onto their own lines
+    // past a COUNT, Prettier keeps them inline while they fit the
+    // print WIDTH.
+    'html/attrs-newline': 'off',
+    'html/css-no-empty-blocks': 'error',
+    // REDUNDANT
+    'html/element-newline': 'off',
+    // Kept: Prettier never reorders `<head>` children, so no formatter
+    // guarantees this one.
+    'html/head-order': 'error',
+    'html/id-naming-convention': 'error',
+    // CONFLICTING: Prettier indents HTML by two spaces where the
+    // rule expects four, so every nested line fails.
+    'html/indent': 'off',
+    // Kept: Prettier lowercases only the element and attribute names
+    // it knows — its own output keeps `onClick`, `DATA-FOO`,
+    // `<MY-ELEMENT>` — so it neither guarantees nor contradicts this;
+    // SVG camelCase attributes are exempt. One determinate fix.
+    'html/lowercase': 'error',
+    'html/max-element-depth': 'error',
+    'html/no-abstract-roles': 'error',
+    'html/no-accesskey-attrs': 'error',
+    'html/no-aria-hidden-body': 'error',
+    'html/no-aria-hidden-on-focusable': 'error',
+    'html/no-duplicate-class': 'error',
+    'html/no-empty-headings': 'error',
+    // CONFLICTING: Prettier writes the space in `<meta … />` that
+    // this rule rejects.
+    'html/no-extra-spacing-tags': 'off',
+    'html/no-heading-inside-button': 'error',
+    'html/no-ineffective-attrs': 'error',
+    'html/no-inline-styles': 'error',
+    'html/no-invalid-attr-value': 'error',
+    'html/no-invalid-entity': 'error',
+    'html/no-invalid-role': 'error',
+    'html/no-nested-interactive': 'error',
+    'html/no-non-scalable-viewport': 'error',
+    'html/no-positive-tabindex': 'error',
+    'html/no-redundant-role': 'error',
+    // Pins an incident every page documents in its boot comment: a
+    // static `<script type="module">` stalls a cold webview boot and
+    // blocks `onHomeyReady` (proven on-device on com.melcloud), so
+    // bundles ship as classic `defer` scripts. Case-insensitive and
+    // whitespace-tolerant, as the HTML spec matches script types.
+    'html/no-restricted-attr-values': [
+      'error',
+      {
+        attrPatterns: ['^type$'],
+        attrValuePatterns: [String.raw`^\s*[Mm][Oo][Dd][Uu][Ll][Ee]\s*$`],
+        message:
+          'Module scripts stall a cold webview boot: ship bundles as classic defer scripts.',
+      },
+    ],
+    // Inline handlers are JavaScript outside the TypeScript bundle,
+    // the webview floor and the DOM rules; case-insensitive because
+    // browsers read attribute names that way.
+    'html/no-restricted-attrs': [
+      'error',
+      {
+        attrPatterns: ['^[Oo][Nn][A-Za-z]+$'],
+        message:
+          'Inline event handlers bypass the TypeScript bundle: wire listeners from the .mts sources.',
+        tagPatterns: ['.*'],
+      },
+    ],
+    // CSS inside `<style>` reaches none of the `css/` table (Baseline
+    // floor, logical properties, relative units): the element form of
+    // what `no-inline-styles` closes for the attribute.
+    'html/no-restricted-tags': [
+      'error',
+      {
+        message:
+          'CSS lives in .css files, where the css/ table (Baseline floor, logical properties, relative units) sees it.',
+        tagPatterns: ['^style$'],
+      },
+    ],
+    'html/no-script-style-type': 'error',
+    'html/no-skip-heading-levels': 'error',
+    'html/no-target-blank': 'error',
+    'html/no-whitespace-only-children': 'error',
+    'html/prefer-https': 'error',
+    // REDUNDANT
+    'html/quotes': 'off',
+    // The positive half of the boot verdict above: every external
+    // script (8 across the five pages) is a classic `defer` script,
+    // so the head never blocks the webview boot; the `conditions`
+    // clause leaves the inline boot script alone. No `value` — that
+    // is what arms the fixer, which would write `defer=""` out of
+    // `sort-attrs` order.
+    'html/require-attrs': [
+      'error',
+      {
+        attr: 'defer',
+        conditions: [{ attr: 'src', kind: 'present' }],
+        message:
+          'External scripts load as classic defer scripts so the head never blocks the webview boot.',
+        tag: 'script',
+      },
+    ],
+    'html/require-button-type': 'error',
+    // CONFLICTING: Prettier self-closes void elements (`<img … />`),
+    // which is exactly what this rule reports. Its name suggests
+    // validity, but the spec makes a trailing slash on a void element
+    // meaningless, not invalid — both spellings parse to the same
+    // DOM, so the rule is style, and style is Prettier's.
+    'html/require-closing-tags': 'off',
+    'html/require-content': 'error',
+    'html/require-details-summary': 'error',
+    'html/require-explicit-size': 'error',
+    'html/require-form-method': 'error',
+    'html/require-frame-title': 'error',
+    'html/require-input-label': 'error',
+    'html/require-meta-charset': 'error',
+    'html/require-meta-viewport': 'error',
+    // Kept: attribute ORDER reads like formatting, but Prettier
+    // preserves the order it is given — no formatter enforces this, so
+    // dropping it would drop the convention itself.
+    'html/sort-attrs': 'error',
+    'html/svg-require-viewbox': 'error',
+    // Bound to the same iOS 16.4 floor as `css/use-baseline` below,
+    // through the same Baseline year; the default (`widely`) is a
+    // rolling 30-month window already a year past the floor. Unlike
+    // the CSS rule this one has no allow-list, so a feature WebKit had
+    // before the floor that Baseline dates later (`inert`: Safari
+    // 15.5, dated 2023 by Firefox 112) re-enters by an
+    // `eslint-disable-next-line html/use-baseline` naming the Safari
+    // release, or by a per-app overlay — never by moving the year.
+    'html/use-baseline': ['error', { available: 2022 }],
+    // The HTML half of unicorn 77's `recommended-html`, taken rule by
+    // rule (the preset itself would drag `filename-case` and
+    // `name-replacements`, both ledger refusals): the four below were
+    // already here; the seven that follow were measured at zero sites
+    // on the family's five live pages (2026-10-12) and each names a
+    // real class of mistake a settings page or a widget can carry —
+    // identifier spelling that drifts between the page and its
+    // script, a CSP `<meta>` whose directive the browser ignores there,
+    // a form constraint a CSS query contradicts, a subresource
+    // integrity hash of the wrong shape, an `http:` reference, a
+    // relative URL spelled two ways, and an `eslint-disable` naming no
+    // rule. `no-missing-local-resource` stays out, in the ledger: the
+    // `index.js` every page references is esbuild's output, built at
+    // install time and absent from the tree.
+    'unicorn/consistent-compound-words': 'error',
+    'unicorn/expiring-todo-comments': expiringTodoComments,
+    'unicorn/no-abusive-eslint-disable': 'error',
+    'unicorn/no-conflicting-constraints': 'error',
+    'unicorn/no-empty-file': 'error',
+    'unicorn/no-ineffective-csp-directives': 'error',
+    'unicorn/no-invalid-file-input-accept': 'error',
+    'unicorn/no-invalid-integrity': 'error',
+    'unicorn/prefer-https': 'error',
+    'unicorn/relative-url-style': 'error',
+    'unicorn/text-encoding-identifier-case': 'error',
   },
-])
+}
 
-const cssBlock: Config[] = defineConfig([
-  {
-    extends: [css.configs.recommended],
-    files: ['**/*.css'],
-    language: 'css/css',
-    plugins: { css, cssicorn, unicorn },
-    rules: {
-      // `allowUnknownVariables`: the pages consume custom properties the
-      // linter never sees — Homey's runtime-injected stylesheet defines
-      // the `--homey-…` set and the pages only read it: 79
-      // `var(--homey-…)` references across the three apps' stylesheets
-      // (com.melcloud 65, com.heatzy 4, com.melcloud.extension 10;
-      // counted 2026-09-28). Every other invalid property still reports.
-      'css/no-invalid-properties': ['error', { allowUnknownVariables: true }],
-      'css/prefer-logical-properties': 'error',
-      'css/relative-font-units': 'error',
-      // Measured family ceiling (com.melcloud's settings/index.css, the
-      // widest corpus, 2026-09-15; the two other apps sit inside it),
-      // one step of headroom on pseudo-classes for the
-      // `:hover:focus-visible` idiom; rises only by a recorded verdict,
-      // like `complexity`. Without limits the entry was inert (every
-      // maximum defaults to Infinity). `maxUniversals: 0` is a measured
-      // absence, not a performance verdict — the `*, *::before` reset
-      // would raise it by verdict.
-      'css/selector-complexity': [
-        'error',
-        {
-          maxAttributes: 2,
-          maxClasses: 3,
-          maxCombinators: 2,
-          maxIds: 1,
-          maxPseudoClasses: 2,
-          maxTypes: 2,
-          maxUniversals: 0,
-        },
-      ],
-      // Bound to the engine `webviewFloorBlock` derives from — the iOS
-      // 16.4 WebKit, never a Chromium — through the one knob the rule
-      // has, a Baseline year: a feature passes once every core browser
-      // had shipped it by that year's end. 2022 is the last year inside
-      // the floor (its WebKit half is Safari 16.2 at the latest); 2023
-      // would admit what Safari 16.5 brought (`&`-nesting — the one
-      // nesting form the rule detects — and `:user-valid`) and that
-      // engine lacks. The year moves with the App Store minimum
-      // homey-kit's `ios-floor-watch.yml` records, and only with it.
-      //
-      // The proxy cuts the other way too: Baseline dates a feature by
-      // the LAST core browser to ship it, so the year alone rejects CSS
-      // WebKit had before the floor. Such a feature re-enters by exact
-      // name with the Safari release that carries it (MDN
-      // browser-compat-data), and only at 16.4 or below — measured over
-      // the three apps' stylesheets (2026-09-07) and grown the same way:
-      // an app meeting a new rejection reads the compat table, and the
-      // feature either lands here with its release or gets rewritten.
-      'css/use-baseline': [
-        'error',
-        {
-          // Safari 16.2; dated 2023 by Firefox 113.
-          allowFunctions: ['color-mix'],
-          // `mask-image`: unprefixed since Safari 15.4, dated 2023 by
-          // Chrome 120. `outline`: dated 2023 by Safari 16.4 itself, the
-          // floor's own release, for following `border-radius`.
-          allowProperties: ['mask-image', 'outline'],
-          available: 2022,
-        },
-      ],
-      // `eslint-cssicorn` 0.1 — unicorn's CSS half, moved out by unicorn
-      // 77 (2026-10-09): the seven ids this block carried since 6.4.0
-      // survive there only as deprecated stubs that lint nothing and
-      // REJECT their options, so under 77 the apps' lint would have
-      // exited at config load on the `allow` below while the six
-      // option-less ids went silent. Enumerated rather than extended,
-      // like the rest of this block, so the five floor-bound rules stay
-      // in the refusal ledger and every rule is judged on what it can
-      // CATCH here (the 2026-09-17 reading: a deprecated feature, a
-      // selector written twice, a font family repeated in one stack, a
-      // mistyped media feature, an annotation that is not one, a
-      // pseudo-selector the engines do not know). Measured over the
-      // twelve app stylesheets with 0.1.0: every rule below at zero
-      // except `lowercase` (six `currentColor`, fixable) and
-      // `no-redundant-longhand-properties` (one `column-gap` + `row-gap`
-      // pair that is `gap`), both in com.melcloud.extension and paid by
-      // its adoption pull request.
-      //
-      // Prettier lowercases hex colours only, never a value keyword, so
-      // nothing else owns keyword case; one determinate fix.
-      'cssicorn/lowercase': 'error',
-      'cssicorn/no-deprecated-features': 'error',
-      // Off in cssicorn's own `recommended` for the noise it makes on
-      // large stylesheets; zero sites here, and source order that follows
-      // specificity is what keeps a later, weaker selector from silently
-      // losing to an earlier one — a latent guard at no cost.
-      'cssicorn/no-descending-specificity': 'error',
-      'cssicorn/no-duplicate-font-family-names': 'error',
-      // Not owned: @eslint/css 2.0 checks duplicate imports and
-      // keyframe selectors, never two declarations of one property in a
-      // block.
-      'cssicorn/no-duplicate-properties': 'error',
-      'cssicorn/no-duplicate-selectors': 'error',
-      'cssicorn/no-invalid-media-features': 'error',
-      'cssicorn/no-redundant-longhand-properties': 'error',
-      // `margin: 1px 1px 1px 1px` is `1px`; fixable, and Prettier never
-      // touches a value.
-      'cssicorn/no-redundant-shorthand-values': 'error',
-      'cssicorn/no-self-referencing-custom-properties': 'error',
-      // Off in cssicorn's own `recommended` because `@keyframes` may
-      // live in another file. Each app page ships ONE stylesheet, Homey's
-      // runtime stylesheet injects custom properties (see
-      // `allowUnknownVariables` above), not animations, and the twelve
-      // files declare no `@keyframes` and reference no animation name —
-      // so the guard is latent and honest here; a Homey-injected keyframe
-      // would re-open this reason, never a disable.
-      'cssicorn/no-unknown-animations': 'error',
-      'cssicorn/no-unknown-annotations': 'error',
-      // `::-webkit-details-marker` is the ONE pseudo-element the rule's
-      // vocabulary lacks and the three settings pages need: they hide
-      // the native disclosure triangle of `<summary>` to draw their own
-      // chevron, and `list-style: none` alone does not reach the WebKit
-      // the floor admits. An allowance, not a disable — the rule still
-      // catches every other unknown selector.
-      'cssicorn/no-unknown-pseudo-selectors': [
-        'error',
-        { allow: ['::-webkit-details-marker'] },
-      ],
-      // `0px` is `0`; fixable.
-      'cssicorn/no-zero-length-unit': 'error',
-      // The rule's default unit is `dvh`; its `unit` option would only
-      // restate it.
-      'cssicorn/prefer-explicit-viewport-units': 'error',
-      // Space-separated colour arguments (`rgb(0 0 0 / 50%)`) and `::`
-      // pseudo-elements — both shipped by every engine years before the
-      // floor (Safari 12.1 and 3), and `css/use-baseline` at 2022 accepts
-      // the output. Fixable.
-      'cssicorn/prefer-modern-syntax': 'error',
-      // Prettier lowercases a hex colour but never shortens it. Fixable.
-      'cssicorn/prefer-short-hex-color': 'error',
-      // `@property` is Baseline 2024 — Safari 16.4, the floor's own
-      // release, shipped it and Firefox 128 dated it — so `css/use-baseline`
-      // rejects the at-rule until the block allows it by name, the day a
-      // page needs one; the descriptor check is live from that day.
-      'cssicorn/require-property-descriptors': 'error',
-      'unicorn/expiring-todo-comments': expiringTodoComments,
-      'unicorn/no-empty-file': 'error',
-      // The CSS twin of core `no-loss-of-precision` (the JSON block
-      // carries the JSON one): a numeric literal that does not survive
-      // binary64. Zero sites (2026-10-09); off in every unicorn 77
-      // preset, so it is enabled here or nowhere.
-      'unicorn/no-loss-of-precision': 'error',
-      'unicorn/no-missing-local-resource': 'error',
-      'unicorn/no-shorthand-property-overrides': 'error',
-      'unicorn/no-transition-all': 'error',
-      'unicorn/text-encoding-identifier-case': 'error',
-    },
+const cssBlock: ConfigWithExtends = {
+  extends: [css.configs.recommended],
+  files: ['**/*.css'],
+  language: 'css/css',
+  plugins: { css, cssicorn, unicorn },
+  rules: {
+    // `allowUnknownVariables`: the pages consume custom properties the
+    // linter never sees — Homey's runtime-injected stylesheet defines
+    // the `--homey-…` set and the pages only read it: 79
+    // `var(--homey-…)` references across the three apps' stylesheets
+    // (com.melcloud 65, com.heatzy 4, com.melcloud.extension 10;
+    // counted 2026-09-28). Every other invalid property still reports.
+    'css/no-invalid-properties': ['error', { allowUnknownVariables: true }],
+    'css/prefer-logical-properties': 'error',
+    'css/relative-font-units': 'error',
+    // Measured family ceiling (com.melcloud's settings/index.css, the
+    // widest corpus, 2026-09-15; the two other apps sit inside it),
+    // one step of headroom on pseudo-classes for the
+    // `:hover:focus-visible` idiom; rises only by a recorded verdict,
+    // like `complexity`. Without limits the entry was inert (every
+    // maximum defaults to Infinity). `maxUniversals: 0` is a measured
+    // absence, not a performance verdict — the `*, *::before` reset
+    // would raise it by verdict.
+    'css/selector-complexity': [
+      'error',
+      {
+        maxAttributes: 2,
+        maxClasses: 3,
+        maxCombinators: 2,
+        maxIds: 1,
+        maxPseudoClasses: 2,
+        maxTypes: 2,
+        maxUniversals: 0,
+      },
+    ],
+    // Bound to the engine `webviewFloorBlock` derives from — the iOS
+    // 16.4 WebKit, never a Chromium — through the one knob the rule
+    // has, a Baseline year: a feature passes once every core browser
+    // had shipped it by that year's end. 2022 is the last year inside
+    // the floor (its WebKit half is Safari 16.2 at the latest); 2023
+    // would admit what Safari 16.5 brought (`&`-nesting — the one
+    // nesting form the rule detects — and `:user-valid`) and that
+    // engine lacks. The year moves with the App Store minimum
+    // homey-kit's `ios-floor-watch.yml` records, and only with it.
+    //
+    // The proxy cuts the other way too: Baseline dates a feature by
+    // the LAST core browser to ship it, so the year alone rejects CSS
+    // WebKit had before the floor. Such a feature re-enters by exact
+    // name with the Safari release that carries it (MDN
+    // browser-compat-data), and only at 16.4 or below — measured over
+    // the three apps' stylesheets (2026-09-07) and grown the same way:
+    // an app meeting a new rejection reads the compat table, and the
+    // feature either lands here with its release or gets rewritten.
+    'css/use-baseline': [
+      'error',
+      {
+        // Safari 16.2; dated 2023 by Firefox 113.
+        allowFunctions: ['color-mix'],
+        // `mask-image`: unprefixed since Safari 15.4, dated 2023 by
+        // Chrome 120. `outline`: dated 2023 by Safari 16.4 itself, the
+        // floor's own release, for following `border-radius`.
+        allowProperties: ['mask-image', 'outline'],
+        available: 2022,
+      },
+    ],
+    // `eslint-cssicorn` 0.1 — unicorn's CSS half, moved out by unicorn
+    // 77 (2026-10-09): the seven ids this block carried since 6.4.0
+    // survive there only as deprecated stubs that lint nothing and
+    // REJECT their options, so under 77 the apps' lint would have
+    // exited at config load on the `allow` below while the six
+    // option-less ids went silent. Enumerated rather than extended,
+    // like the rest of this block, so the five floor-bound rules stay
+    // in the refusal ledger and every rule is judged on what it can
+    // CATCH here (the 2026-09-17 reading: a deprecated feature, a
+    // selector written twice, a font family repeated in one stack, a
+    // mistyped media feature, an annotation that is not one, a
+    // pseudo-selector the engines do not know). Measured over the
+    // twelve app stylesheets with 0.1.0: every rule below at zero
+    // except `lowercase` (six `currentColor`, fixable) and
+    // `no-redundant-longhand-properties` (one `column-gap` + `row-gap`
+    // pair that is `gap`), both in com.melcloud.extension and paid by
+    // its adoption pull request.
+    //
+    // Prettier lowercases hex colours only, never a value keyword, so
+    // nothing else owns keyword case; one determinate fix.
+    'cssicorn/lowercase': 'error',
+    'cssicorn/no-deprecated-features': 'error',
+    // Off in cssicorn's own `recommended` for the noise it makes on
+    // large stylesheets; zero sites here, and source order that follows
+    // specificity is what keeps a later, weaker selector from silently
+    // losing to an earlier one — a latent guard at no cost.
+    'cssicorn/no-descending-specificity': 'error',
+    'cssicorn/no-duplicate-font-family-names': 'error',
+    // Not owned: @eslint/css 2.0 checks duplicate imports and
+    // keyframe selectors, never two declarations of one property in a
+    // block.
+    'cssicorn/no-duplicate-properties': 'error',
+    'cssicorn/no-duplicate-selectors': 'error',
+    'cssicorn/no-invalid-media-features': 'error',
+    'cssicorn/no-redundant-longhand-properties': 'error',
+    // `margin: 1px 1px 1px 1px` is `1px`; fixable, and Prettier never
+    // touches a value.
+    'cssicorn/no-redundant-shorthand-values': 'error',
+    'cssicorn/no-self-referencing-custom-properties': 'error',
+    // Off in cssicorn's own `recommended` because `@keyframes` may
+    // live in another file. Each app page ships ONE stylesheet, Homey's
+    // runtime stylesheet injects custom properties (see
+    // `allowUnknownVariables` above), not animations, and the twelve
+    // files declare no `@keyframes` and reference no animation name —
+    // so the guard is latent and honest here; a Homey-injected keyframe
+    // would re-open this reason, never a disable.
+    'cssicorn/no-unknown-animations': 'error',
+    'cssicorn/no-unknown-annotations': 'error',
+    // `::-webkit-details-marker` is the ONE pseudo-element the rule's
+    // vocabulary lacks and the three settings pages need: they hide
+    // the native disclosure triangle of `<summary>` to draw their own
+    // chevron, and `list-style: none` alone does not reach the WebKit
+    // the floor admits. An allowance, not a disable — the rule still
+    // catches every other unknown selector.
+    'cssicorn/no-unknown-pseudo-selectors': [
+      'error',
+      { allow: ['::-webkit-details-marker'] },
+    ],
+    // `0px` is `0`; fixable.
+    'cssicorn/no-zero-length-unit': 'error',
+    // The rule's default unit is `dvh`; its `unit` option would only
+    // restate it.
+    'cssicorn/prefer-explicit-viewport-units': 'error',
+    // Space-separated colour arguments (`rgb(0 0 0 / 50%)`) and `::`
+    // pseudo-elements — both shipped by every engine years before the
+    // floor (Safari 12.1 and 3), and `css/use-baseline` at 2022 accepts
+    // the output. Fixable.
+    'cssicorn/prefer-modern-syntax': 'error',
+    // Prettier lowercases a hex colour but never shortens it. Fixable.
+    'cssicorn/prefer-short-hex-color': 'error',
+    // `@property` is Baseline 2024 — Safari 16.4, the floor's own
+    // release, shipped it and Firefox 128 dated it — so `css/use-baseline`
+    // rejects the at-rule until the block allows it by name, the day a
+    // page needs one; the descriptor check is live from that day.
+    'cssicorn/require-property-descriptors': 'error',
+    'unicorn/expiring-todo-comments': expiringTodoComments,
+    'unicorn/no-empty-file': 'error',
+    // The CSS twin of core `no-loss-of-precision` (the JSON block
+    // carries the JSON one): a numeric literal that does not survive
+    // binary64. Zero sites (2026-10-09); off in every unicorn 77
+    // preset, so it is enabled here or nowhere.
+    'unicorn/no-loss-of-precision': 'error',
+    'unicorn/no-missing-local-resource': 'error',
+    'unicorn/no-shorthand-property-overrides': 'error',
+    'unicorn/no-transition-all': 'error',
+    'unicorn/text-encoding-identifier-case': 'error',
   },
-])
+}
 
 // Class ordering with the Homey lifecycle hooks spliced after the
 // constructor.
@@ -552,64 +548,47 @@ const appNaming = (
   extraEntries: [...wireNamingEntries, ...homeyNamingEntries],
 })
 
-const appMainRuleOptions = (
+const appMainBlock = (
   bundledSourceGlobs: HomeyAppOptions['bundledSourceGlobs'],
   templateExpressionAllow: NonNullable<
     HomeyAppOptions['templateExpressionAllow']
   >,
   naming: NamingConventionOptions,
-): SharedMainRulesOptions => ({
-  extraneous: {
-    devDependencies: [
-      '*.config.{js,mjs,mts,ts}',
-      'scripts/**',
-      'tests/**',
-      ...bundledSourceGlobs,
-    ],
-  },
-  naming,
-  templateExpressionAllow,
-  unassignedImportAllow: ['source-map-support/register.js'],
-})
-
-const appMainBlock = ({
-  bundledSourceGlobs,
-  naming,
-  templateExpressionAllow = [],
-}: Pick<HomeyAppOptions, 'bundledSourceGlobs' | 'templateExpressionAllow'> & {
-  readonly naming: NamingConventionOptions
-}): Config[] =>
-  defineConfig([
-    {
-      extends: mainExtends,
-      files: [tsGlobs.ts, '*.config.{js,mjs}'],
-      languageOptions: mainLanguageOptions,
-      plugins: { '@stylistic': stylistic, perfectionist },
-      rules: {
-        ...sharedMainRules(
-          appMainRuleOptions(
-            bundledSourceGlobs,
-            templateExpressionAllow,
-            naming,
-          ),
-        ),
-        // Under `module: preserve` an extensionless relative import of a
-        // `.mts` module is already TS2307, so what the rule covers is the
-        // `.ts` test and config files vitest and jiti resolve leniently:
-        // the family's explicit-extension convention
-        // (`rewriteRelativeImportExtensions`) held everywhere, zero sites
-        // (2026-09-27). The library preset omits it: TS2835 under
-        // `module: nodenext` owns it there.
-        'import-x/extensions': [
-          'error',
-          'always',
-          { checkTypeImports: true, ignorePackages: true },
+): ConfigWithExtends => ({
+  extends: mainExtends,
+  files: [tsGlobs.ts, '*.config.{js,mjs}'],
+  languageOptions: mainLanguageOptions,
+  plugins: { '@stylistic': stylistic, perfectionist },
+  rules: {
+    ...sharedMainRules({
+      extraneous: {
+        devDependencies: [
+          configFileGlob,
+          'scripts/**',
+          'tests/**',
+          ...bundledSourceGlobs,
         ],
-        'perfectionist/sort-classes': ['error', appSortClassesOptions],
       },
-      settings: perfectionistSettings,
-    },
-  ])
+      naming,
+      templateExpressionAllow,
+      unassignedImportAllow: ['source-map-support/register.js'],
+    }),
+    // Under `module: preserve` an extensionless relative import of a
+    // `.mts` module is already TS2307, so what the rule covers is the
+    // `.ts` test and config files vitest and jiti resolve leniently:
+    // the family's explicit-extension convention
+    // (`rewriteRelativeImportExtensions`) held everywhere, zero sites
+    // (2026-09-27). The library preset omits it: TS2835 under
+    // `module: nodenext` owns it there.
+    'import-x/extensions': [
+      'error',
+      'always',
+      { checkTypeImports: true, ignorePackages: true },
+    ],
+    'perfectionist/sort-classes': ['error', appSortClassesOptions],
+  },
+  settings: perfectionistSettings,
+})
 
 // Omitted entirely when empty: ESLint rejects `files: []`.
 const untypedDoubleBlock = (files: readonly string[]): Config[] =>
@@ -638,14 +617,14 @@ const homeyShimBlock: Config = {
   },
 }
 
-const appTestsBlock = (naming: NamingConventionOptions): Config[] =>
+const appTestsBlock = (naming: NamingConventionOptions): ConfigWithExtends =>
   testsBlock({
     ...testNamingRules(naming),
     // Test doubles cast wholesale around the SDK's branded types.
     '@typescript-eslint/no-unsafe-type-assertion': 'off',
   })
 
-const appPackageJsonBlock: Config[] = packageJsonBlock({
+const appPackageJsonBlock: ConfigWithExtends = packageJsonBlock({
   // A Homey app is never published to npm, and `private: true` is the
   // machine-readable form of that fact (npm refuses `publish`). The
   // plugin's `require-exports`, `require-files`, `require-homepage`…
@@ -675,11 +654,11 @@ export const homeyApp = ({
 
   return defineConfig([
     linterOptionsBlock,
-    ...appMainBlock({
+    appMainBlock(
       bundledSourceGlobs,
-      naming: isScoped ? appNaming([]) : naming,
       templateExpressionAllow,
-    }),
+      isScoped ? appNaming([]) : naming,
+    ),
     // After the main block, so the scoped files win the override.
     ...(isScoped ? [wireNamingBlock(wireNamingFiles, naming)] : []),
     jsdocBlock([...jsdocFiles]),
@@ -698,15 +677,15 @@ export const homeyApp = ({
     // The platform entries, never the wire's: a config file speaks no
     // wire. No typedoc-key shape either (the library preset's): typedoc
     // never runs on an app, so its config files hold the bare core.
-    configTsBlock(['*.config.{js,mjs,mts,ts}'], appNaming([])),
+    configTsBlock(appNaming([])),
     configJsBlock,
     htmlBlock,
     jsonBlock(['app.json', 'locales/*.json']),
     cssBlock,
     markdownBlock,
-    ...appTestsBlock(naming),
+    appTestsBlock(naming),
     ...untypedDoubleBlock(untypedDoubleTestFiles),
-    yamlBlock(['id', 'name', 'if', 'uses', 'with', 'env', 'run']),
-    ...appPackageJsonBlock,
+    yamlBlock,
+    appPackageJsonBlock,
   ])
 }

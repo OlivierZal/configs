@@ -8,9 +8,10 @@ import stylistic from '@stylistic/eslint-plugin'
 import perfectionist from 'eslint-plugin-perfectionist'
 
 import {
+  type ConfigWithExtends,
   type NamingConventionOptions,
-  type SharedMainRulesOptions,
   changelogBlock,
+  configFileGlob,
   configJsBlock,
   configTsBlock,
   jsdocBlock,
@@ -51,61 +52,54 @@ const libraryNaming = (
   extraEntries: wireNamingEntries,
 })
 
-const libraryMainRuleOptions = (
-  wireNamingEntries: NonNullable<LibraryOptions['wireNamingEntries']>,
-): SharedMainRulesOptions => ({
-  extraneous: {
-    devDependencies: ['*.config.{js,mjs,mts,ts}', 'tests/**'],
-    includeTypes: true,
-  },
-  naming: libraryNaming(wireNamingEntries),
-})
-
-const libraryMainBlock = ({
-  wireNamingEntries = [],
-}: LibraryOptions): Config[] =>
-  defineConfig([
-    {
-      extends: mainExtends,
-      files: [tsGlobs.ts, '*.config.{js,mjs}'],
-      languageOptions: mainLanguageOptions,
-      plugins: { '@stylistic': stylistic, perfectionist },
-      rules: {
-        ...sharedMainRules(libraryMainRuleOptions(wireNamingEntries)),
-        // A namespace import hides which names a module uses; the
-        // libraries import by name. The app preset OMITS it: com.melcloud
-        // disambiguates the two wire vocabularies with `import * as
-        // Classic/Home from '@olivierzal/melcloud-api/{classic,home}'` —
-        // 86 sites in 70 files, 56 of them type-only (2026-09-27), the
-        // consumption melcloud-api's `src/classic.ts` documents — and the
-        // rule's only option is `ignore` globs, with no type-only
-        // exemption.
-        'import-x/no-namespace': 'error',
-        // `src/temporal.ts` is the single sanctioned polyfill entry
-        // point.
-        'no-restricted-imports': [
-          'error',
+const libraryMainBlock = (
+  naming: NamingConventionOptions,
+): ConfigWithExtends => ({
+  extends: mainExtends,
+  files: [tsGlobs.ts, '*.config.{js,mjs}'],
+  languageOptions: mainLanguageOptions,
+  plugins: { '@stylistic': stylistic, perfectionist },
+  rules: {
+    ...sharedMainRules({
+      extraneous: {
+        devDependencies: [configFileGlob, 'tests/**'],
+        includeTypes: true,
+      },
+      naming,
+    }),
+    // A namespace import hides which names a module uses; the
+    // libraries import by name. The app preset OMITS it: com.melcloud
+    // disambiguates the two wire vocabularies with `import * as
+    // Classic/Home from '@olivierzal/melcloud-api/{classic,home}'` —
+    // 86 sites in 70 files, 56 of them type-only (2026-09-27), the
+    // consumption melcloud-api's `src/classic.ts` documents — and the
+    // rule's only option is `ignore` globs, with no type-only
+    // exemption.
+    'import-x/no-namespace': 'error',
+    // `src/temporal.ts` is the single sanctioned polyfill entry
+    // point.
+    'no-restricted-imports': [
+      'error',
+      {
+        patterns: [
           {
-            patterns: [
-              {
-                group: ['temporal-polyfill', 'temporal-polyfill/*'],
-                message: 'Import Temporal/Intl from src/temporal.ts instead.',
-              },
-            ],
-          },
-        ],
-        'perfectionist/sort-classes': [
-          'error',
-          {
-            groups: [...sharedClassGroups, ...sharedClassGroupsTail],
-            newlinesBetween: 1,
-            newlinesInside: 1,
+            group: ['temporal-polyfill', 'temporal-polyfill/*'],
+            message: 'Import Temporal/Intl from src/temporal.ts instead.',
           },
         ],
       },
-      settings: perfectionistSettings,
-    },
-  ])
+    ],
+    'perfectionist/sort-classes': [
+      'error',
+      {
+        groups: [...sharedClassGroups, ...sharedClassGroupsTail],
+        newlinesBetween: 1,
+        newlinesInside: 1,
+      },
+    ],
+  },
+  settings: perfectionistSettings,
+})
 
 // TC39 decorator protocol: the replacement method receives the
 // instance through `this` (no class body to put it in), and the
@@ -161,20 +155,6 @@ const libraryPackageJsonRules: NonNullable<Config['rules']> = {
   'package-json/require-types': 'error',
 }
 
-const libraryYamlStepOrder = [
-  'id',
-  'name',
-  'if',
-  'continue-on-error',
-  'timeout-minutes',
-  'uses',
-  'with',
-  'env',
-  'shell',
-  'working-directory',
-  'run',
-]
-
 export const library = ({
   wireNamingEntries = [],
   wireNamingFiles = [],
@@ -185,18 +165,13 @@ export const library = ({
   return defineConfig([
     linterOptionsBlock,
     jsdocBlock(['src/**/*.ts']),
-    ...libraryMainBlock({
-      wireNamingEntries: isScoped ? [] : wireNamingEntries,
-    }),
+    libraryMainBlock(isScoped ? libraryNaming([]) : naming),
     // After the main block, so the scoped files win the override.
     ...(isScoped ? [wireNamingBlock(wireNamingFiles, naming)] : []),
     // The core policy, never the wire's (a config file speaks no wire),
     // plus the one tool-imposed shape of a library's root configs: the
     // typedoc map keys. Library-only — typedoc never runs on an app.
-    configTsBlock(['*.config.{js,mjs,mts,ts}'], {
-      ...libraryNaming([]),
-      extraEntries: [typedocKeyEntry],
-    }),
+    configTsBlock({ ...libraryNaming([]), extraEntries: [typedocKeyEntry] }),
     configJsBlock,
     jsonBlock(),
     markdownBlock,
@@ -207,7 +182,7 @@ export const library = ({
       ...testNamingRules(naming),
       '@typescript-eslint/no-shadow': libraryTestShadow,
     }),
-    yamlBlock(libraryYamlStepOrder),
+    yamlBlock,
     packageJsonBlock(libraryPackageJsonRules),
   ])
 }
