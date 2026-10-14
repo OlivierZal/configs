@@ -130,13 +130,13 @@ naming doctrine's own: a repo fits one of the two families, or the family gains
 a preset HERE — never a hand-assembled third, which is the copy that drifts. The
 fragments stay module-internal in `shared.ts` and `helpers.ts`.
 
-Two subpaths still spell the same thing: `./eslint/homey-app` and
-`./eslint/library` expose the barrel's own bindings, and the family
-splits across the three spellings (three repos on `./eslint`, three on
-each subpath). Verified 2026-10-14: byte-identical configs, no test or
-document pins the subpaths, six one-line imports to change. Removing
-them is a major of this package for zero behaviour, so it is parked for
-8.0.0 — and no new consumer adopts a subpath meanwhile.
+8.0.0 (2026-10-14) closed the last duplicate spelling: the
+`./eslint/homey-app` and `./eslint/library` subpaths, which exposed the
+barrel's own bindings and split the family across three import
+spellings, are gone; `./eslint` is the one entry point, as this section
+had said since 5.0.0. Verified beforehand: byte-identical configs, no
+test or document pinned the subpaths, six one-line imports moved with
+the adoption.
 
 Pinned by a runtime test of the barrel's export names, because the
 rule that would report an unused export cannot:

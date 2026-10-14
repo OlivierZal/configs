@@ -39,7 +39,7 @@ consumer runs: `eslint >=10.6.0` (es-x's own floor), `prettier >=3.5`,
 ```ts title="eslint.config.ts (Homey app)"
 import { type Config, defineConfig } from 'eslint/config'
 
-import { homeyApp } from '@olivierzal/configs/eslint/homey-app'
+import { homeyApp } from '@olivierzal/configs/eslint'
 
 const config: Config[] = defineConfig([
   { ignores: ['.homeybuild/', 'coverage/'] },
@@ -66,7 +66,7 @@ export default config
 ```
 
 ```ts title="eslint.config.ts (published library)"
-import { library } from '@olivierzal/configs/eslint/library'
+import { library } from '@olivierzal/configs/eslint'
 
 export default defineConfig([
   { ignores: ['coverage/', 'dist/', 'docs/'] },
