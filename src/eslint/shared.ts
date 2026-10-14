@@ -1084,6 +1084,12 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // The Homey SDK and both wire protocols speak `null` — banning null
   // literals fights the domain.
   'unicorn/no-null': 'off',
+  // Unicorn 78's opt-in rule, adopted: a function whose EVERY caller
+  // wraps the result the same way (`new Set(f())`, `Number(f())`) is the
+  // indirection the 2026-10 simplification hunt removed by hand; one
+  // site over the eight repositories (an api-core test helper every
+  // caller wrapped in `new URLSearchParams()`), paid by its adoption.
+  'unicorn/no-repeated-call-wrappers': 'error',
   // Owned by `@typescript-eslint/no-this-alias` (same two selectors,
   // same default filter; recommended and strict-type-checked).
   'unicorn/no-this-assignment': 'off',

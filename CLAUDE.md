@@ -853,6 +853,53 @@ perfectionist 5.12.1 and was red on the audit ledger by design, and a
 human commit on a Dependabot branch is refused by the Sonar gate — so
 the seven moves land in one hand-made pull request.
 
+The 2026-10-14 releases were read the same way (8.1.0), measured with a
+pack of this package installed in the seven consumers and, for the rules
+no preset turns on, a probe config extending each repository's own (the
+CLI `--rule` flag cannot: it reaches every language block, so unicorn's
+rules fail on the YAML one and cssicorn's on the TypeScript ones).
+unicorn 78 adds two opt-in rules and widens four: `no-repeated-call-wrappers`
+ADOPTED at `error` in the shared table (one site, an api-core test helper
+every caller wrapped in `new URLSearchParams()` — the indirection the
+simplification hunt removed by hand elsewhere);
+`no-unnecessary-default-arguments` REFUSED in the ledger, class
+`conflicting`: 69 sites, every one in a test, where a fixture's default
+moving must not silently change what a test exercises — the author's own
+reason for keeping it out of `recommended`. The widenings cost what they
+should: `prefer-default-parameters` reads `??`/`||` fallbacks of
+parameters (5 sites, all `groupId ?? driverId`-shaped, fixed as
+destructuring defaults; its new `checkFallbackExpressions` stays at the
+default `true`) and handles nullable fallback types, which retires the
+six `eslint-disable` lines the family carried for exactly that false
+positive; `no-negated-condition` reaches `&&`/`||` chains (7 sites,
+fixed); `prefer-combined-guards` combines non-literal exits under type
+information (1 site); `prefer-minimal-ternary` ignores formatting
+differences (1 site). Rules no longer skip code that carries comments —
+zero new sites over the eight repositories. `prefer-ternary`'s
+`checkVaryingBase`/`checkComputedMemberAccess` stay at their `false`
+default: `(test ? a : b)(value)` is not a shape the family writes.
+eslint-cssicorn 0.2 brings thirty rules: twenty-five enter the
+`cssBlock` enumeration at `error` — twenty-one at zero sites over the
+twelve app stylesheets, `consistent-property-order` at `order: 'alphabetical'` (47 sites,
+fixable; an opt-in the family takes because it already sorts
+everything a fixer can sort, and the alphabet is the house order —
+the default Concentric list is knowledge a reader must carry), `prefer-individual-transform-properties` (5 sites by hand;
+`translate`/`scale`/`rotate` are Safari 14.1), `require-prefers-reduced-motion`
+(4 transitions by hand; the media query is Safari 10.1 and the motion
+preference is an accessibility floor, not a taste), `no-redundant-functions`
+(1 site, fixable) — and five go to the ledger: `prefer-nesting` and
+`no-redundant-nesting-selector` beside the four nesting rules already
+there (the floor ships no nesting), `prefer-light-dark` (`light-dark()`
+is Safari 17.5) and `prefer-relative-colors` (relative colour syntax is
+Baseline 2024 — Safari 16.4 shipped it, Chrome 119 dated it — so
+`css/use-baseline` at 2022 refuses the output) as `owned` twins of
+`css/use-baseline`, and `require-selector-scope` as `domain`: a Homey
+settings page owns its document, its stylesheet has nothing to scope
+against. jsdoc 65.3 is patches plus one option,
+`no-unnecessary-type-assertion`'s `fixTypeChangingCasts`, for JSDoc casts
+in JavaScript — nothing this TypeScript family writes. typescript-eslint
+8.71.2 rode along.
+
 Maintenance is a gate — an unmaintained plugin is refused regardless of
 coverage — and the claim is scoped to what was measured: the three
 long-standing refusals (n, promise, security) are active under

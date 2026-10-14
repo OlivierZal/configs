@@ -370,6 +370,65 @@ const htmlBlock: ConfigWithExtends = {
   },
 }
 
+// `eslint-cssicorn` 0.2 (2026-10-12), read on 2026-10-14 over the twelve
+// app stylesheets with a probe config extending each app's own: thirty
+// rules, twenty-five here, five in the refusal ledger (two more nesting
+// rules the floor cannot use, `prefer-light-dark` and
+// `prefer-relative-colors` as `css/use-baseline`'s twins,
+// `require-selector-scope` as out of domain — a settings page owns its
+// document). Twenty-one arrive at zero sites; the four with sites were
+// paid by the adoption pull requests, as noted on each.
+const cssicornZeroTwo: NonNullable<ConfigWithExtends['rules']> = {
+  'cssicorn/consistent-compound-selector-order': 'error',
+  'cssicorn/consistent-layer-order': 'error',
+  // Off in cssicorn's own `recommended` as a matter of taste; the family
+  // already sorts everything a fixer can sort, and alphabetically every
+  // time (perfectionist on the scripts and JSON, Prettier's own order on
+  // `package.json`), so the house order is the alphabet here too — the
+  // rule's default, Concentric CSS, is a fixed list a reader must carry.
+  // 47 declarations over the three settings pages, fixed by `--fix` in
+  // the adoptions.
+  'cssicorn/consistent-property-order': ['error', { order: 'alphabetical' }],
+  'cssicorn/consistent-value-order': 'error',
+  'cssicorn/no-clamped-values': 'error',
+  'cssicorn/no-disabled-pinch-zoom': 'error',
+  'cssicorn/no-duplicate-at-rule-definitions': 'error',
+  'cssicorn/no-ineffective-keyframe-declarations': 'error',
+  'cssicorn/no-ineffective-overrides': 'error',
+  'cssicorn/no-ineffective-properties': 'error',
+  'cssicorn/no-ineffective-selector-properties': 'error',
+  'cssicorn/no-ineffective-supports-conditions': 'error',
+  'cssicorn/no-ineffective-transitions': 'error',
+  'cssicorn/no-invalid-property-references': 'error',
+  // Off in cssicorn's own `recommended`; zero sites, and animating a
+  // layout property is the one CSS performance fault a page cannot see
+  // in its own tests — a latent guard at no cost, like
+  // `no-descending-specificity` above.
+  'cssicorn/no-layout-animations': 'error',
+  'cssicorn/no-overflow-axis-coercion': 'error',
+  // One `radial-gradient()` the ATA widget wrote with a redundant
+  // argument; fixable.
+  'cssicorn/no-redundant-functions': 'error',
+  'cssicorn/no-useless-is': 'error',
+  // `aspect-ratio` is Safari 15 and `clamp()` Safari 13.1 — both inside
+  // the floor, both accepted by `css/use-baseline` at 2022.
+  'cssicorn/prefer-aspect-ratio': 'error',
+  'cssicorn/prefer-clamp': 'error',
+  'cssicorn/prefer-current-color': 'error',
+  'cssicorn/prefer-existing-custom-properties': 'error',
+  // `translate`/`scale`/`rotate` are Safari 14.1; five `transform`
+  // declarations over two settings pages, rewritten by hand in the
+  // adoptions (the rule has no fixer).
+  'cssicorn/prefer-individual-transform-properties': 'error',
+  'cssicorn/prefer-merged-rules': 'error',
+  // Off in cssicorn's own `recommended`. The motion preference is an
+  // accessibility floor, not a taste: a `transition` plays only inside
+  // `@media (prefers-reduced-motion: no-preference)` (Safari 10.1).
+  // Four transitions over the three settings pages, wrapped by hand in
+  // the adoptions.
+  'cssicorn/require-prefers-reduced-motion': 'error',
+}
+
 const cssBlock: ConfigWithExtends = {
   extends: [css.configs.recommended],
   files: ['**/*.css'],
@@ -510,6 +569,7 @@ const cssBlock: ConfigWithExtends = {
     // rejects the at-rule until the block allows it by name, the day a
     // page needs one; the descriptor check is live from that day.
     'cssicorn/require-property-descriptors': 'error',
+    ...cssicornZeroTwo,
     'unicorn/expiring-todo-comments': expiringTodoComments,
     'unicorn/no-empty-file': 'error',
     // The CSS twin of core `no-loss-of-precision` (the JSON block
