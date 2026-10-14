@@ -81,41 +81,28 @@ if [[ -z $project_key ]]; then
   pass 'no Sonar project is declared for this repo; nothing to gate'
 fi
 
-# Mirrors the upload condition of the test job. Kept as one expression
-# so the two cannot drift into a gate that vouches for an analysis
-# nobody uploaded, or that waves through one that exists.
-analysis_expected() {
-  case $event in
-  push) return 0 ;;
-  pull_request)
-    [[ $pr_author != "$bot" && $head_repo == "$this_repo" ]] && return 0
-    return 1
-    ;;
-  *) return 1 ;;
-  esac
-}
-
-# The accepted-without-analysis branch. Every clause states a fact this
+# The gate predicate, stated once: a push is analysed; a pull request is
+# analysed when it comes from a branch of this repository and a person
+# opened it — Dependabot's receive no analysis and are accepted on the
+# proof that every commit is Dependabot's, since it authors manifests and
+# pinned references rather than source. Every clause states a fact this
 # script checked; none of them is an assumption about who opened what.
-accept_unanalysed() {
-  [[ $event == pull_request ]] ||
-    fail "no analysis runs for a \`$event\` event and this gate has no rule for it; the bar was not verified"
+case $event in
+push) ;;
+pull_request)
   [[ $head_repo == "$this_repo" ]] ||
     fail "a pull request from the fork \`$head_repo\` receives no SONAR_TOKEN, so the bar cannot be verified here; land it from a branch of $this_repo"
-  [[ $pr_author == "$bot" ]] ||
-    fail "no analysis exists for this pull request and its author \`$pr_author\` is not $bot; the bar was not verified"
-
-  local author
-  while IFS= read -r author; do
-    [[ -n $author ]] || continue
-    [[ $author == "$bot" ]] ||
-      fail "commit authored by \`$author\` on a Dependabot branch: a change nobody analysed is exactly what this gate refuses, so move it to its own pull request"
-  done <<<"${COMMIT_AUTHORS-}"
-
-  pass "Dependabot pull request #$pr_number: every commit is $bot's, and $bot authors manifests and pinned references rather than source, so no analysable change went unread"
-}
-
-analysis_expected || accept_unanalysed
+  if [[ $pr_author == "$bot" ]]; then
+    while IFS= read -r author; do
+      [[ -n $author ]] || continue
+      [[ $author == "$bot" ]] ||
+        fail "commit authored by \`$author\` on a Dependabot branch: a change nobody analysed is exactly what this gate refuses, so move it to its own pull request"
+    done <<<"${COMMIT_AUTHORS-}"
+    pass "Dependabot pull request #$pr_number: every commit is $bot's, and $bot authors manifests and pinned references rather than source, so no analysable change went unread"
+  fi
+  ;;
+*) fail "no analysis runs for a \`$event\` event and this gate has no rule for it; the bar was not verified" ;;
+esac
 
 # The analysed path. The scan ran under this token and waited on the
 # gate, so reaching here means the bar was verified by the scanner

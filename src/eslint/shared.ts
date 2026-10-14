@@ -3,8 +3,8 @@
 // vocabularies) live in the presets; per-repo verdicts (documented
 // `'off'` ledgers, ignores) stay in each consumer's overlay.
 import type { Linter } from 'eslint'
+import type { Config, defineConfig } from 'eslint/config'
 import { recommended as commentsRecommended } from '@eslint-community/eslint-plugin-eslint-comments/configs'
-import { type Config, defineConfig } from 'eslint/config'
 import { flatConfigs as importXConfigs } from 'eslint-plugin-import-x'
 import { jsdoc } from 'eslint-plugin-jsdoc'
 import { configs as packageJsonConfigs } from 'eslint-plugin-package-json'
@@ -1229,11 +1229,10 @@ export const typedocKeyEntry: Readonly<Record<string, unknown>> = {
 // Root config files (`eslint.config.ts`, `vitest.config.ts`,
 // `typedoc.config.js`, …): the main table applies, with the departures
 // below.
-export const configTsBlock = (
-  files: string[],
-  naming: NamingConventionOptions,
-): Config => ({
-  files,
+export const configFileGlob = '*.config.{js,mjs,mts,ts}'
+
+export const configTsBlock = (naming: NamingConventionOptions): Config => ({
+  files: [configFileGlob],
   rules: {
     // The family naming policy restated — the preset's platform entries,
     // never a wire vocabulary (a config file speaks no wire) — plus the
@@ -1284,95 +1283,86 @@ export const configJsBlock: Config = {
   },
 }
 
-export const jsonBlock = (extraIgnores: readonly string[] = []): Config[] =>
-  defineConfig([
-    {
-      extends: [json.configs.recommended],
-      files: ['**/*.json'],
-      ignores: ['**/package-lock.json', '**/package.json', ...extraIgnores],
-      language: 'json/json',
-      // Unicorn is loaded for two of its JSON-capable rules, enumerated
-      // the way the Markdown block does: its `recommended-json` preset
-      // would re-open the asterisk-prefix conflict on a second language
-      // and demand kebab-case of Homey's `.homeycompose` ids
-      // (`filename-case`, 62 sites), external names that are not the
-      // family's to change (measured 2026-10-09).
-      plugins: { unicorn },
-      rules: {
-        'json/sort-keys': [
-          'error',
-          'asc',
-          { caseSensitive: true, natural: true },
-        ],
-        'json/top-level-interop': 'error',
-        // The JSON twin of core `no-loss-of-precision` (recommended, JS
-        // only): a numeric literal that does not survive binary64 is a
-        // silent value change, and manifest numbers parse into the same
-        // doubles. `json/no-unsafe-values` shares only the past-2^53
-        // integer surface; a decimal that loses digits is covered by
-        // nothing else. Zero sites over the family's JSON (2026-10-09);
-        // off in every unicorn 77 preset, so it is enabled here or
-        // nowhere.
-        'unicorn/no-loss-of-precision': 'error',
-        // The JSON twin of a verdict taken twice already — core
-        // `no-irregular-whitespace` with `skipStrings: false` and
-        // `yml/no-irregular-whitespace` with `skipQuotedScalars: false`:
-        // the raw invisible character is forbidden, its escaped spelling
-        // is byte-identical after the parse, and the fixer writes it.
-        // Not owned: @eslint/json 2.1 ships no whitespace rule. Two
-        // fixable sites family-wide, both com.melcloud (a U+202F in a
-        // French changelog string, a U+00A0 before `%` in a vendored
-        // capability; 2026-10-09); the app preset's `app.json` and
-        // `locales/*.json` ignores keep the locale strings out.
-        'unicorn/prefer-escaped-irregular-whitespace': 'error',
-      },
-    },
-  ])
-
-export const markdownBlock: Config[] = defineConfig([
-  {
-    extends: [markdown.configs.recommended],
-    files: ['**/*.md'],
-    language: 'markdown/gfm',
-    plugins: { unicorn },
-    rules: {
-      'markdown/fenced-code-meta': 'error',
-      'markdown/no-bare-urls': 'error',
-      'markdown/no-duplicate-headings': 'error',
-      'markdown/no-html': 'error',
-      'markdown/no-missing-atx-heading-space': [
-        'error',
-        { checkClosedHeadings: true },
-      ],
-      'markdown/no-missing-label-refs': [
-        'error',
-        {
-          allowLabels: ['!CAUTION', '!IMPORTANT', '!NOTE', '!TIP', '!WARNING'],
-        },
-      ],
-      'markdown/no-missing-link-fragments': ['error', { ignoreCase: false }],
-      'markdown/no-space-in-emphasis': ['error', { checkStrikethrough: true }],
-      'markdown/table-column-count': ['error', { checkMissingCells: true }],
-      'unicorn/expiring-todo-comments': expiringTodoComments,
-      'unicorn/no-empty-file': 'error',
-      // Not owned: `markdown/no-empty-links` (recommended) checks
-      // DESTINATIONS, this one the link TEXT — `[](url)`, a whitespace
-      // label, a badge image without `alt`. An accessibility guard at
-      // zero sites over the family's 45 Markdown files (2026-10-09);
-      // off in unicorn's `recommended`, on in its `recommended-markdown`,
-      // which this block does not extend (its `filename-case` would
-      // rename README.md and CHANGELOG.md, GitHub's conventional names).
-      'unicorn/no-empty-link-text': 'error',
-      // `javascript:` destinations in links, images, autolinks and
-      // reference definitions. Core `no-script-url` is JS-only, so
-      // nothing owns it, and the family's Markdown IS rendered with live
-      // links (GitHub; typedoc folds the README into the docs). Zero
-      // sites (2026-10-09); off in every unicorn 77 preset.
-      'unicorn/no-javascript-url': 'error',
-      'unicorn/no-missing-local-resource': 'error',
-    },
+export const jsonBlock = (
+  extraIgnores: readonly string[] = [],
+): ConfigWithExtends => ({
+  extends: [json.configs.recommended],
+  files: ['**/*.json'],
+  ignores: ['**/package-lock.json', '**/package.json', ...extraIgnores],
+  language: 'json/json',
+  // Unicorn is loaded for two of its JSON-capable rules, enumerated
+  // the way the Markdown block does: its `recommended-json` preset
+  // would re-open the asterisk-prefix conflict on a second language
+  // and demand kebab-case of Homey's `.homeycompose` ids
+  // (`filename-case`, 62 sites), external names that are not the
+  // family's to change (measured 2026-10-09).
+  plugins: { unicorn },
+  rules: {
+    'json/sort-keys': ['error', 'asc', { caseSensitive: true, natural: true }],
+    'json/top-level-interop': 'error',
+    // The JSON twin of core `no-loss-of-precision` (recommended, JS
+    // only): a numeric literal that does not survive binary64 is a
+    // silent value change, and manifest numbers parse into the same
+    // doubles. `json/no-unsafe-values` shares only the past-2^53
+    // integer surface; a decimal that loses digits is covered by
+    // nothing else. Zero sites over the family's JSON (2026-10-09);
+    // off in every unicorn 77 preset, so it is enabled here or
+    // nowhere.
+    'unicorn/no-loss-of-precision': 'error',
+    // The JSON twin of a verdict taken twice already — core
+    // `no-irregular-whitespace` with `skipStrings: false` and
+    // `yml/no-irregular-whitespace` with `skipQuotedScalars: false`:
+    // the raw invisible character is forbidden, its escaped spelling
+    // is byte-identical after the parse, and the fixer writes it.
+    // Not owned: @eslint/json 2.1 ships no whitespace rule. Two
+    // fixable sites family-wide, both com.melcloud (a U+202F in a
+    // French changelog string, a U+00A0 before `%` in a vendored
+    // capability; 2026-10-09); the app preset's `app.json` and
+    // `locales/*.json` ignores keep the locale strings out.
+    'unicorn/prefer-escaped-irregular-whitespace': 'error',
   },
-])
+})
+
+export const markdownBlock: ConfigWithExtends = {
+  extends: [markdown.configs.recommended],
+  files: ['**/*.md'],
+  language: 'markdown/gfm',
+  plugins: { unicorn },
+  rules: {
+    'markdown/fenced-code-meta': 'error',
+    'markdown/no-bare-urls': 'error',
+    'markdown/no-duplicate-headings': 'error',
+    'markdown/no-html': 'error',
+    'markdown/no-missing-atx-heading-space': [
+      'error',
+      { checkClosedHeadings: true },
+    ],
+    'markdown/no-missing-label-refs': [
+      'error',
+      { allowLabels: ['!CAUTION', '!IMPORTANT', '!NOTE', '!TIP', '!WARNING'] },
+    ],
+    'markdown/no-missing-link-fragments': ['error', { ignoreCase: false }],
+    'markdown/no-space-in-emphasis': ['error', { checkStrikethrough: true }],
+    'markdown/table-column-count': ['error', { checkMissingCells: true }],
+    'unicorn/expiring-todo-comments': expiringTodoComments,
+    'unicorn/no-empty-file': 'error',
+    // Not owned: `markdown/no-empty-links` (recommended) checks
+    // DESTINATIONS, this one the link TEXT — `[](url)`, a whitespace
+    // label, a badge image without `alt`. An accessibility guard at
+    // zero sites over the family's 45 Markdown files (2026-10-09);
+    // off in unicorn's `recommended`, on in its `recommended-markdown`,
+    // which this block does not extend (its `filename-case` would
+    // rename README.md and CHANGELOG.md, GitHub's conventional names).
+    'unicorn/no-empty-link-text': 'error',
+    // `javascript:` destinations in links, images, autolinks and
+    // reference definitions. Core `no-script-url` is JS-only, so
+    // nothing owns it, and the family's Markdown IS rendered with live
+    // links (GitHub; typedoc folds the README into the docs). Zero
+    // sites (2026-10-09); off in every unicorn 77 preset.
+    'unicorn/no-javascript-url': 'error',
+    'unicorn/no-missing-local-resource': 'error',
+  },
+}
 
 // Release sections repeat their own headings by design.
 export const changelogBlock: Config = {
@@ -1509,18 +1499,15 @@ const sharedTestRules: NonNullable<Config['rules']> = {
 // which an empty table would be right.
 export const testsBlock = (
   extraRules: NonNullable<Config['rules']>,
-): Config[] =>
-  defineConfig([
-    {
-      extends: [vitest.configs.recommended],
-      files: ['tests/**/*.ts'],
-      rules: { ...sharedTestRules, ...extraRules },
-      settings: { vitest: { typecheck: true } },
-    },
-  ])
+): ConfigWithExtends => ({
+  extends: [vitest.configs.recommended],
+  files: ['tests/**/*.ts'],
+  rules: { ...sharedTestRules, ...extraRules },
+  settings: { vitest: { typecheck: true } },
+})
 
-// The YAML table minus the one entry that takes a family parameter (the
-// step-key order of `yml/sort-keys`). The block runs on ESLint's
+// The YAML table minus the `yml/sort-keys` entry, which the block adds
+// with the family's step-key order. The block runs on ESLint's
 // language API, not a parser: `ymlConfigs.standard` carries
 // `language: 'yml/yaml'` since eslint-plugin-yml 3.0.0 (print-config on
 // a workflow resolves `language: yml/yaml` and a `languageOptions`
@@ -1601,33 +1588,51 @@ const staticYamlRules: NonNullable<Config['rules']> = {
   ],
 }
 
-export const yamlBlock = (stepKeyOrder: readonly string[]): Config[] =>
-  defineConfig([
-    {
-      // `files` keeps the `yml/*` rules off every non-YAML file.
-      extends: [
-        ymlConfigs.standard,
-        ymlConfigs.prettier,
-        unicorn.configs['recommended-yaml'],
-      ],
-      files: ['**/*.{yaml,yml}'],
-      plugins: { unicorn },
-      rules: {
-        ...staticYamlRules,
-        'yml/sort-keys': [
-          'error',
-          {
-            order: { caseSensitive: true, natural: true, type: 'asc' },
-            pathPattern: String.raw`^(?!jobs\.\w+\.steps\[\d+\]).*$`,
-          },
-          {
-            order: [...stepKeyOrder],
-            pathPattern: String.raw`^jobs\.\w+\.steps\[\d+\]$`,
-          },
-        ],
+// The one step-key order of the family: the app presets used to pass a
+// seven-key subsequence of this list, and `yml/sort-keys` with an array
+// `order` leaves keys absent from the list unpoliced, so on every
+// workflow the family lints the two lists reported the same (measured
+// 2026-10-14: no app step carries `continue-on-error`, `timeout-minutes`,
+// `shell` or `working-directory`). One list, and an app step that one
+// day carries one of the four is positioned instead of ignored.
+const stepKeyOrder = [
+  'id',
+  'name',
+  'if',
+  'continue-on-error',
+  'timeout-minutes',
+  'uses',
+  'with',
+  'env',
+  'shell',
+  'working-directory',
+  'run',
+]
+
+export const yamlBlock: ConfigWithExtends = {
+  // `files` keeps the `yml/*` rules off every non-YAML file.
+  extends: [
+    ymlConfigs.standard,
+    ymlConfigs.prettier,
+    unicorn.configs['recommended-yaml'],
+  ],
+  files: ['**/*.{yaml,yml}'],
+  plugins: { unicorn },
+  rules: {
+    ...staticYamlRules,
+    'yml/sort-keys': [
+      'error',
+      {
+        order: { caseSensitive: true, natural: true, type: 'asc' },
+        pathPattern: String.raw`^(?!jobs\.\w+\.steps\[\d+\]).*$`,
       },
-    },
-  ])
+      {
+        order: [...stepKeyOrder],
+        pathPattern: String.raw`^jobs\.\w+\.steps\[\d+\]$`,
+      },
+    ],
+  },
+}
 
 const sharedPackageJsonRules: NonNullable<Config['rules']> = {
   // Guards the runtime pins — api-core, homey-kit, melcloud-api,
@@ -1699,11 +1704,8 @@ const sharedPackageJsonRules: NonNullable<Config['rules']> = {
 
 export const packageJsonBlock = (
   familyRules: NonNullable<Config['rules']>,
-): Config[] =>
-  defineConfig([
-    {
-      extends: [packageJsonConfigs.recommended, packageJsonConfigs.stylistic],
-      files: ['**/package.json'],
-      rules: { ...sharedPackageJsonRules, ...familyRules },
-    },
-  ])
+): ConfigWithExtends => ({
+  extends: [packageJsonConfigs.recommended, packageJsonConfigs.stylistic],
+  files: ['**/package.json'],
+  rules: { ...sharedPackageJsonRules, ...familyRules },
+})

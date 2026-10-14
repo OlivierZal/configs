@@ -780,7 +780,16 @@ sites on the five live pages (`consistent-compound-words`,
 `no-ineffective-csp-directives`, `no-invalid-integrity`, `prefer-https`,
 `relative-url-style`), and `no-missing-local-resource` is a scoped
 ledger row (domain: the `index.js` each page references is esbuild's
-output, absent from the tree — 5 sites, all of them that). The YAML block
+output, absent from the tree — 5 sites, all of them that). The 2026-10-14
+simplification wave then flattened the preset fragments: every block is a
+plain `ConfigWithExtends` object the preset's one `defineConfig([...])`
+resolves (the inner `defineConfig([{ … }])` wrappers added a level the
+outer call redid, and the `name` labels they generated are read by no
+lint result), the two main blocks take `naming` and inline their
+`sharedMainRules` options, `configTsBlock` reads the one `configFileGlob`
+the `devDependencies` lists spell too, and `yamlBlock` is a constant with
+the family's single eleven-key step order (the apps' seven-key list was a
+subsequence that policed nothing differently on their corpus). The YAML block
 was never parser-based, whatever this reading's brief assumed:
 `ymlConfigs.standard` has carried `language: 'yml/yaml'` since
 eslint-plugin-yml 3.0.0, and yml 3.9 itself is types-only (#675,
