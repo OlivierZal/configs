@@ -111,7 +111,21 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
     class: 'domain',
     files: CSS_FILES,
     reason: CSS_NESTING,
+    rule: 'cssicorn/no-redundant-nesting-selector',
+  },
+  {
+    class: 'domain',
+    files: CSS_FILES,
+    reason: CSS_NESTING,
     rule: 'cssicorn/no-unscoped-nesting-selector',
+  },
+  {
+    class: 'owned',
+    files: CSS_FILES,
+    owner: 'css/use-baseline',
+    reason:
+      'Mutually exclusive twin at the floor knob: `light-dark()` is Safari 17.5 (Baseline 2024), above the iOS 16.4 WebKit floor, so `css/use-baseline` at `available: 2022` reports the very function this rule would introduce for every paired light/dark colour declaration.',
+    rule: 'cssicorn/prefer-light-dark',
   },
   {
     class: 'owned',
@@ -120,6 +134,27 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
     reason:
       "Mutually exclusive twin at the floor knob: `css/use-baseline` at `available: 2022` reports the range syntax (Baseline 2023, Safari 16.4) this rule would demand on every `@media`, so adopting it would argue with the block the day one appears; no `@media` exists in the twelve app stylesheets (0 sites with eslint-cssicorn 0.1.0, 2026-10-09). Re-enters with the year, or by an exact-name allowance the block's own comment provides for. Refused in prose on 2026-09-17 under its unicorn 75 id.",
     rule: 'cssicorn/prefer-media-feature-range-syntax',
+  },
+  {
+    class: 'domain',
+    files: CSS_FILES,
+    reason: CSS_NESTING,
+    rule: 'cssicorn/prefer-nesting',
+  },
+  {
+    class: 'owned',
+    files: CSS_FILES,
+    owner: 'css/use-baseline',
+    reason:
+      'Mutually exclusive twin at the floor knob: the relative colour syntax (`rgb(from …)`) is Baseline 2024 — Safari 16.4 shipped it, Chrome 119 dated it — so `css/use-baseline` at `available: 2022` reports the output this rule would write for every alpha variant of a colour custom property.',
+    rule: 'cssicorn/prefer-relative-colors',
+  },
+  {
+    class: 'domain',
+    files: CSS_FILES,
+    reason:
+      "A Homey settings page or widget page owns its whole document and ships one stylesheet: there is no shared page a selector could leak into, so a positive scoping boundary on every selector would prefix the twelve app stylesheets (24 sites, 2026-10-14) for a collision that cannot happen. Off in cssicorn's own `recommended` for the same reason.",
+    rule: 'cssicorn/require-selector-scope',
   },
   {
     class: 'redundant',
@@ -248,6 +283,12 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
     reason:
       'House comments wrap prose at print width; the rule reads those wraps as unfinished sentences and its fixer JOINS the group into one `//` line without reflowing it (verified in the rule source, 2026-09-27) — not noise but the destruction of the convention, on every `--fix` run.',
     rule: 'unicorn/no-manually-wrapped-comments',
+  },
+  {
+    class: 'conflicting',
+    reason:
+      "House convention: a test states the values of the scenario it exercises, defaults included — a fixture's default moving must not silently change what a test checks. Measured 2026-10-14 over the eight repositories with unicorn 78: 69 sites, every one in a test (`classicBuildingData({ ID: 1 })`, `mockHttpResponse(data, {}, 200)`…), zero in a source. Off in unicorn's own `recommended` for the author's version of the same reason: explicit arguments preserve behaviour when an API's defaults change.",
+    rule: 'unicorn/no-unnecessary-default-arguments',
   },
   {
     class: 'domain',

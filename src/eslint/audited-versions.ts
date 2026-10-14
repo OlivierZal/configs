@@ -19,7 +19,10 @@
  * package-json 1.9, html-eslint 0.66; 2026-09-29: typescript-eslint 8.71,
  * jsdoc 65; 2026-10-09: eslint 10.12, unicorn 77 with eslint-cssicorn 0.1
  * — the CSS half unicorn moved out — perfectionist 5.12, package-json
- * 1.10, jsdoc 65.2, yml 3.9).
+ * 1.10, jsdoc 65.2, yml 3.9; 2026-10-14: unicorn 78, eslint-cssicorn
+ * 0.2, jsdoc 65.3 — measured with a pack of this package installed in
+ * the seven consumers, and a probe config extending each repository's
+ * own for the rules no preset turns on).
  */
 export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@eslint/css': '2.0',
@@ -31,14 +34,14 @@ export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@stylistic/eslint-plugin': '5.10',
   '@vitest/eslint-plugin': '1.6',
   eslint: '10.12',
-  'eslint-cssicorn': '0.1',
+  'eslint-cssicorn': '0.2',
   'eslint-plugin-es-x': '10.0',
   'eslint-plugin-import-x': '4.17',
-  'eslint-plugin-jsdoc': '65.2',
+  'eslint-plugin-jsdoc': '65.3',
   'eslint-plugin-package-json': '1.10',
   'eslint-plugin-perfectionist': '5.12',
   'eslint-plugin-regexp': '3.3',
-  'eslint-plugin-unicorn': '77.0',
+  'eslint-plugin-unicorn': '78.0',
   'eslint-plugin-yml': '3.9',
   'typescript-eslint': '8.71',
 }
