@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest'
 import { homeyApp } from '../../src/eslint/homey-app.ts'
 import { library } from '../../src/eslint/library.ts'
 import { jsdocBlock, mainLanguageOptions } from '../../src/eslint/shared.ts'
-import { asRecord } from '../helpers.ts'
+import { asArray, asRecord } from '../helpers.ts'
 
 const appPreset = homeyApp({
   bundledSourceGlobs: ['settings/**'],
@@ -453,6 +453,34 @@ describe('the HTML block and unicorn 77', () => {
 // 7.0.0, for the reason `no-alert` is there: homey-kit's webview sources
 // compile under `lib: DOM` in a library-preset repo. The one that has
 // only JSX and HTML visitors stays in the HTML block.
+// The two ternary rules split one policy by syntactic domain —
+// `prefer-ternary` turns `if`/`else` statements into ternaries,
+// `prefer-minimal-ternary` moves existing ternaries into their varying
+// part — and the author gives their shape options the same meaning. The
+// table states the options once; this pins both rules to that one object,
+// so a drift (an `if`/`else` allowed to keep a shape its ternary twin
+// would be reduced to) fails here rather than in a consumer's review.
+describe.each(presets)(
+  'the ternary shape policy via $presetName',
+  ({ preset }) => {
+    it('should give both ternary rules the same shape options', () => {
+      const rules = mainRulesOf(preset)
+      const [, minimalShape] = asArray(
+        rules['unicorn/prefer-minimal-ternary'],
+        'unicorn/prefer-minimal-ternary',
+      )
+      const [, mode, ternaryShape] = asArray(
+        rules['unicorn/prefer-ternary'],
+        'unicorn/prefer-ternary',
+      )
+
+      expect(mode).toBe('always')
+      expect(ternaryShape).toStrictEqual(minimalShape)
+      expect(minimalShape).toStrictEqual({ checkVaryingBase: true })
+    })
+  },
+)
+
 describe.each(presets)('the DOM rules via $presetName', ({ preset }) => {
   it('should carry the DOM rules in the main table', () => {
     const rules = mainRulesOf(preset)

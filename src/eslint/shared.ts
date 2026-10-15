@@ -76,6 +76,20 @@ export const mainExtends: NonNullable<ConfigWithExtends['extends']> = [
   prettier,
 ]
 
+// The one "single varying part" policy of the two ternary rules.
+// `prefer-ternary` (statements) and `prefer-minimal-ternary` (expressions)
+// use the same shallow matching, and their shape options carry the same
+// meaning by the author's doc — so the family states them ONCE and a
+// test pins both rules to this object. `checkVaryingBase`: an `if`/`else`
+// or ternary whose branches differ only by the callee or the base
+// becomes `(test ? a : b)(value)` / `(test ? a : b).foo`.
+// `checkComputedMemberAccess` stays off on both: `object[test ? 'a' :
+// 'b']` puts member names in strings, out of reach of rename and
+// find-references.
+const ternaryShapeOptions: { readonly checkVaryingBase: boolean } = {
+  checkVaryingBase: true,
+}
+
 // `eslint-plugin-unicorn` 74 ships its comment-expiry rule hollow:
 // `checkDates` and `allowWarningComments` default to false/true, so a
 // dated warning comment never expired and an undated one was never a
@@ -1130,8 +1144,8 @@ const staticMainRules: NonNullable<Config['rules']> = {
   'unicorn/prefer-global-number-constants': 'off',
   'unicorn/prefer-import-meta-properties': 'error',
   // Stricter than the v72 default: varying-base member accesses stay
-  // reported so the shared shape is factored out.
-  'unicorn/prefer-minimal-ternary': ['error', { checkVaryingBase: true }],
+  // reported so the shared shape is factored out (`ternaryShapeOptions`).
+  'unicorn/prefer-minimal-ternary': ['error', ternaryShapeOptions],
   // Stricter than the v72 default (see `prefer-global-number-constants`
   // above).
   'unicorn/prefer-number-properties': ['error', { checkNaN: true }],
@@ -1139,14 +1153,10 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // Owned by `@typescript-eslint/prefer-string-starts-ends-with`.
   'unicorn/prefer-string-starts-ends-with': 'off',
   'unicorn/prefer-temporal': 'error',
-  // The statement-side twin of the setting above (unicorn 78 added the
-  // option): an `if`/`else` whose branches differ only by the callee or
-  // the base becomes `(test ? a : b)(value)`, the shape
-  // `prefer-minimal-ternary` already gives the family's ternaries.
-  // `checkComputedMemberAccess` stays off on both rules: `object[test ?
-  // 'a' : 'b']` puts member names in strings, out of reach of rename and
-  // find-references.
-  'unicorn/prefer-ternary': ['error', 'always', { checkVaryingBase: true }],
+  // The statement-side twin of `prefer-minimal-ternary` (unicorn 78 added
+  // the option): the same shape policy, stated once in
+  // `ternaryShapeOptions`, so the two rules cannot drift apart.
+  'unicorn/prefer-ternary': ['error', 'always', ternaryShapeOptions],
   // Same move as `no-unsafe-dom-html`. Caveat recorded: the rule flags
   // ANY one-argument `.postMessage(x)` regardless of receiver, so a
   // future `MessagePort`, `BroadcastChannel` or `worker_threads` post in
