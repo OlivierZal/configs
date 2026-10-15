@@ -792,6 +792,14 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // surface in a Homey webview; the platform's dialogs are.
   'no-alert': 'error',
   'no-await-in-loop': 'error',
+  // A typo guard, not a ban: `&` for `&&`, `|` for `||`, on operators
+  // JavaScript rarely needs — and one TypeScript only half covers (`a & b`
+  // on booleans is a `number` the compiler refuses in an assignment but
+  // accepts in an `if`). Where a bitfield IS the domain (melcloud-api's
+  // `EffectiveFlags`), the practice is confinement, not an `allow`: the
+  // two operations live in one named module (`classic-flag-bits.ts`),
+  // its call sites read `hasFlag(...)`, and the guard still covers every
+  // other line (verdict 2026-10-15, the family's directive audit).
   'no-bitwise': 'error',
   // `arguments.callee`/`.caller` throw under ESM strict mode and
   // TypeScript declares them; `prefer-rest-params` skips non-computed
@@ -861,6 +869,13 @@ const staticMainRules: NonNullable<Config['rules']> = {
   'no-script-url': 'error',
   'no-self-compare': 'error',
   'no-sequences': ['error', { allowInParentheses: false }],
+  // Not stylistic: `'${x}'` in a quoted string is a forgotten backtick,
+  // a bug that is silent at runtime. Its one false positive is a string
+  // that quotes a template on purpose, and the family has no disable-free
+  // spelling for it — `@stylistic/quotes` runs with `allowTemplateLiterals:
+  // 'never'`, so the escaped-hole template literal is written straight
+  // back to the quoted form; two homey-kit test sites carry the honest
+  // directive (verdict 2026-10-15).
   'no-template-curly-in-string': 'error',
   // `checkConditionalExpressions`: each operand of a `?:` inside a loop
   // condition is checked on its own, not the ternary as one group.
