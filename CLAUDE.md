@@ -927,7 +927,13 @@ take that shape, and an `if`/`else` with a varying callee was the one
 form escaping it. The option is on; `checkComputedMemberAccess` stays
 off on both rules for a tooling reason, not a taste — member names in
 strings escape rename and find-references. Measured before adopting:
-`no-unnecessary-default-arguments` at zero source sites over the eight repositories; `checkVaryingBase` at one, heatzy-api's binding loop, whose `if`/`else` pushed to one of two typed arrays — the fixer's `(test ? dropped : bindings).push(entry)` does not type-check (TypeScript resolves a call on a union of array types against the intersection of their element types), so the loop became two typed `filter` passes in the adoption.
+`no-unnecessary-default-arguments` at zero source sites over the eight
+repositories; `checkVaryingBase` at one, heatzy-api's binding loop,
+whose `if`/`else` pushed to one of two typed arrays — the fixer's `(test
+? dropped : bindings).push(entry)` does not type-check (TypeScript
+resolves a call on a union of array types against the intersection of
+their element types), so the loop became two typed `filter` passes in
+the adoption.
 
 Maintenance is a gate — an unmaintained plugin is refused regardless of
 coverage — and the claim is scoped to what was measured: the three
