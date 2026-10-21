@@ -185,6 +185,9 @@ describe('against a stand-in SonarCloud', () => {
     ...overrides,
   })
 
+  // One builder per scope, for the tables that name theirs.
+  const analysed = { branch: analysedPush, pullRequest: analysedPullRequest }
+
   // The analysed path asks two things: did the scan get the token it
   // needed to run at all (an absent token is the one way the upload
   // silently skips), and does the analysis it published meet the bar.
@@ -238,31 +241,42 @@ describe('against a stand-in SonarCloud', () => {
   // the platform's built-in gate is the Free plan's floor, so the
   // thresholds the `Olivierzal way` gate used to hold are enforced here.
   describe('the house bar', () => {
-    // A pull request answers for the code it introduces: the overall
-    // window is the branch's business.
-    it('holds a pull request to its new code only', () => {
-      const { output, status } = run(analysedPullRequest('short-violations'))
+    // A pull request answers for the code it introduces, the overall
+    // window is the branch's business — and the stand-in answers each
+    // scope with its own figures (`scoped`: the pull request meets the
+    // bar, the branch does not), so the verdict says which one the
+    // script read.
+    it.each([
+      {
+        absent: 'violations=3',
+        expected: 'house bar holds on pull request #7',
+        project: 'short-violations',
+        scope: 'pullRequest' as const,
+        status: 0,
+        what: 'holds a pull request to its new code only',
+      },
+      {
+        absent: 'violations=3',
+        expected: 'house bar holds on pull request #7',
+        project: 'scoped',
+        scope: 'pullRequest' as const,
+        status: 0,
+        what: 'reads the pull request scope for a pull request',
+      },
+      {
+        absent: 'house bar holds',
+        expected: 'violations is 3, the bar is at most 0',
+        project: 'scoped',
+        scope: 'branch' as const,
+        status: 1,
+        what: 'reads the branch scope for a push',
+      },
+    ])('$what', ({ absent, expected, project, scope, status }) => {
+      const result = run(analysed[scope](project))
 
-      expect(status).toBe(0)
-      expect(output).toContain('house bar holds on pull request #7')
-      expect(output).not.toContain('violations=3')
-    })
-
-    // The stand-in answers each scope with its own figures: the pull
-    // request meets the bar, the branch does not, so the verdict says
-    // which one the script read.
-    it('reads the pull request scope for a pull request', () => {
-      const { output, status } = run(analysedPullRequest('scoped'))
-
-      expect(status).toBe(0)
-      expect(output).toContain('house bar holds on pull request #7')
-    })
-
-    it('reads the branch scope for a push', () => {
-      const { output, status } = run(analysedPush('scoped'))
-
-      expect(status).toBe(1)
-      expect(output).toContain('violations is 3, the bar is at most 0')
+      expect(result.status).toBe(status)
+      expect(result.output).toContain(expected)
+      expect(result.output).not.toContain(absent)
     })
 
     it.each(metricsOf('new'))(
@@ -289,31 +303,41 @@ describe('against a stand-in SonarCloud', () => {
       },
     )
 
-    // A documentation-only change carries no line-derived figure: a
-    // measure with no subject, not a measure that failed.
-    it('lets an empty window through', () => {
-      const { output, status } = run(analysedPullRequest('empty-window'))
+    // One pull request, one verdict: an empty window (a documentation-
+    // only change carries no line-derived figure) and the singular
+    // `period` shape (SonarQube Server's, where SonarCloud uses
+    // `periods`) both pass; a measure in a shape the read does not know
+    // and an analysis nobody published both fail.
+    it.each([
+      {
+        expected: 'new_coverage: no measure (empty window)',
+        project: 'empty-window',
+        status: 0,
+        what: 'lets an empty window through',
+      },
+      {
+        expected: 'new_coverage=100.0',
+        project: 'period-shape',
+        status: 0,
+        what: 'reads a new-code value under the singular period shape',
+      },
+      {
+        expected: 'a shape this read does not know',
+        project: 'bare',
+        status: 1,
+        what: 'refuses a measure in a shape it does not know',
+      },
+      {
+        expected: 'no analysis of pull request #7 is published',
+        project: 'unlisted',
+        status: 1,
+        what: 'refuses a pull request nobody analysed',
+      },
+    ])('$what', ({ expected, project, status }) => {
+      const result = run(analysedPullRequest(project))
 
-      expect(status).toBe(0)
-      expect(output).toContain('new_coverage: no measure (empty window)')
-    })
-
-    // SonarQube Server carries a new-code value under `period` where
-    // SonarCloud uses `periods`: both read. An entry with neither is a
-    // shape this read does not know, and must fail rather than pass as
-    // an empty window.
-    it('reads a new-code value under the singular period shape', () => {
-      const { output, status } = run(analysedPullRequest('period-shape'))
-
-      expect(status).toBe(0)
-      expect(output).toContain('new_coverage=100.0')
-    })
-
-    it('refuses a measure in a shape it does not know', () => {
-      const { output, status } = run(analysedPullRequest('bare'))
-
-      expect(status).toBe(1)
-      expect(output).toContain('a shape this read does not know')
+      expect(result.status).toBe(status)
+      expect(result.output).toContain(expected)
     })
 
     // A sibling run on the same branch may have published since the leg
@@ -327,13 +351,6 @@ describe('against a stand-in SonarCloud', () => {
       expect(status).toBe(1)
       expect(output).toContain(ANALYSED_SHA)
       expect(output).toContain('re-run the workflow')
-    })
-
-    it('refuses a pull request nobody analysed', () => {
-      const { output, status } = run(analysedPullRequest('unlisted'))
-
-      expect(status).toBe(1)
-      expect(output).toContain('no analysis of pull request #7 is published')
     })
 
     // An outage — a 5xx, or the platform's documented rate limit — gets
