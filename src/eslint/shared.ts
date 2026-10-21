@@ -1154,8 +1154,9 @@ const staticMainRules: NonNullable<Config['rules']> = {
   ],
   'unicorn/prefer-dispose': 'error',
   // Mutually exclusive twin of `prefer-number-properties`' `checkNaN`:
-  // the family picks `Number.NaN` (SonarCloud S7773 is a required gate,
-  // and it pairs with the mandated `Number.isNaN`).
+  // the family picks `Number.NaN` (SonarCloud S7773 counts against the
+  // house bar's zero issues, and it pairs with the mandated
+  // `Number.isNaN`).
   'unicorn/prefer-global-number-constants': 'off',
   'unicorn/prefer-import-meta-properties': 'error',
   // Stricter than the v72 default: varying-base member accesses stay

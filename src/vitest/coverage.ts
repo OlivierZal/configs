@@ -1,6 +1,6 @@
 // The family coverage bar every vitest repo used to restate by hand:
 // `text` for the CI log, `lcov` for the Sonar upload, and 100% on all
-// four axes — the same bar the `Olivierzal way` quality gate holds.
+// four axes — the same bar `check-sonar-gate.sh` holds on the analysis.
 // Spread it into `test.coverage`; the `include`/`exclude` globs beside
 // it stay per-repo identity, never here.
 import type { CoverageOptions } from 'vitest/node'

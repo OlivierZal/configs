@@ -284,18 +284,24 @@ the list updates its ruleset in the same move.
 
 The house bar — zero issues, every security hotspot reviewed, zero
 duplication and full coverage, on both the new-code and the overall
-window — is stated once in the `Olivierzal way` quality gate, the
-organisation default. The scan step waits on it
-(`-Dsonar.qualitygate.wait=true`), so a violation fails the coverage leg
-itself and no CI code restates or re-reads the bar. Which window applies
-is SonarCloud's own split: a pull request analysis is held to the
-new-code conditions and a branch to both, which lands exactly where the
-house reasoning did — a pull request answers for the code it introduces,
-while an analyser update raising issues on untouched code surfaces on
-the default branch without blocking a review that did not cause it.
+window — is stated once, in `scripts/check-sonar-gate.sh`, and held by
+the `Sonar` job on the analysis the coverage leg uploaded. The scan step
+waits on the platform's built-in `Sonar way` gate
+(`-Dsonar.qualitygate.wait=true`), the Free plan's floor: a floor
+violation fails the coverage leg itself, and the wait is what leaves the
+analysis published when the job reads its measures back and rejects on
+the house thresholds. The read is tied to the commit: the published
+analysis of the pull request or branch must be of the run's own commit,
+or the job fails and asks for a re-run. The window mirrors SonarCloud's
+own split: a pull request is held to the new-code conditions and a
+branch to both, which lands exactly where the house reasoning did — a
+pull request answers for the code it introduces, while an analyser
+update raising issues on untouched code surfaces on the default branch
+without blocking a review that did not cause it. An absent measure is an
+empty window, not an unverified one, and rejects nothing.
 
-The `Sonar` job reports the one thing a waiting scanner cannot: a scan
-that never ran, whose skipped step fails nothing. It accepts exactly two
+The `Sonar` job also reports the one thing a waiting scanner cannot: a
+scan that never ran, whose skipped step fails nothing. It accepts exactly two
 silences, each verified rather than assumed — a repo that declared
 neither project nor token has opted out in writing, and a Dependabot
 pull request, which SonarCloud never analyses because such workflows
