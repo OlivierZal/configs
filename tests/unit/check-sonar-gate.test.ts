@@ -318,59 +318,58 @@ describe('against a stand-in SonarCloud', () => {
       expect(output).toContain('no analysis of pull request #7 is published')
     })
 
-    it(
-      'retries a transient platform failure',
-      () => {
-        const { output, status } = run(analysedPush('flaky'))
+    // An outage — a 5xx, or the platform's documented rate limit — gets
+    // three attempts: one that clears recovers, one that lasts reports.
+    it.each([
+      {
+        expected: 'house bar holds',
+        project: 'flaky',
+        status: 0,
+        what: 'retries a transient platform failure',
+      },
+      {
+        expected: 'house bar holds',
+        project: 'rate-limited',
+        status: 0,
+        what: 'retries a rate-limited read',
+      },
+      {
+        expected: 'HTTP 503 after 3 attempts',
+        project: 'down',
+        status: 1,
+        what: 'gives up on an outage after three attempts',
+      },
+    ])(
+      '$what',
+      ({ expected, project, status }) => {
+        const result = run(analysedPush(project))
 
-        expect(status).toBe(0)
-        expect(output).toContain('house bar holds')
+        expect(result.status).toBe(status)
+        expect(result.output).toContain(expected)
       },
       RETRY_TIMEOUT_MS,
     )
 
-    it(
-      'gives up on an outage after three attempts',
-      () => {
-        const { output, status } = run(analysedPush('down'))
-
-        expect(status).toBe(1)
-        expect(output).toContain('HTTP 503 after 3 attempts')
+    // A 4xx is a verdict on the request, not an outage: no retry. The
+    // refused token is the negative of the token test above.
+    it.each([
+      {
+        expected: 'project_branches/list: HTTP 401',
+        overrides: { SONAR_TOKEN: 'wrong' },
+        project: 'authenticated',
+        what: 'a refused token',
       },
-      RETRY_TIMEOUT_MS,
-    )
-
-    // The negative of the token test: a refused token is a verdict on
-    // the request, not an outage.
-    it('treats a refused token as a verdict, not an outage', () => {
-      const { output, status } = run(
-        analysedPush('authenticated', { SONAR_TOKEN: 'wrong' }),
-      )
+      {
+        expected: 'HTTP 403',
+        overrides: {},
+        project: 'forbidden',
+        what: 'a refused request',
+      },
+    ])('fails at once on $what', ({ expected, overrides, project }) => {
+      const { output, status } = run(analysedPush(project, overrides))
 
       expect(status).toBe(1)
-      expect(output).toContain('project_branches/list: HTTP 401')
-      expect(output).not.toContain('attempts')
-    })
-
-    // The platform's documented rate limit is an outage, not a verdict:
-    // it gets the same attempts a 5xx does.
-    it(
-      'retries a rate-limited read',
-      () => {
-        const { output, status } = run(analysedPush('rate-limited'))
-
-        expect(status).toBe(0)
-        expect(output).toContain('house bar holds')
-      },
-      RETRY_TIMEOUT_MS,
-    )
-
-    // A 4xx is a verdict on the request, not an outage: no retry.
-    it('fails at once on a refused request', () => {
-      const { output, status } = run(analysedPush('forbidden'))
-
-      expect(status).toBe(1)
-      expect(output).toContain('HTTP 403')
+      expect(output).toContain(expected)
       expect(output).not.toContain('attempts')
     })
 
