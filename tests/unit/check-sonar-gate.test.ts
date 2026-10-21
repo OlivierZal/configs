@@ -298,6 +298,24 @@ describe('against a stand-in SonarCloud', () => {
       expect(output).toContain('new_coverage: no measure (empty window)')
     })
 
+    // SonarQube Server carries a new-code value under `period` where
+    // SonarCloud uses `periods`: both read. An entry with neither is a
+    // shape this read does not know, and must fail rather than pass as
+    // an empty window.
+    it('reads a new-code value under the singular period shape', () => {
+      const { output, status } = run(analysedPullRequest('period-shape'))
+
+      expect(status).toBe(0)
+      expect(output).toContain('new_coverage=100.0')
+    })
+
+    it('refuses a measure in a shape it does not know', () => {
+      const { output, status } = run(analysedPullRequest('bare'))
+
+      expect(status).toBe(1)
+      expect(output).toContain('a shape this read does not know')
+    })
+
     // A sibling run on the same branch may have published since the leg
     // uploaded: the measures must be this commit's or the verdict is
     // another run's.

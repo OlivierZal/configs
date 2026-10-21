@@ -14,6 +14,10 @@ export interface Scenario {
   // Fires once per stub lifetime: the stand-in counts the outage down
   // and never re-arms it, so a scenario with an outage serves one run.
   readonly failuresFirst?: number
+  // How a new-code measure carries its value: SonarCloud's `periods`
+  // array (the default), SonarQube Server's `period` object, or a
+  // `bare` entry with no value at all.
+  readonly shape?: 'bare' | 'period'
   readonly status?: number
   readonly token?: string
   readonly unlisted?: true
@@ -66,6 +70,7 @@ export const scenarios: Readonly<Record<string, Scenario>> = {
     Object.keys(REJECTED_VALUES).map((metric) => shortOf(metric)),
   ),
   authenticated: { measures: both(BEST), token: TOKEN },
+  bare: { measures: both(BEST), shape: 'bare' },
   best: { measures: both(BEST) },
   down: { failuresFirst: 3, measures: both(BEST) },
   'empty-window': {
@@ -77,6 +82,7 @@ export const scenarios: Readonly<Record<string, Scenario>> = {
   },
   flaky: { failuresFirst: 1, measures: both(BEST) },
   forbidden: { measures: both(BEST), status: 403 },
+  'period-shape': { measures: both(BEST), shape: 'period' },
   'rate-limited': {
     failureStatus: 429,
     failuresFirst: 1,

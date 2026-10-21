@@ -230,6 +230,11 @@ const verifyRevision = async () => {
   return revision
 }
 
+// An overall measure carries `value`; a new-code one carries its value
+// under `periods[0]` on SonarCloud (read live, 2026-10) and under
+// `period` on SonarQube Server. A measure the platform returns in a
+// shape this read does not know is NOT an empty window: it must fail,
+// or a vocabulary change would pass the bar vacuously and in silence.
 const readMeasures = async () => {
   const { component } = await get('measures/component', {
     component: project,
@@ -239,7 +244,7 @@ const readMeasures = async () => {
   return new Map(
     component.measures.map((measure) => [
       measure.metric,
-      measure.value ?? measure.periods?.[0]?.value,
+      measure.value ?? measure.period?.value ?? measure.periods?.[0]?.value,
     ]),
   )
 }
@@ -249,10 +254,13 @@ const measures = await readMeasures()
 const rejected = []
 const read = []
 for (const { comparator, metric, threshold } of HOUSE_BAR) {
-  const value = measures.get(metric)
-  if (value === undefined) {
+  if (!measures.has(metric)) {
     read.push(`${metric}: no measure (empty window)`)
     continue
+  }
+  const value = measures.get(metric)
+  if (value === undefined) {
+    fail(`the measure ${metric} of ${describeScope()} came back in a shape this read does not know; the bar was not verified`)
   }
   const actual = Number(value)
   read.push(`${metric}=${value}`)

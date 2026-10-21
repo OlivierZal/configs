@@ -282,7 +282,10 @@ longer turns it off with a reason that was false twice over.
   2026-08: a `CHANGELOG.md`-only pull request returns `new_coverage`
   absent and the gate `OK`. Reading those payloads by hand cost this
   house a correction; the script logs a missing measure as an empty
-  window and rejects nothing.
+  window and rejects nothing — but a measure PRESENT in a shape the
+  read does not know (neither `value`, nor `period`, nor `periods`)
+  fails, since a vocabulary change passing the bar vacuously and in
+  silence is the one failure mode the move must never have.
 - SonarCloud never runs on a Dependabot pull request, and this house
   keeps it that way BY CHOICE: a path exists — on Dependabot-triggered
   runs `secrets.*` resolves from the Dependabot secrets store, so

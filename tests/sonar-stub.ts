@@ -48,7 +48,29 @@ const measuresFor = (scenario: Scenario, url: URL): Measures | undefined => {
   return scope === undefined ? undefined : scenario.measures[scope]
 }
 
-const measuresOf = (measures: Measures, url: URL): unknown[] => {
+const newCodeEntry = (
+  metric: string,
+  value: string,
+  shape: Scenario['shape'],
+): unknown => {
+  switch (shape) {
+    case 'bare': {
+      return { metric }
+    }
+    case 'period': {
+      return { metric, period: { index: 1, value } }
+    }
+    case undefined: {
+      return { metric, periods: [{ index: 1, value }] }
+    }
+  }
+}
+
+const measuresOf = (
+  scenario: Scenario,
+  measures: Measures,
+  url: URL,
+): unknown[] => {
   const requested = new Set(
     (url.searchParams.get('metricKeys') ?? '').split(','),
   )
@@ -56,7 +78,7 @@ const measuresOf = (measures: Measures, url: URL): unknown[] => {
     .filter(([metric]) => requested.has(metric))
     .map(([metric, value]) =>
       metric.startsWith('new_')
-        ? { metric, periods: [{ index: 1, value }] }
+        ? newCodeEntry(metric, value, scenario.shape)
         : { metric, value },
     )
 }
@@ -73,7 +95,10 @@ const routes = new Map<string, Route>([
             HTTP.badRequest,
             errors('a pull request key or a branch name is required'),
           ]
-        : [HTTP.ok, { component: { measures: measuresOf(measures, url) } }]
+        : [
+            HTTP.ok,
+            { component: { measures: measuresOf(scenario, measures, url) } },
+          ]
     },
   ],
   [
