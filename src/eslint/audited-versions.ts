@@ -23,7 +23,16 @@
  * 0.2, jsdoc 65.3 — measured with a pack of this package installed in
  * the seven consumers, and a probe config extending each repository's
  * own for the rules no preset turns on; same day, html-eslint 0.67 and
- * es-x 10.1, zero sites over the seven consumers).
+ * es-x 10.1, zero sites over the seven consumers; 2026-10-22: jsdoc 65.4
+ * — `check-tag-names`' fixer moves `@prop` descriptions onto the
+ * properties they name, under the preset's `typed: true`, behaviour only
+ * — perfectionist 5.13 — `sort-constructor-parameters` refused in the
+ * ledger, 15 positional constructors over the eight repositories; the
+ * sort fixes, zero sites, and the settings values it now validates at
+ * lint start, accepted — and typescript-eslint 8.72 — `await-thenable`'s
+ * `allowMixedPromiseArrays` kept at its strict default, `no-deprecated`
+ * on object literals and `require-array-sort-compare` on tuples, zero
+ * sites — measured with a pack in the seven consumers).
  */
 export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@eslint/css': '2.0',
@@ -38,11 +47,11 @@ export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   'eslint-cssicorn': '0.2',
   'eslint-plugin-es-x': '10.1',
   'eslint-plugin-import-x': '4.17',
-  'eslint-plugin-jsdoc': '65.3',
+  'eslint-plugin-jsdoc': '65.4',
   'eslint-plugin-package-json': '1.10',
-  'eslint-plugin-perfectionist': '5.12',
+  'eslint-plugin-perfectionist': '5.13',
   'eslint-plugin-regexp': '3.3',
   'eslint-plugin-unicorn': '78.0',
   'eslint-plugin-yml': '3.9',
-  'typescript-eslint': '8.71',
+  'typescript-eslint': '8.72',
 }
