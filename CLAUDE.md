@@ -211,12 +211,27 @@ longer turns it off with a reason that was false twice over.
 
 ## Sonar gate doctrine
 
-- The bar lives in the `Olivierzal way` quality gate, the organisation
-  default on the Team plan, stated ONCE for every project instead of
-  restated in each consumer's CI: `violations`,
-  `duplicated_lines_density` and their `new_*` twins at 0,
+- The bar lives in `scripts/check-sonar-gate.sh` (`NEW_CODE_BAR` and
+  `OVERALL_BAR`, which `HOUSE_BAR` joins per event), stated ONCE for
+  every project instead of restated in each consumer's CI:
+  `violations`, `duplicated_lines_density` and their `new_*` twins at 0,
   `coverage`/`new_coverage` at 100, `security_hotspots_reviewed` and its
-  `new_*` twin at 100.
+  `new_*` twin at 100. Until 8.3.0 it lived in the `Olivierzal way`
+  quality gate, the organisation default on the Team plan; the
+  organisation moves to the Free plan (2026-10), which has no custom
+  quality gate — its built-in `Sonar way` accepts 80 % coverage and 3 %
+  duplication on new code — so the bar moved into the family's own CI.
+  Facts verified before the move (2026-10-21, the Web API and the
+  docs): the eight projects' `Sonar way comprehensive` profiles are
+  BUILT-IN profiles, which the Free plan keeps, so the rule set does not
+  change with the plan — only the gate does, and the script holds the
+  bar on the same analysis; the Free plan analyses the main branch and
+  the pull requests that target it, so a stacked pull request gets no
+  analysis and the script refuses it («no analysis … is published»)
+  until it targets `main`; the no-cost OSS plan would keep a custom
+  gate, but it is selectable at organisation creation only (Sonar
+  staff, 2026-10-01), at the price of the eight projects' history —
+  refused.
   - Hotspots are the one axis the platform will not take literally:
     SonarCloud refuses `security_hotspots` as a gate condition
     («cannot be used to define a condition») because it models hotspots
@@ -225,35 +240,52 @@ longer turns it off with a reason that was false twice over.
     recorded human verdict rather than forbidding a flagged pattern.
     With zero hotspots the measure reads 100, so the condition is
     vacuously satisfied.
-- The SCANNER holds the bar, not a script. The scan step passes
-  `-Dsonar.qualitygate.wait=true`, so it blocks on the analysis task it
-  just submitted and exits non-zero when the gate rejects it. A
-  violation therefore fails the coverage leg — already a required
-  context — naming the commit that caused it, and no CI code re-reads a
-  verdict the platform has already published. Waiting on its OWN task is
-  also what makes that verdict unmistakably this commit's, which a poll
-  over recent analyses had to reconstruct.
+- The scanner holds the FLOOR, the script holds the BAR, both on the
+  same analysis. The scan step passes `-Dsonar.qualitygate.wait=true`,
+  so it blocks on the analysis task it just submitted and exits non-zero
+  when the built-in gate rejects it — a floor violation fails the
+  coverage leg, already a required context, naming the commit that
+  caused it. The `Sonar` job then reads the measures back
+  (`api/measures/component`: the four `new_*` on a pull request, all
+  eight on a push) and rejects on the house thresholds. The read is a
+  verification, not a dashboard, because it is tied to the commit: the
+  published analysis of that pull request or branch must be of THIS
+  commit (`HEAD_SHA` against the listing's `commit.sha` — a sibling run
+  publishing in between fails the read and asks for a re-run, which is
+  what waiting on one's OWN task used to guarantee). Every read goes
+  out under the token the scan ran under; a 5xx, a 429 or a dropped
+  connection gets three attempts, each bounded so the three stay inside
+  the job's timeout, and any other status is a verdict on the request.
 - ONE window per event, each answering for what it can cause — the same
-  split by TIME as the dependency doctrine below. It is the platform's
-  own split, not a decision made here: SonarCloud holds a pull request
-  analysis to the new-code conditions and a branch to both. It lands
-  where the house reasoning did. A pull request answers for the code it
-  introduces, which is Clean as You Code and is enough alone: every
-  change lands through a gated pull request, so an overall at zero stays
-  at zero by induction. The single drift that escapes the induction is
-  an analyser update raising issues on untouched code; no pull request
-  causes it, so it surfaces on `main`, where it is loud and blocks no
-  review it has nothing to do with. No scheduled sweep re-asks the
-  question: every push to `main` already evaluates both windows, so a
-  weekly one would only re-read what the last merge measured.
-- An EMPTY window is not an UNVERIFIED one, and that is now the
-  PLATFORM's distinction rather than ours. Sonar analyses no Markdown,
-  so a documentation-only pull request comes back without a single
+  split by TIME as the dependency doctrine below. The split is the
+  platform's, mirrored by `HOUSE_BAR` rather than decided afresh:
+  SonarCloud holds a pull request analysis to a gate's new-code
+  conditions and a branch to both, and the script selects the same
+  tables. It lands where the house reasoning did. A pull request answers
+  for the code it introduces, which is Clean as You Code and is enough
+  alone: every change lands through a gated pull request, so an overall
+  at zero stays at zero by induction. The single drift that escapes the
+  induction is an analyser update raising issues on untouched code; no
+  pull request causes it, so it surfaces on `main`, where it is loud and
+  blocks no review it has nothing to do with. No scheduled sweep re-asks
+  the question: every push to `main` that creates a workflow run
+  evaluates both windows — a merge performed with the repository's
+  `GITHUB_TOKEN` (the Dependabot auto-merge; measured 2026-10-21 on
+  api-core, no `CI` run on such a merge commit) creates none, and its
+  analysis lands with the next push that does — so a weekly one would
+  only re-read what the last analysed push measured.
+- An EMPTY window is not an UNVERIFIED one, and the script keeps the
+  distinction the platform's gate makes. Sonar analyses no Markdown, so a
+  documentation-only pull request comes back without a single
   line-derived figure — a measure with no subject, not a measure that
   failed — and a condition with no measure cannot reject. Measured
   2026-08: a `CHANGELOG.md`-only pull request returns `new_coverage`
   absent and the gate `OK`. Reading those payloads by hand cost this
-  house a correction; the gate needs none.
+  house a correction; the script logs a missing measure as an empty
+  window and rejects nothing — but a measure PRESENT in a shape the
+  read does not know (neither `value`, nor `period`, nor `periods`)
+  fails, since a vocabulary change passing the bar vacuously and in
+  silence is the one failure mode the move must never have.
 - SonarCloud never runs on a Dependabot pull request, and this house
   keeps it that way BY CHOICE: a path exists — on Dependabot-triggered
   runs `secrets.*` resolves from the Dependabot secrets store, so
