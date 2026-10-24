@@ -92,6 +92,13 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
   {
     class: 'domain',
     files: CSS_FILES,
+    reason:
+      "Enforces that the fallbacks of CONFIGURED custom properties agree within a file, and configures nothing by default (`customProperties: []`, 0.3.0): a list is the rule's whole subject. The family's stylesheets carry nine fallbacks over eighteen files (2026-10-24), all on Homey's theme tokens (`var(--homey-color-red, rgb(216 28 29))` and six siblings), each written once per file but two; a list naming those seven tokens would hold two agreements and be maintained for every token the webviews adopt — an option fitted to the corpus, which the doctrine refuses. The fallback values themselves are `css/use-baseline`'s and `prefer-existing-custom-properties`' business, both at `error`.",
+    rule: 'cssicorn/consistent-custom-property-fallbacks',
+  },
+  {
+    class: 'domain',
+    files: CSS_FILES,
     reason: CSS_NESTING,
     rule: 'cssicorn/no-declarations-after-nested-rules',
   },
@@ -148,6 +155,14 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
     reason:
       'Mutually exclusive twin at the floor knob: the relative colour syntax (`rgb(from …)`) is Baseline 2024 — Safari 16.4 shipped it, Chrome 119 dated it — so `css/use-baseline` at `available: 2022` reports the output this rule would write for every alpha variant of a colour custom property.',
     rule: 'cssicorn/prefer-relative-colors',
+  },
+  {
+    class: 'owned',
+    files: CSS_FILES,
+    owner: 'css/use-baseline',
+    reason:
+      "Mutually exclusive twin at the floor knob: `subgrid` is Baseline 2023 — Safari 16.0 shipped it, Chrome 117 dated it — so `css/use-baseline` at `available: 2022` reports the one rewrite this rule suggests (measured 2026-10-24, 0.3.0); no nested grid repeats a parent track definition in the eighteen app stylesheets. Re-enters with the year, or by the exact-name allowance `allowPropertyValues: { 'grid-template-columns': ['subgrid'], 'grid-template-rows': ['subgrid'] }` (Safari 16.0, inside the 16.4 floor) the day a page needs one.",
+    rule: 'cssicorn/prefer-subgrid',
   },
   {
     class: 'domain',
@@ -337,21 +352,6 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
       "Rewrites to `Uint8Array#toHex()`, a Node 26 API (the rule's own source: enable when targeting Node.js 26; `undefined` on Node 24.19.0, a function on 26.7.0, measured 2026-09-28); unicorn 75 and 76 ship it `recommended: false`, so it never arrived — CLAUDE.md's unicorn 75 entry recorded it as recommended by mistake.",
     rule: 'unicorn/prefer-uint8array-hex',
     until: NODE_26_FLOOR,
-  },
-  {
-    class: 'domain',
-    files: CSS_FILES,
-    reason:
-      "Enforces that the fallbacks of CONFIGURED custom properties agree within a file, and configures nothing by default (`customProperties: []`, 0.3.0): a list is the rule's whole subject. The family's stylesheets carry nine fallbacks over eighteen files (2026-10-24), all on Homey's theme tokens (`var(--homey-color-red, rgb(216 28 29))` and six siblings), each written once per file but two; a list naming those seven tokens would hold two agreements and be maintained for every token the webviews adopt — an option fitted to the corpus, which the doctrine refuses. The fallback values themselves are `css/use-baseline`'s and `prefer-existing-custom-properties`' business, both at `error`.",
-    rule: 'cssicorn/consistent-custom-property-fallbacks',
-  },
-  {
-    class: 'owned',
-    files: CSS_FILES,
-    owner: 'css/use-baseline',
-    reason:
-      "Mutually exclusive twin at the floor knob: `subgrid` is Baseline 2023 — Safari 16.0 shipped it, Chrome 117 dated it — so `css/use-baseline` at `available: 2022` reports the one rewrite this rule suggests (measured 2026-10-24, 0.3.0); no nested grid repeats a parent track definition in the eighteen app stylesheets. Re-enters with the year, or by the exact-name allowance `allowPropertyValues: { 'grid-template-columns': ['subgrid'], 'grid-template-rows': ['subgrid'] }` (Safari 16.0, inside the 16.4 floor) the day a page needs one.",
-    rule: 'cssicorn/prefer-subgrid',
   },
   {
     class: 'conflicting',

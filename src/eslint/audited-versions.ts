@@ -43,9 +43,9 @@
  * 76 under a sixty-name zod allow, heatzy-api 46 → 37), and a
  * `@__PURE__` on each remaining site is bundler semantics no runtime of
  * the family consumes, which a tagged template cannot carry at all; the
- * maintainers keep it opt-in since the rule "does not prove purity".
- * `comment-content`'s
- * `ignore` option on a rule the family does not configure; the sharper
+ * maintainers keep it opt-in since the rule "does not prove purity";
+ * `comment-content`'s `ignore` is an option on a rule the family does not
+ * configure; the sharper
  * `prefer-smaller-scope` found ten type aliases over the three apps' tests,
  * paid by the adoptions — package-json 1.11 — `consistent-property-aliases`
  * and `consistent-package-manager-declaration` adopted, zero sites — and
