@@ -378,10 +378,11 @@ const htmlBlock: ConfigWithExtends = {
 // `require-selector-scope` as out of domain — a settings page owns its
 // document). Twenty-one arrive at zero sites; the four with sites were
 // paid by the adoption pull requests, as noted on each. 0.3 (read
-// 2026-10-24 over the eighteen stylesheets the same way) adds five: four
-// here, `consistent-custom-property-fallbacks` in the ledger; its
-// sharper `no-redundant-shorthand-values` found thirteen sites, paid
-// by the adoptions.
+// 2026-10-24 over the eighteen stylesheets the same way) adds five:
+// three here, two in the ledger (`consistent-custom-property-fallbacks`
+// out of domain, `prefer-subgrid` owned by `css/use-baseline` at the
+// floor knob); its sharper `no-redundant-shorthand-values` found
+// thirteen sites, paid by the adoptions.
 const cssicornZeroThree: NonNullable<ConfigWithExtends['rules']> = {
   'cssicorn/consistent-compound-selector-order': 'error',
   'cssicorn/consistent-layer-order': 'error',
@@ -410,8 +411,11 @@ const cssicornZeroThree: NonNullable<ConfigWithExtends['rules']> = {
   // `no-descending-specificity` above.
   'cssicorn/no-layout-animations': 'error',
   'cssicorn/no-overflow-axis-coercion': 'error',
-  // 0.3: a property an overlapping animation overwrites is dead; zero
-  // sites.
+  // 0.3: reports a `replace` track that overwrites an earlier one, in
+  // the blocks that declare `animation-composition` explicitly. That
+  // property is Safari 16.0, Baseline 2023, so `css/use-baseline` at
+  // 2022 admits it by name first: the guard is live from that day, like
+  // `require-property-descriptors`. No `@keyframes` today.
   'cssicorn/no-overridden-animation-properties': 'error',
   // One `radial-gradient()` the ATA widget wrote with a redundant
   // argument; fixable.
@@ -432,12 +436,14 @@ const cssicornZeroThree: NonNullable<ConfigWithExtends['rules']> = {
   // adoptions (the rule has no fixer).
   'cssicorn/prefer-individual-transform-properties': 'error',
   // 0.3: overriding one component of a shorthand with the whole
-  // shorthand resets the others; one site (com.melcloud
-  // `styles/layout.css`), rewritten by hand in the adoption.
+  // shorthand resets the others; suggestion-only, and the longhand it
+  // names is judged by `css/use-baseline` in turn (`transition-behavior`
+  // is Safari 17.4, above the floor), so an override whose component has
+  // no in-floor longhand keeps its shorthand under a reasoned disable.
+  // One site (com.melcloud `styles/layout.css`), rewritten by hand in
+  // the adoption.
   'cssicorn/prefer-longhand-overrides': 'error',
   'cssicorn/prefer-merged-rules': 'error',
-  // 0.3: `subgrid` is Safari 16; the floor is 16.4. Zero sites.
-  'cssicorn/prefer-subgrid': 'error',
   // Off in cssicorn's own `recommended`. The motion preference is an
   // accessibility floor, not a taste: a `transition` plays only inside
   // `@media (prefers-reduced-motion: no-preference)` (Safari 10.1).

@@ -33,16 +33,26 @@
  * `allowMixedPromiseArrays` kept at its strict default, `no-deprecated`
  * on object literals and `require-array-sort-compare` on tuples, zero
  * sites — measured with a pack in the seven consumers); 2026-10-24:
- * unicorn 79 — `no-top-level-side-effects` refocused on global mutations,
- * its new `checkUnknownCalls` kept off (on, it reports every module-level
- * call that builds a table or a config: 31 here, 2 to 250 per consumer,
- * an allow-list fitted to the corpus away from silence); `comment-content`'s
+ * unicorn 79 — `no-top-level-side-effects` refocused on global mutations
+ * on import, which is exactly the `"sideEffects": false` contract the
+ * eight manifests declare; its new `checkUnknownCalls` kept off, because
+ * no allow-list reaches silence: `allow` trusts only a direct call on an
+ * imported binding, so the chained zod builders, `new Set`/`new Map`,
+ * `String.raw` templates and local table builders stay reported (17 in
+ * `src` here, 15 under the widest principled allow; melcloud-api 246 →
+ * 76 under a sixty-name zod allow, heatzy-api 46 → 37), and a
+ * `@__PURE__` on each remaining site is bundler semantics no runtime of
+ * the family consumes, which a tagged template cannot carry at all; the
+ * maintainers keep it opt-in since the rule "does not prove purity".
+ * `comment-content`'s
  * `ignore` option on a rule the family does not configure; the sharper
  * `prefer-smaller-scope` found ten type aliases over the three apps' tests,
  * paid by the adoptions — package-json 1.11 — `consistent-property-aliases`
  * and `consistent-package-manager-declaration` adopted, zero sites — and
- * eslint-cssicorn 0.3 — four rules adopted, one refused in the ledger,
- * thirteen `no-redundant-shorthand-values` sites paid by the adoptions.
+ * eslint-cssicorn 0.3 — three rules adopted, two refused in the ledger
+ * (`consistent-custom-property-fallbacks` out of domain, `prefer-subgrid`
+ * owned by `css/use-baseline` at the floor knob), thirteen
+ * `no-redundant-shorthand-values` sites paid by the adoptions.
  */
 export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@eslint/css': '2.0',

@@ -346,6 +346,14 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
     rule: 'cssicorn/consistent-custom-property-fallbacks',
   },
   {
+    class: 'owned',
+    files: CSS_FILES,
+    owner: 'css/use-baseline',
+    reason:
+      "Mutually exclusive twin at the floor knob: `subgrid` is Baseline 2023 — Safari 16.0 shipped it, Chrome 117 dated it — so `css/use-baseline` at `available: 2022` reports the one rewrite this rule suggests (measured 2026-10-24, 0.3.0); no nested grid repeats a parent track definition in the eighteen app stylesheets. Re-enters with the year, or by the exact-name allowance `allowPropertyValues: { 'grid-template-columns': ['subgrid'], 'grid-template-rows': ['subgrid'] }` (Safari 16.0, inside the 16.4 floor) the day a page needs one.",
+    rule: 'cssicorn/prefer-subgrid',
+  },
+  {
     class: 'conflicting',
     files: CSS_FILES,
     reason:
