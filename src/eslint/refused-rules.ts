@@ -339,6 +339,13 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
     until: NODE_26_FLOOR,
   },
   {
+    class: 'domain',
+    files: CSS_FILES,
+    reason:
+      "Enforces that the fallbacks of CONFIGURED custom properties agree within a file, and configures nothing by default (`customProperties: []`, 0.3.0): a list is the rule's whole subject. The family's stylesheets carry nine fallbacks over eighteen files (2026-10-24), all on Homey's theme tokens (`var(--homey-color-red, rgb(216 28 29))` and six siblings), each written once per file but two; a list naming those seven tokens would hold two agreements and be maintained for every token the webviews adopt — an option fitted to the corpus, which the doctrine refuses. The fallback values themselves are `css/use-baseline`'s and `prefer-existing-custom-properties`' business, both at `error`.",
+    rule: 'cssicorn/consistent-custom-property-fallbacks',
+  },
+  {
     class: 'conflicting',
     files: CSS_FILES,
     reason:

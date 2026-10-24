@@ -32,7 +32,17 @@
  * lint start, accepted — and typescript-eslint 8.72 — `await-thenable`'s
  * `allowMixedPromiseArrays` kept at its strict default, `no-deprecated`
  * on object literals and `require-array-sort-compare` on tuples, zero
- * sites — measured with a pack in the seven consumers).
+ * sites — measured with a pack in the seven consumers); 2026-10-24:
+ * unicorn 79 — `no-top-level-side-effects` refocused on global mutations,
+ * its new `checkUnknownCalls` kept off (on, it reports every module-level
+ * call that builds a table or a config: 31 here, 2 to 250 per consumer,
+ * an allow-list fitted to the corpus away from silence); `comment-content`'s
+ * `ignore` option on a rule the family does not configure; the sharper
+ * `prefer-smaller-scope` found ten type aliases over the three apps' tests,
+ * paid by the adoptions — package-json 1.11 — `consistent-property-aliases`
+ * and `consistent-package-manager-declaration` adopted, zero sites — and
+ * eslint-cssicorn 0.3 — four rules adopted, one refused in the ledger,
+ * thirteen `no-redundant-shorthand-values` sites paid by the adoptions.
  */
 export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@eslint/css': '2.0',
@@ -44,14 +54,14 @@ export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@stylistic/eslint-plugin': '5.10',
   '@vitest/eslint-plugin': '1.6',
   eslint: '10.12',
-  'eslint-cssicorn': '0.2',
+  'eslint-cssicorn': '0.3',
   'eslint-plugin-es-x': '10.1',
   'eslint-plugin-import-x': '4.17',
   'eslint-plugin-jsdoc': '65.4',
-  'eslint-plugin-package-json': '1.10',
+  'eslint-plugin-package-json': '1.11',
   'eslint-plugin-perfectionist': '5.13',
   'eslint-plugin-regexp': '3.3',
-  'eslint-plugin-unicorn': '78.0',
+  'eslint-plugin-unicorn': '79.0',
   'eslint-plugin-yml': '3.9',
   'typescript-eslint': '8.72',
 }

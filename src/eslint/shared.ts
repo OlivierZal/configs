@@ -1695,6 +1695,14 @@ const sharedPackageJsonRules: NonNullable<Config['rules']> = {
   // where `check-pins.sh` is the guard. A runtime `file:` pin
   // lints red on this rule until the re-pin — that red is the
   // point.
+  // 1.11: one declaration of the package manager, in `devEngines` (the
+  // npm field; `packageManager` is Corepack's). No repository declares
+  // one today, so this guards the field's arrival.
+  'package-json/consistent-package-manager-declaration': 'error',
+  // 1.11: one spelling for the aliased fields (`license`, not
+  // `licence`; `bundleDependencies`, not `bundledDependencies`),
+  // fixable; zero sites.
+  'package-json/consistent-property-aliases': 'error',
   'package-json/no-local-dependencies': 'error',
   // Field and collection order are the FORMATTER's:
   // `prettier-plugin-packagejson` (the family's prettier preset)

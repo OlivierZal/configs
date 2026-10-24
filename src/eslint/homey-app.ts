@@ -377,8 +377,12 @@ const htmlBlock: ConfigWithExtends = {
 // `prefer-relative-colors` as `css/use-baseline`'s twins,
 // `require-selector-scope` as out of domain — a settings page owns its
 // document). Twenty-one arrive at zero sites; the four with sites were
-// paid by the adoption pull requests, as noted on each.
-const cssicornZeroTwo: NonNullable<ConfigWithExtends['rules']> = {
+// paid by the adoption pull requests, as noted on each. 0.3 (read
+// 2026-10-24 over the eighteen stylesheets the same way) adds five: four
+// here, `consistent-custom-property-fallbacks` in the ledger; its
+// sharper `no-redundant-shorthand-values` found thirteen sites, paid
+// by the adoptions.
+const cssicornZeroThree: NonNullable<ConfigWithExtends['rules']> = {
   'cssicorn/consistent-compound-selector-order': 'error',
   'cssicorn/consistent-layer-order': 'error',
   // Off in cssicorn's own `recommended` as a matter of taste; the family
@@ -406,9 +410,16 @@ const cssicornZeroTwo: NonNullable<ConfigWithExtends['rules']> = {
   // `no-descending-specificity` above.
   'cssicorn/no-layout-animations': 'error',
   'cssicorn/no-overflow-axis-coercion': 'error',
+  // 0.3: a property an overlapping animation overwrites is dead; zero
+  // sites.
+  'cssicorn/no-overridden-animation-properties': 'error',
   // One `radial-gradient()` the ATA widget wrote with a redundant
   // argument; fixable.
   'cssicorn/no-redundant-functions': 'error',
+  // 0.3: a typo in an element name, or a class missing its dot, would
+  // otherwise match nothing in silence; custom elements stay allowed
+  // (the default), the webviews declare none. Zero sites.
+  'cssicorn/no-unknown-type-selectors': 'error',
   'cssicorn/no-useless-is': 'error',
   // `aspect-ratio` is Safari 15 and `clamp()` Safari 13.1 — both inside
   // the floor, both accepted by `css/use-baseline` at 2022.
@@ -420,7 +431,13 @@ const cssicornZeroTwo: NonNullable<ConfigWithExtends['rules']> = {
   // declarations over two settings pages, rewritten by hand in the
   // adoptions (the rule has no fixer).
   'cssicorn/prefer-individual-transform-properties': 'error',
+  // 0.3: overriding one component of a shorthand with the whole
+  // shorthand resets the others; one site (com.melcloud
+  // `styles/layout.css`), rewritten by hand in the adoption.
+  'cssicorn/prefer-longhand-overrides': 'error',
   'cssicorn/prefer-merged-rules': 'error',
+  // 0.3: `subgrid` is Safari 16; the floor is 16.4. Zero sites.
+  'cssicorn/prefer-subgrid': 'error',
   // Off in cssicorn's own `recommended`. The motion preference is an
   // accessibility floor, not a taste: a `transition` plays only inside
   // `@media (prefers-reduced-motion: no-preference)` (Safari 10.1).
@@ -569,7 +586,7 @@ const cssBlock: ConfigWithExtends = {
     // rejects the at-rule until the block allows it by name, the day a
     // page needs one; the descriptor check is live from that day.
     'cssicorn/require-property-descriptors': 'error',
-    ...cssicornZeroTwo,
+    ...cssicornZeroThree,
     'unicorn/expiring-todo-comments': expiringTodoComments,
     'unicorn/no-empty-file': 'error',
     // The CSS twin of core `no-loss-of-precision` (the JSON block
