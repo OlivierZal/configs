@@ -1,4 +1,20 @@
 rules:
+  # zizmor 1.31 reports `issue_comment` unconditionally. Here it is the
+  # @claude mention trigger, and the path actually used (the family's two
+  # effective runs, both owner comments, 2026-08 and 2026-09). It is
+  # owner-gated twice: the job `if` admits only OWNER, MEMBER or
+  # COLLABORATOR comment authors (the owner alone on these repositories),
+  # and claude-code-action re-checks write permission, with neither
+  # `allowed_bots` nor `allowed_non_write_users` set. The job checks out
+  # the default branch without persisted credentials and builds or runs
+  # nothing from the repository. Line-scoped on purpose: an inline ignore
+  # covers the whole `on:` block, so a dangerous trigger added later would
+  # go unreported (measured with 1.31.1); this entry leaves any other one
+  # reported and lapses when the line moves. Each caller's
+  # `.github/zizmor.yml` carries the same entry for its stub.
+  dangerous-triggers:
+    ignore:
+      - claude.yml:36
   # Not applicable: we publish to GitHub Packages with the job-scoped
   # GITHUB_TOKEN (already OIDC-based), not to npmjs.org. The step lives
   # in the reusable; publish.yml is a stub over it.

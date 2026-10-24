@@ -1382,6 +1382,22 @@ for the fix, a sentinel verdict and a deterministic post/verify step —
 audit against the boundary above before adding any workflow that
 relies on agent-side writes.
 
+`claude.yml` keeps its `issue_comment` trigger under a line-scoped
+`dangerous-triggers` entry in `.github/zizmor.yml` — here and in each
+caller, for its stub — since zizmor 1.31.0 started reporting the trigger
+unconditionally (2026-10). The trigger is owner-gated twice: the job `if`
+admits only OWNER, MEMBER or COLLABORATOR comment authors (the owner alone
+on these repositories), and claude-code-action re-checks write permission,
+with neither `allowed_bots` nor `allowed_non_write_users` set. The job
+checks out the default branch without persisted credentials and builds or
+runs nothing from the repository, and `issue_comment` is the path actually
+used (the family's two effective runs, both owner comments). The entry is
+`claude.yml:<line>`, not an inline `# zizmor: ignore`: measured with 1.31.1,
+an inline ignore covers the whole `on:` block and would hide a
+`pull_request_target` added later, where the line-scoped entry leaves it
+reported and lapses when the line moves. Re-evaluate if either gate
+loosens.
+
 ## Governance files
 
 `SECURITY.md` and `CONTRIBUTING.md` exist here because this package is a
