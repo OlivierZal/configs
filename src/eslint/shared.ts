@@ -1687,6 +1687,18 @@ export const yamlBlock: ConfigWithExtends = {
 }
 
 const sharedPackageJsonRules: NonNullable<Config['rules']> = {
+  // 1.11: one declaration of the package manager, in `devEngines` — the
+  // npm field, read by npm 10.9+ and by Corepack 0.34+, where the
+  // top-level `packageManager` is Corepack's alone and Corepack no
+  // longer ships with Node 25+. A lone `devEngines.packageManager`
+  // passes, so this constrains nothing until a `packageManager` key
+  // appears: a latent guard of the `restrict-dist-tags` kind. No
+  // repository declares one today (npm throughout).
+  'package-json/consistent-package-manager-declaration': 'error',
+  // 1.11: one spelling for the aliased fields — `license` and
+  // `bundleDependencies`, the ones npm documents, over the aliases it
+  // merely tolerates; fixable, zero sites.
+  'package-json/consistent-property-aliases': 'error',
   // Guards the runtime pins — api-core, homey-kit, melcloud-api,
   // heatzy-api under `dependencies` — against a committed `file:`,
   // `link:` or relative pack rehearsal, the shape the 2026-09-07

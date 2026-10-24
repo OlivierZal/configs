@@ -32,7 +32,27 @@
  * lint start, accepted — and typescript-eslint 8.72 — `await-thenable`'s
  * `allowMixedPromiseArrays` kept at its strict default, `no-deprecated`
  * on object literals and `require-array-sort-compare` on tuples, zero
- * sites — measured with a pack in the seven consumers).
+ * sites — measured with a pack in the seven consumers); 2026-10-24:
+ * unicorn 79 — `no-top-level-side-effects` refocused on global mutations
+ * on import, which is exactly the `"sideEffects": false` contract the
+ * eight manifests declare; its new `checkUnknownCalls` kept off, because
+ * no allow-list reaches silence: `allow` trusts only a direct call on an
+ * imported binding, so the chained zod builders, `new Set`/`new Map`,
+ * `String.raw` templates and local table builders stay reported (17 in
+ * `src` here, 15 under the widest principled allow; melcloud-api 246 →
+ * 76 under a sixty-name zod allow, heatzy-api 46 → 37), and a
+ * `@__PURE__` on each remaining site is bundler semantics no runtime of
+ * the family consumes, which a tagged template cannot carry at all; the
+ * maintainers keep it opt-in since the rule "does not prove purity";
+ * `comment-content`'s `ignore` is an option on a rule the family does not
+ * configure; the sharper
+ * `prefer-smaller-scope` found ten type aliases over the three apps' tests,
+ * paid by the adoptions — package-json 1.11 — `consistent-property-aliases`
+ * and `consistent-package-manager-declaration` adopted, zero sites — and
+ * eslint-cssicorn 0.3 — three rules adopted, two refused in the ledger
+ * (`consistent-custom-property-fallbacks` out of domain, `prefer-subgrid`
+ * owned by `css/use-baseline` at the floor knob), thirteen
+ * `no-redundant-shorthand-values` sites paid by the adoptions.
  */
 export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@eslint/css': '2.0',
@@ -44,14 +64,14 @@ export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@stylistic/eslint-plugin': '5.10',
   '@vitest/eslint-plugin': '1.6',
   eslint: '10.12',
-  'eslint-cssicorn': '0.2',
+  'eslint-cssicorn': '0.3',
   'eslint-plugin-es-x': '10.1',
   'eslint-plugin-import-x': '4.17',
   'eslint-plugin-jsdoc': '65.4',
-  'eslint-plugin-package-json': '1.10',
+  'eslint-plugin-package-json': '1.11',
   'eslint-plugin-perfectionist': '5.13',
   'eslint-plugin-regexp': '3.3',
-  'eslint-plugin-unicorn': '78.0',
+  'eslint-plugin-unicorn': '79.0',
   'eslint-plugin-yml': '3.9',
   'typescript-eslint': '8.72',
 }
