@@ -718,6 +718,14 @@ const appPackageJsonBlock: ConfigWithExtends = packageJsonBlock({
   // run `require-private`'s fixer: it writes `"private": false`
   // (measured 2026-09-28) — an adoption sets `true` by hand first. No
   // `enforceForPrivate`.
+  // 1.14: a Homey app is never published and its `name` is the
+  // repository name (`com.melcloud`), so no scope is imposed — `allowed`
+  // alone leaves an unscoped name unreported (zero sites on the three app
+  // manifests, 2026-11-04) and keeps a FOREIGN scope reported, without a
+  // fixer. Not `preferred`: that would autofix the private manifests into
+  // a scoped name (the library preset's verdict, where publication
+  // imposes the scope).
+  'package-json/prefer-scoped-name': ['error', { allowed: ['@olivierzal'] }],
   'package-json/require-private': 'error',
   'package-json/restrict-private-properties': 'error',
 })

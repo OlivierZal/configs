@@ -52,7 +52,25 @@
  * eslint-cssicorn 0.3 — three rules adopted, two refused in the ledger
  * (`consistent-custom-property-fallbacks` out of domain, `prefer-subgrid`
  * owned by `css/use-baseline` at the floor knob), thirteen
- * `no-redundant-shorthand-values` sites paid by the adoptions.
+ * `no-redundant-shorthand-values` sites paid by the adoptions;
+ * 2026-11-04 (measured on APFS clones of the eight repositories with a
+ * pack built from the bumped pins): eslint 10.13 — `no-use-before-define`
+ * now reports references inside an IIFE, a widening that touches only the
+ * `variables: false`/`classes: false` escape hatches; the rule itself is
+ * in no table, left to TypeScript's TDZ checks, and would report 20 legal
+ * closure-ordering sites family-wide (a module-level arrow calling a
+ * `const` declared below it, resolved at call time) — and 10.14 —
+ * `func-name-matching` reworked its property-descriptor reading under
+ * the `considerPropertyDescriptor` the main table sets, zero sites over
+ * the eight repositories; package-json 1.12 — `sort-collections` gains
+ * key selectors, an option on a live off the formatter owns — 1.13 —
+ * `require-override-restrictions`, adopted in the shared table at zero
+ * sites — and 1.14 — `prefer-scoped-name`, adopted in both presets on the
+ * publication fact (`preferred: '@olivierzal'` for the libraries,
+ * `allowed: ['@olivierzal']` for the apps), zero sites on the eight
+ * manifests; jsdoc 65.4.1–65.4.3, regexp 3.3.2–3.3.3 and typescript-eslint
+ * 8.72.1 are fixes only; `@eslint/css` 2.0.1 is baseline data the consumers'
+ * trees already resolve; vitest 5.1.0 ran the eight suites green.
  */
 export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@eslint/css': '2.0',
@@ -63,12 +81,12 @@ export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@html-eslint/eslint-plugin': '0.67',
   '@stylistic/eslint-plugin': '5.10',
   '@vitest/eslint-plugin': '1.6',
-  eslint: '10.12',
+  eslint: '10.14',
   'eslint-cssicorn': '0.3',
   'eslint-plugin-es-x': '10.1',
   'eslint-plugin-import-x': '4.17',
   'eslint-plugin-jsdoc': '65.4',
-  'eslint-plugin-package-json': '1.11',
+  'eslint-plugin-package-json': '1.14',
   'eslint-plugin-perfectionist': '5.13',
   'eslint-plugin-regexp': '3.3',
   'eslint-plugin-unicorn': '79.0',
