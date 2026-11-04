@@ -208,10 +208,15 @@ program reaches it without loading the package's own `.d.ts`:
 ```jsonc title="package.json"
 {
   "scripts": {
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.declarations.json",
+    "typecheck": "node ./node_modules/@typescript/native/bin/tsc --noEmit && node ./node_modules/@typescript/native/bin/tsc -p tsconfig.declarations.json",
   },
 }
 ```
+
+The compiler is named by its explicit path, as every family `typecheck`
+does: under the official TypeScript 6/7 layout the `.bin/tsc` shim is
+the TypeScript 6 compat package, and `check-declarations.sh` runs the
+same native compiler (or the one `TSC` names).
 
 ### typedoc
 
