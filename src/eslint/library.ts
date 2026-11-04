@@ -145,6 +145,18 @@ const libraryTestShadow: Linter.RuleEntry = [
 ]
 
 const libraryPackageJsonRules: NonNullable<Config['rules']> = {
+  // 1.14: the libraries publish to GitHub Packages, which accepts only a
+  // package scoped to the repository owner — the same fact
+  // `restrict-dependency-ranges` reads through its `^@olivierzal/`
+  // selector — so the scope is imposed here, where the manifest is
+  // published. `preferred` reports an unscoped or foreign-scoped name;
+  // its fixer rewrites a `private: true` manifest only (a public one gets
+  // a suggestion, measured in the rule source), so an unattended `--fix`
+  // never renames a published package. NEVER move `preferred` to the
+  // shared table: on the three private app manifests it would autofix
+  // `com.melcloud` into `@olivierzal/com.melcloud` (one fixable report
+  // per app, measured 2026-11-04); the app preset sets `allowed`.
+  'package-json/prefer-scoped-name': ['error', { preferred: '@olivierzal' }],
   'package-json/require-homepage': 'error',
   'package-json/require-keywords': 'error',
   // A scoped package published to a non-default registry declares it:

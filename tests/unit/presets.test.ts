@@ -9,6 +9,7 @@ import { homeyApp } from '../../src/eslint/homey-app.ts'
 import { library } from '../../src/eslint/library.ts'
 import { jsdocBlock, mainLanguageOptions } from '../../src/eslint/shared.ts'
 import { asArray, asRecord } from '../helpers.ts'
+import packageJson from '../../package.json' with { type: 'json' }
 
 const appPreset = homeyApp({
   bundledSourceGlobs: ['settings/**'],
@@ -488,6 +489,129 @@ describe.each(presets)('the DOM rules via $presetName', ({ preset }) => {
     expect(rules['unicorn/no-unsafe-dom-html']).toBe('error')
     expect(rules['unicorn/require-post-message-target-origin']).toBe('error')
     expect(rules['unicorn/no-invalid-file-input-accept']).toBeUndefined()
+  })
+})
+
+// The package.json block alone, its extended plugin presets included:
+// `defineConfig` lands them as siblings whose `files` AND the plugin's
+// own glob with the block's (`[['**/package.json', '**/package.json']]`),
+// hence the flatten.
+const packageJsonBlocksOf = (preset: typeof appPreset): Config[] =>
+  preset.filter(
+    (entry) => entry.files?.flat().includes('**/package.json') === true,
+  )
+
+// The fields `restrict-private-properties` refuses on a private package,
+// plus the `exports` map a Homey app never has.
+const PUBLISHED_ONLY_FIELDS = new Set(['exports', 'files', 'publishConfig'])
+
+// This repository's own manifest, which the library preset it dogfoods
+// accepts as is, turned into a private Homey app's: the two clean
+// baselines below, so a mutation can only raise its own message.
+const appManifest: Record<string, unknown> = {
+  ...Object.fromEntries(
+    Object.entries(packageJson).filter(
+      ([key]) => !PUBLISHED_ONLY_FIELDS.has(key),
+    ),
+  ),
+  name: 'com.melcloud',
+  private: true,
+}
+
+// A real `--fix` run: `name` is read back from the fixed text, so a fixer
+// that renames shows as the new name with its report gone, and one that
+// is withheld shows as the old name with its report standing.
+const lintManifest = async (
+  preset: typeof appPreset,
+  manifest: Record<string, unknown>,
+): Promise<{ name: unknown; ruleIds: (string | null)[] }> => {
+  const text = `${JSON.stringify(manifest, null, 2)}\n`
+  const eslint = new ESLint({
+    fix: true,
+    overrideConfig: packageJsonBlocksOf(preset),
+    overrideConfigFile: true,
+  })
+  const [result] = await eslint.lintText(text, { filePath: 'package.json' })
+  return {
+    name: asRecord(JSON.parse(result?.output ?? text), 'the fixed manifest')
+      .name,
+    ruleIds: result?.messages.map(({ ruleId }) => ruleId) ?? [],
+  }
+}
+
+// `prefer-scoped-name` is split on the publication fact: the libraries
+// publish to GitHub Packages, which accepts only the owner's scope, so
+// the library preset imposes it (`preferred`) — and its fixer renames a
+// private manifest only, never a published one; a Homey app is never
+// published and is named after its repository, so the app preset
+// imposes nothing (`allowed`) and only a foreign scope is reported.
+describe('package.json scope guards', () => {
+  it('should accept this repository manifest as a library', async () => {
+    await expect(
+      lintManifest(libraryPreset, packageJson),
+    ).resolves.toStrictEqual({ name: '@olivierzal/configs', ruleIds: [] })
+  })
+
+  it('should report an unscoped published name without renaming it', async () => {
+    await expect(
+      lintManifest(libraryPreset, { ...packageJson, name: 'configs' }),
+    ).resolves.toStrictEqual({
+      name: 'configs',
+      ruleIds: ['package-json/prefer-scoped-name'],
+    })
+  })
+
+  it('should rename a private library manifest into the scope', async () => {
+    await expect(
+      lintManifest(libraryPreset, {
+        ...packageJson,
+        name: 'configs',
+        private: true,
+      }),
+    ).resolves.toStrictEqual({ name: '@olivierzal/configs', ruleIds: [] })
+  })
+
+  it('should accept an unscoped private app name', async () => {
+    await expect(lintManifest(appPreset, appManifest)).resolves.toStrictEqual({
+      name: 'com.melcloud',
+      ruleIds: [],
+    })
+  })
+
+  it('should report a foreign scope on an app without renaming it', async () => {
+    await expect(
+      lintManifest(appPreset, { ...appManifest, name: '@other/com.melcloud' }),
+    ).resolves.toStrictEqual({
+      name: '@other/com.melcloud',
+      ruleIds: ['package-json/prefer-scoped-name'],
+    })
+  })
+})
+
+// `require-override-restrictions` guards both families alike: an
+// `overrides` selector without a version range pins the transitive for
+// every dependent version, which is the workaround shape the dependency
+// doctrine refuses; a range-restricted selector passes.
+describe.each([
+  { manifest: appManifest, preset: appPreset, presetName: 'homeyApp' },
+  { manifest: packageJson, preset: libraryPreset, presetName: 'library' },
+])('override restrictions via $presetName', ({ manifest, preset }) => {
+  it('should report an override selector without a version range', async () => {
+    await expect(
+      lintManifest(preset, { ...manifest, overrides: { foo: '1.2.3' } }),
+    ).resolves.toStrictEqual({
+      name: manifest.name,
+      ruleIds: ['package-json/require-override-restrictions'],
+    })
+  })
+
+  it('should accept a range-restricted override selector', async () => {
+    await expect(
+      lintManifest(preset, {
+        ...manifest,
+        overrides: { 'foo@^1.0.0': '1.2.3' },
+      }),
+    ).resolves.toStrictEqual({ name: manifest.name, ruleIds: [] })
   })
 })
 

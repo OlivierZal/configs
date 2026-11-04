@@ -1251,12 +1251,19 @@ the plugin's `stylistic` set) and `package-json/sort-collections` (from
 `sort-package-json`, as does `prettier-plugin-packagejson` in the
 family's prettier preset — three readers of one table whose orders are
 identical today but move in minors and ride two different Dependabot
-groups. Nor are they identical everywhere: `sort-collections` sorts the
-top-level keys of `exports` code-unit-wise while `sort-package-json`
-keeps path order and moves `default` last, so on a condition-keyed
-`exports: { types, default }` ESLint writes `{ default, types }` —
-TypeScript then stops seeing `types` — and the next Prettier pass
-restores it, a fight reproduced 2026-09-27. One owner, the formatter.
+groups. Since 8.5.0 the two readers resolve ONE copy of it:
+`prettier-plugin-packagejson` 3.1.0 and `eslint-plugin-package-json`
+1.14 both depend on `sort-package-json` 4, so the lock holds a single
+`node_modules/sort-package-json` where it nested a 3.7.1 under the
+prettier plugin before (measured 2026-11-04) — the orders cannot differ
+today, but the next minor of either plugin can split them again, so the
+handover stands. Nor are they identical everywhere: `sort-collections`
+sorts the top-level keys of `exports` code-unit-wise while
+`sort-package-json` keeps path order and moves `default` last, so on a
+condition-keyed `exports: { types, default }` ESLint writes
+`{ default, types }` — TypeScript then stops seeing `types` — and the
+next Prettier pass restores it, a fight reproduced 2026-09-27. One
+owner, the formatter.
 The same release settled the app/library split of the plugin's
 `require-*` rules on the machine-readable fact: a Homey app is never
 published, so `require-private` and `restrict-private-properties` run
@@ -1270,6 +1277,27 @@ takes at `error`, `require-package-json-export`: once an `exports` map
 exists Node hides the manifest unless `"./package.json"` is exported,
 which the four libraries did by hand and this package had forgotten —
 inert on a private app (no `exports`), live the day one gains a map.
+package-json 1.12 gave `sort-collections` key selectors — an option on a
+live off, the formatter still owns the order. 1.13 and 1.14 (8.5.0) added
+two rules, both measured at zero sites over the eight manifests on
+2026-11-04. `require-override-restrictions` runs at `error` in the shared
+table: an `overrides` selector without a version range pins a transitive
+for every dependent version, forever — the workaround that outlives its
+cause, the shape the dependency doctrine refuses outright; that doctrine
+(no `overrides` at all) stays the stronger rule and is not mechanised,
+the lint is the latent guard. `prefer-scoped-name` is split on the same
+machine-readable fact as `require-private`: the library preset sets
+`preferred: '@olivierzal'`, because GitHub Packages accepts only a
+package scoped to the repository owner (the `restrict-dependency-ranges`
+`forPackages` precedent) and the rule's fixer rewrites a `private: true`
+manifest only, so an unattended `--fix` never renames a published
+package; the app preset sets `allowed: ['@olivierzal']`, because a Homey
+app is never published and its `name` is the repository name, so no
+scope is imposed — an unscoped name passes, a foreign scope stays
+reported, and there is no fixer. `preferred` must never reach an app:
+with it, the three private app manifests autofix into
+`@olivierzal/com.melcloud` and its siblings (one fixable report per
+app, measured). The suite pins both halves with real `--fix` runs.
 
 ## Consumers & adoption
 

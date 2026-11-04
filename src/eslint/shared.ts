@@ -1735,6 +1735,16 @@ const sharedPackageJsonRules: NonNullable<Config['rules']> = {
   'package-json/require-author': 'error',
   'package-json/require-bugs': 'error',
   'package-json/require-engines': 'error',
+  // 1.13: an `overrides` selector without a version range (`"foo":
+  // "1.2.3"` rather than `"foo@^1": "1.2.3"`) pins the transitive for
+  // every version of every dependent, forever — the override outlives
+  // the upstream fix it worked around. The family declares no
+  // `overrides` at all (zero sites over the eight manifests,
+  // 2026-11-04): the dependency doctrine in CLAUDE.md is the stronger
+  // rule and is not mechanised; this is the latent guard, of the
+  // `restrict-dist-tags` kind, for the day one is written. No fixer, no
+  // options.
+  'package-json/require-override-restrictions': 'error',
   // The manifest subpath, mechanised: once an `exports` map exists Node
   // hides `package.json` from consumers and linters unless it is
   // exported explicitly — the four runtime libraries carry
