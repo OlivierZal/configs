@@ -1,0 +1,4 @@
+{
+  "compilerOptions": { "noEmit": true, "skipLibCheck": true, "strict": true },
+  "include": ["**/*.d.ts"]
+}

@@ -1,0 +1,4 @@
+{
+  "compilerOptions": { "noEmit": true, "skipLibCheck": false, "strict": true },
+  "files": ["types.d.ts"]
+}

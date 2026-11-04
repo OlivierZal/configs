@@ -11,11 +11,22 @@ import packageJson from '../../package.json' with { type: 'json' }
 const basesDir = path.join(repoRoot, 'tsconfig-bases')
 const fixturesDir = path.join(repoRoot, 'tests/fixtures/tsconfig-build')
 
-// The whole tsconfig surface: one base per family, one subpath each.
-// The `-build` aliases that used to double them were content-free
-// shells (`{ extends }` of these two) and are gone — a consumer's build
-// config extends its own tsconfig.json, which names the base once.
-const bases = ['app', 'library']
+// The whole tsconfig surface: one base per family, one subpath each,
+// plus the one overlay every family composes with its own tsconfig
+// (`extends` takes a list): the declarations program's two options.
+// The `-build` aliases that used to double the family bases were
+// content-free shells (`{ extends }` of those two) and are gone — a
+// consumer's build config extends its own tsconfig.json, which names
+// the base once.
+const bases = ['app', 'declarations', 'library']
+
+// What each fixture consumer's resolved file list must reach: a source
+// for the family bases, a declaration file for the overlay.
+const fixtureFiles = [
+  { base: 'app', file: 'index.ts' },
+  { base: 'declarations', file: 'index.d.ts' },
+  { base: 'library', file: 'index.ts' },
+]
 
 interface ResolvedTsconfig {
   readonly compilerOptions?: { readonly strict?: boolean }
@@ -103,15 +114,31 @@ describe('the tsconfig bases', () => {
     },
   )
 
-  it.each(bases)(
-    'should resolve a non-empty file list for a %s consumer',
-    (project) => {
-      const resolved = showConfig(project)
+  it.each(fixtureFiles)(
+    'should resolve a non-empty file list for a $base consumer',
+    ({ base, file }) => {
+      const resolved = showConfig(base)
 
       expect(resolved.files).toBeDefined()
       expect(resolved.files?.length).toBeGreaterThan(0)
-      expect(JSON.stringify(resolved.files)).toContain('index.ts')
+      expect(JSON.stringify(resolved.files)).toContain(file)
       expect(resolved.compilerOptions?.strict).toBe(true)
     },
   )
+
+  // `skipLibCheck: true` is the family setting and the modern default:
+  // the only program that turns it off is the declarations overlay,
+  // which exists for the one thing the setting hides — a repository's
+  // own `.d.ts` — and never emits, so a check stays a check.
+  it('should turn library checking off in the family bases alone', async () => {
+    await expect(readBase('app')).resolves.toMatchObject({
+      compilerOptions: { skipLibCheck: true },
+    })
+    await expect(readBase('library')).resolves.toMatchObject({
+      compilerOptions: { skipLibCheck: true },
+    })
+    await expect(readBase('declarations')).resolves.toStrictEqual({
+      compilerOptions: { noEmit: true, skipLibCheck: false },
+    })
+  })
 })

@@ -1,0 +1,6 @@
+{
+  "name": "fixture",
+  "scripts": {
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.declarations.json"
+  }
+}

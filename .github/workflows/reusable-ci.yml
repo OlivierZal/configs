@@ -42,6 +42,15 @@ jobs:
           script=node_modules/@olivierzal/configs/scripts/check-pins.sh
           [ -f "$script" ] || script=scripts/check-pins.sh
           bash "$script"
+      # `skipLibCheck: true` hides a repository's own `.d.ts` files; the
+      # verifier proves each one its program loads is checked by the
+      # declarations program, which `typecheck` chains — or that there is
+      # none to check.
+      - name: Verify declaration coverage
+        run: |
+          script=node_modules/@olivierzal/configs/scripts/check-declarations.sh
+          [ -f "$script" ] || script=scripts/check-declarations.sh
+          bash "$script"
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run format
