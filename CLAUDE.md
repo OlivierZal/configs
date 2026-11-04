@@ -27,7 +27,24 @@ both channels — bump once, release once.
   BASE file (inside `node_modules` for consumers), so a base carrying
   them resolves an empty file list. Pinned by a test.
 - Two tsconfig bases, two subpaths (`tsconfig/app`, `tsconfig/library`),
-  nothing else. The `-build` aliases retired in 5.0.0 were content-free
+  plus ONE overlay, `tsconfig/declarations` (8.6.0): `skipLibCheck:
+false` and `noEmit`, the two options of the second program a repository
+  whose program loads `.d.ts` files of its own runs over them, composed with its own
+  tsconfig through an `extends` list. It is an overlay, not a third
+  family: it carries the verdict `skipLibCheck: true` cannot carry — that
+  setting is the modern default and stays in both bases (homey-api's own
+  `.d.ts` does not even compile, and TypeScript exempts no package), but
+  it skips a repository's OWN declaration files, where an unresolved name
+  keeps its spelling, relates like `any` and reports nothing: the
+  extension's `homey-api-override.d.ts` carried a dead `Homey` for
+  fourteen months that way (2026-11-04). `check-declarations.sh`, run by
+  `reusable-ci.yml` in every consumer, proves each own `.d.ts` the main program
+  loads is in that program and that `typecheck` chains it; a repository whose program loads
+  none has nothing to prove — the libraries, and this repo, whose test
+  fixtures sit outside its program. The
+  `.ts` spelling of a declaration file was measured and refused: the
+  Homey CLI compiles from `tsconfig.json` and would ship empty fossils.
+  Nothing else. The `-build` aliases retired in 5.0.0 were content-free
   `{ extends }` shells of those two: measured 2026-09-07, one consumer
   extended one of them and none the other, while a build config already
   names its base once (its own `tsconfig.json`, or the plain base). Four
@@ -472,6 +489,13 @@ longer turns it off with a reason that was false twice over.
   What this package keeps is the rule that makes the move safe:
   `check-pins.sh` polices `OlivierZal/homey-kit` as a two-channel
   package exactly like itself.
+- `check-declarations.sh` (8.6.0) is the third verifier the check job
+  reads out of the package, beside the pins and the coverage leg: the
+  tsconfig overlay above states the program, the script proves the
+  program reaches every own `.d.ts` the main program loads and that the gate runs it. Its
+  suite drives it through `DECLARATION_FILES` (the fixtures have no main
+  program to list) and `TSC` (this repo's compiler), so the resolution and
+  the file listing it asserts on are the real ones.
 
 ## Adopting a fixer
 

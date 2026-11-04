@@ -186,6 +186,33 @@ names the base once):
 }
 ```
 
+`skipLibCheck: true` is the family setting (and `tsc --init`'s): it
+also skips the repository's OWN `.d.ts` files, where an unresolved
+name keeps its spelling, relates like `any` and reports nothing. A
+repository whose program loads declaration files of its own therefore
+runs a second program over them, composed from its tsconfig and the
+`tsconfig/declarations` overlay (`skipLibCheck: false`, `noEmit`), and
+chains it in `typecheck`; `check-declarations.sh` (run by
+`reusable-ci.yml`) proves every `.d.ts` of the repository that its program loads is in
+that program, or that there is none. Replace a package's types through `paths` to a
+declaration module rather than an ambient `declare module`, so the
+program reaches it without loading the package's own `.d.ts`:
+
+```jsonc title="tsconfig.declarations.json"
+{
+  "extends": ["./tsconfig.json", "@olivierzal/configs/tsconfig/declarations"],
+  "include": ["**/*.d.ts"],
+}
+```
+
+```jsonc title="package.json"
+{
+  "scripts": {
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.declarations.json",
+  },
+}
+```
+
 ### typedoc
 
 ```js title="typedoc.config.js"
@@ -342,7 +369,8 @@ single-file workflows (`dependency-review`, `pr-title`, `zizmor`,
 become stubs. The Homey apps' process — `reusable-homey-validate.yml`,
 `reusable-homey-publish.yml` and the iOS floor watch — lives in
 `@olivierzal/homey-kit` (6.1.0), the second two-channel package
-`check-pins.sh` polices.
+`check-pins.sh` polices. `check-declarations.sh` runs beside it, over
+the repository's own `.d.ts` files (see tsconfig above).
 
 ```yaml title=".github/workflows/publish.yml"
 jobs:

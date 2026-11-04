@@ -1,5 +1,6 @@
 {
   "compilerOptions": { "outDir": "dist" },
+  "exclude": ["tests/fixtures"],
   "extends": "./tsconfig-bases/library.json",
   "include": ["*.config.ts", "src", "tests"]
 }
