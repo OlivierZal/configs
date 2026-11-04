@@ -22,6 +22,9 @@ set -euo pipefail
 
 readonly root=${1:-.}
 readonly program=tsconfig.declarations.json
+# The family's compiler, by its explicit path: under the official
+# TypeScript 6/7 layout the `.bin/tsc` shim is the TypeScript 6 compat
+# package, and every repository's `typecheck` names the native one.
 readonly tsc=${TSC:-$root/node_modules/@typescript/native/bin/tsc}
 
 failures=0
@@ -31,6 +34,11 @@ fail() {
   printf 'error: %s\n' "$message" >&2
   failures=$((failures + 1))
 }
+
+if [[ ! -f $tsc ]]; then
+  fail "no TypeScript compiler at $tsc; install the repository, or name the compiler in TSC"
+  exit 1
+fi
 
 # The declaration files that can hide a diagnostic are the ones the
 # main program loads: a `.d.ts` outside it (a test fixture, a build

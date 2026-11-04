@@ -32,6 +32,16 @@ const checkProgram = (fixture: string): RunResult =>
   })
 
 describe('the declaration check', () => {
+  it('names the compiler it cannot find', () => {
+    const { output, status } = runScript(script, {
+      args: [path.join(fixturesDir, 'covered')],
+      env: { ...process.env, TSC: path.join(fixturesDir, 'no-such-tsc') },
+    })
+
+    expect(status).toBe(1)
+    expect(output).toContain('no TypeScript compiler at')
+  })
+
   it('reads the declaration files out of the main program', () => {
     const { output, status } = checkProgram('main-program')
 
