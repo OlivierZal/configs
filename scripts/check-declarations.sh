@@ -38,12 +38,31 @@ fail() {
 # packages carry declaration files by the hundred, and none of them is
 # this repository's to check.
 absolute_root=$(cd "$root" && pwd -P)
+
+# A program that does not resolve must never read as a program with
+# nothing in it: the listing's failure is reported, not folded away.
+list_program() {
+  local config=$1 listing
+  if ! listing=$(node "$tsc" --listFilesOnly -p "$config" 2>&1); then
+    fail "$config does not resolve: $listing"
+    printf '%s\n' "$failures declaration problem(s)" >&2
+    exit 1
+  fi
+  printf '%s\n' "$listing"
+}
+
 if [[ -n ${DECLARATION_FILES+set} ]]; then
   files=$(printf '%s\n' "$DECLARATION_FILES" | sed '/^$/d')
 else
-  files=$(node "$tsc" --listFilesOnly -p "$root/tsconfig.json" 2>/dev/null |
-    grep -v '/node_modules/' | grep "^$absolute_root/" | grep '\.d\.ts$' |
-    sed "s#^$absolute_root/##" || true)
+  main_listing=$(list_program "$root/tsconfig.json") || exit 1
+  files=''
+  # Literal prefix and suffix tests — never a pattern built from a path,
+  # whose dots would match more than themselves.
+  while IFS= read -r line; do
+    [[ $line == "$absolute_root/"* && $line == *.d.ts && $line != */node_modules/* ]] || continue
+    files+="${line#"$absolute_root/"}"$'\n'
+  done <<<"$main_listing"
+  files=${files%$'\n'}
 fi
 
 if [[ -z $files ]]; then
@@ -86,7 +105,7 @@ options=$(node -e '
 
 # Every declaration file must be a root or a dependency of the program:
 # one the include misses is exactly the silent case again.
-listed=$(node "$tsc" --listFilesOnly -p "$root/$program" 2>/dev/null || true)
+listed=$(list_program "$root/$program") || exit 1
 while IFS= read -r file; do
   absolute=$(cd "$root" && cd "$(dirname "$file")" && printf '%s/%s' "$(pwd -P)" "$(basename "$file")")
   if ! grep -qxF "$absolute" <<<"$listed"; then

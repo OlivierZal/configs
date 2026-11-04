@@ -20,7 +20,36 @@ const check = (fixture: string, files: readonly string[]): RunResult =>
     },
   })
 
+// Without the seam the script lists the fixture's own main program —
+// the path every consumer takes.
+const checkProgram = (fixture: string): RunResult =>
+  runScript(script, {
+    args: [path.join(fixturesDir, fixture)],
+    env: {
+      ...process.env,
+      TSC: path.join(repoRoot, 'node_modules/@typescript/native/bin/tsc'),
+    },
+  })
+
 describe('the declaration check', () => {
+  it('reads the declaration files out of the main program', () => {
+    const { output, status } = checkProgram('main-program')
+
+    expect(status).toBe(0)
+    expect(output).toContain(
+      'checked 1 declaration file(s) of this repository through tsconfig.declarations.json',
+    )
+  })
+
+  // A main program that does not resolve lists nothing, which must not
+  // read as a repository with nothing to prove.
+  it('reports a main program that does not resolve instead of passing', () => {
+    const { output, status } = checkProgram('broken-main')
+
+    expect(status).toBe(1)
+    expect(output).toContain('tsconfig.json does not resolve')
+  })
+
   it('has nothing to prove for a program that loads no declaration file of its own', () => {
     const { output, status } = check('none', [])
 
