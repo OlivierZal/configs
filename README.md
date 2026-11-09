@@ -47,10 +47,10 @@ const config: Config[] = defineConfig([
     bundledSourceGlobs: ['settings/**'],
     defaultExportFiles: ['api.mts', 'app.mts', 'drivers/*/{device,driver}.mts'],
     jsdocFiles: ['{api,app}.mts', 'drivers/**/*.mts', 'lib/**/*.mts'],
-    // Import sources kept in namespace form — a dependency's documented
+    // Value imports kept in namespace form — a dependency's documented
     // consumption (melcloud-api's dialect entries); omit when the app
-    // has none.
-    namespaceImportIgnore: ['@olivierzal/melcloud-api/classic'],
+    // has none. Type-only namespaces are always admitted.
+    namespaceImportAllow: ['@olivierzal/melcloud-api/classic'],
     untypedDoubleTestFiles: ['tests/unit/app.test.ts'],
     webviewFloorFiles: ['settings/**/*.mts'],
     // App-side wire vocabulary, filter-scoped (converters, report

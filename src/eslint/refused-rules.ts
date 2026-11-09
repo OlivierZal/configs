@@ -228,10 +228,10 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
   },
   {
     class: 'owned',
-    owner: 'import-x/no-namespace',
+    owner: 'import-x/avoid-namespace-import',
     reason:
-      "The same ban as `import-x/no-namespace` — a namespace import hides which names a module uses — with an exact `allowList` and no fixer, where the owner takes `ignore` globs and fixes direct member access. The owner runs at `error` in both presets since 8.7.0 (the app preset omitted it until then): com.melcloud's 31 namespace imports of melcloud-api's two dialect entries (2026-11-09), the consumption the library documents, are named by its overlay through `namespaceImportIgnore`, and the other seven repositories hold none.",
-    rule: 'import-x/avoid-namespace-import',
+      "The same ban as `import-x/avoid-namespace-import` — a namespace import hides which names a module uses — with a fixer and `ignore` globs, but no exemption for `import type * as`, which the owner has by construction. A type namespace is erased and names what no named import can: the module type a mocked module is typed against (`mockModule<typeof HomeyLib>`, the three apps' `app.test.ts`; `consistent-type-imports` refuses a `typeof import()` annotation) and the same-name types com.melcloud's `types/classic-capabilities.mts` disambiguates across three modules — twelve sites over the three apps (4.18.1, 2026-11-09), none a glob could carve out without also admitting a value import of the same source. Ran at `error` in the library preset until 8.8.0 (zero sites there, of either kind) and in the app preset for 8.7.0 alone, an unadopted release; the owner runs in both since, with the overlay's `namespaceImportAllow` for com.melcloud's two documented dialect namespaces (31 value sites).",
+    rule: 'import-x/no-namespace',
   },
   {
     class: 'domain',
