@@ -29,7 +29,9 @@ jobs:
           display_report: true
           plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
           plugins: code-review@claude-code-plugins
-          prompt: '/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}'
+          prompt: >-
+            /code-review:code-review ${{ github.repository }}/pull/${{
+            github.event.pull_request.number }}
           # One auto-updated comment per PR: without it a clean review
           # leaves no trace on the PR (the report only reaches the run's
           # step summary, and inline comments only fire on findings).

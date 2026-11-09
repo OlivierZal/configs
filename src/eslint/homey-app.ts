@@ -47,6 +47,11 @@ export interface HomeyAppOptions {
   readonly jsdocFiles: readonly string[]
   // Sources that run in the phone webview and carry the es2023 floor.
   readonly webviewFloorFiles: readonly string[]
+  // Import sources kept in namespace form, as `import-x/no-namespace`'s
+  // `ignore` takes them: a dependency's documented consumption (the two
+  // melcloud-api dialect entries), never a convenience — the shared
+  // table states the verdict.
+  readonly namespaceImportIgnore?: readonly string[]
   readonly templateExpressionAllow?: readonly TemplateExpressionAllowEntry[]
   // Test files whose Homey driver/device doubles proxy untyped SDK
   // surfaces; omit when the app has none (ESLint rejects `files: []`).
@@ -631,13 +636,15 @@ const appNaming = (
   extraEntries: [...wireNamingEntries, ...homeyNamingEntries],
 })
 
-const appMainBlock = (
-  bundledSourceGlobs: HomeyAppOptions['bundledSourceGlobs'],
-  templateExpressionAllow: NonNullable<
-    HomeyAppOptions['templateExpressionAllow']
-  >,
-  naming: NamingConventionOptions,
-): ConfigWithExtends => ({
+const appMainBlock = ({
+  bundledSourceGlobs,
+  namespaceImportIgnore,
+  naming,
+  templateExpressionAllow,
+}: Pick<HomeyAppOptions, 'bundledSourceGlobs' | 'namespaceImportIgnore'> & {
+  readonly naming: NamingConventionOptions
+  readonly templateExpressionAllow: readonly TemplateExpressionAllowEntry[]
+}): ConfigWithExtends => ({
   extends: mainExtends,
   files: [tsGlobs.ts, '*.config.{js,mjs}'],
   languageOptions: mainLanguageOptions,
@@ -652,6 +659,7 @@ const appMainBlock = (
           ...bundledSourceGlobs,
         ],
       },
+      ...(namespaceImportIgnore !== undefined && { namespaceImportIgnore }),
       naming,
       templateExpressionAllow,
       unassignedImportAllow: ['source-map-support/register.js'],
@@ -661,7 +669,12 @@ const appMainBlock = (
     // `.ts` test and config files vitest and jiti resolve leniently:
     // the family's explicit-extension convention
     // (`rewriteRelativeImportExtensions`) held everywhere, zero sites
-    // (2026-09-27). The library preset omits it: TS2835 under
+    // (2026-09-27). Since import-x 4.18 an extension ALIAS — `./x.js`
+    // for `x.ts`, TypeScript's own ESM spelling — reads as the
+    // extension written and passes; the apps write the real one by
+    // convention, which no rule held before either (the report 4.17
+    // raised named the resolved `.ts`, a side effect of its resolution
+    // read). The library preset omits the rule: TS2835 under
     // `module: nodenext` owns it there.
     'import-x/extensions': [
       'error',
@@ -671,6 +684,16 @@ const appMainBlock = (
     'perfectionist/sort-classes': ['error', appSortClassesOptions],
   },
   settings: perfectionistSettings,
+})
+
+// Platform-imposed: the Homey loader reads `export default class` from
+// the app, driver, device and api modules — a named export is not found.
+const defaultExportBlock = (files: readonly string[]): Config => ({
+  files: [...files],
+  rules: {
+    'import-x/no-default-export': 'off',
+    'import-x/prefer-default-export': ['error', { target: 'any' }],
+  },
 })
 
 // Omitted entirely when empty: ESLint rejects `files: []`.
@@ -734,6 +757,7 @@ export const homeyApp = ({
   bundledSourceGlobs,
   defaultExportFiles,
   jsdocFiles,
+  namespaceImportIgnore,
   templateExpressionAllow = [],
   untypedDoubleTestFiles = [],
   webviewFloorFiles,
@@ -745,26 +769,18 @@ export const homeyApp = ({
 
   return defineConfig([
     linterOptionsBlock,
-    appMainBlock(
+    appMainBlock({
       bundledSourceGlobs,
+      ...(namespaceImportIgnore !== undefined && { namespaceImportIgnore }),
+      naming: isScoped ? appNaming([]) : naming,
       templateExpressionAllow,
-      isScoped ? appNaming([]) : naming,
-    ),
+    }),
     // After the main block, so the scoped files win the override.
     ...(isScoped ? [wireNamingBlock(wireNamingFiles, naming)] : []),
     jsdocBlock([...jsdocFiles]),
     webviewFloorBlock(webviewFloorFiles),
     homeyShimBlock,
-    {
-      files: [...defaultExportFiles],
-      rules: {
-        // Platform-imposed: the Homey loader reads `export default class`
-        // from the app, driver, device and api modules — a named export
-        // is not found.
-        'import-x/no-default-export': 'off',
-        'import-x/prefer-default-export': ['error', { target: 'any' }],
-      },
-    },
+    defaultExportBlock(defaultExportFiles),
     // The platform entries, never the wire's: a config file speaks no
     // wire. No typedoc-key shape either (the library preset's): typedoc
     // never runs on an app, so its config files hold the bare core.

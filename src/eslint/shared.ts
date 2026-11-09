@@ -486,6 +486,10 @@ export interface SharedMainRulesOptions {
     readonly includeTypes?: boolean
   }
   readonly naming: NamingConventionOptions
+  // Import sources kept in namespace form — a dependency's documented
+  // consumption, never a convenience — as `import-x/no-namespace`'s
+  // `ignore` takes them (exact specifiers or globs).
+  readonly namespaceImportIgnore?: readonly string[]
   readonly templateExpressionAllow?: readonly TemplateExpressionAllowEntry[]
   readonly unassignedImportAllow?: readonly string[]
 }
@@ -726,6 +730,13 @@ const staticMainRules: NonNullable<Config['rules']> = {
   ],
   'guard-for-in': 'error',
   'id-length': 'error',
+  // 4.18: `export *` publishes whatever a module happens to export, so a
+  // name added there joins the public surface unreviewed and a consumer
+  // cannot see what it imports; the family's barrels name every
+  // re-export (zero `export *` over the eight repositories, 2026-11-09)
+  // and this is the guard that keeps it so. `export type *` is erased
+  // and exempt.
+  'import-x/avoid-re-export-all': 'error',
   'import-x/first': 'error',
   'import-x/newline-after-import': 'error',
   'import-x/no-absolute-path': 'error',
@@ -1185,9 +1196,25 @@ const staticMainRules: NonNullable<Config['rules']> = {
   yoda: 'error',
 }
 
+// Every type the rule can admit is refused; only the measured `allow`
+// entries interpolate.
+const templateExpressionOptions = (
+  allow: readonly TemplateExpressionAllowEntry[],
+): Record<string, unknown> => ({
+  allow: [...allow],
+  allowAny: false,
+  allowArray: false,
+  allowBoolean: false,
+  allowNever: false,
+  allowNullish: false,
+  allowNumber: false,
+  allowRegExp: false,
+})
+
 // Merges the static table with the measured family knobs.
 export const sharedMainRules = ({
   extraneous,
+  namespaceImportIgnore,
   naming,
   templateExpressionAllow = [],
   unassignedImportAllow,
@@ -1199,16 +1226,7 @@ export const sharedMainRules = ({
   ],
   '@typescript-eslint/restrict-template-expressions': [
     'error',
-    {
-      allow: [...templateExpressionAllow],
-      allowAny: false,
-      allowArray: false,
-      allowBoolean: false,
-      allowNever: false,
-      allowNullish: false,
-      allowNumber: false,
-      allowRegExp: false,
-    },
+    templateExpressionOptions(templateExpressionAllow),
   ],
   'import-x/no-extraneous-dependencies': [
     'error',
@@ -1220,6 +1238,20 @@ export const sharedMainRules = ({
       peerDependencies: false,
     },
   ],
+  // A namespace import hides which names a module uses; the family
+  // imports by name. The one documented exception travels in
+  // `namespaceImportIgnore`: com.melcloud disambiguates melcloud-api's
+  // two wire vocabularies with `import * as Classic/Home from
+  // '@olivierzal/melcloud-api/{classic,home}'` — 31 sites in 27 files
+  // (2026-11-09), the consumption the library's `classic.ts` and
+  // `home.ts` entries document — and names those two entries in its
+  // overlay. Until 8.7.0 the app preset omitted the rule for them;
+  // import-x 4.18's `avoid-namespace-import` (an exact `allowList`, no
+  // fixer) is the same verdict and sits in the refusal ledger as owned.
+  'import-x/no-namespace':
+    namespaceImportIgnore === undefined
+      ? 'error'
+      : ['error', { ignore: [...namespaceImportIgnore] }],
   'import-x/no-unassigned-import':
     unassignedImportAllow === undefined
       ? 'error'
@@ -1618,6 +1650,23 @@ const staticYamlRules: NonNullable<Config['rules']> = {
       SCREAMING_SNAKE_CASE: true,
       snake_case: true,
     },
+  ],
+  // 3.10: the one width rule for the one language Prettier never wraps
+  // (a plain, quoted or folded scalar, a comment and a `uses:` line all
+  // survive a pass at any length, measured 2026-11-09), so the 80
+  // columns every other file of the family holds — Prettier's print
+  // width, the hand-wrapped comments — reach YAML through this rule and
+  // nothing else. Two exemptions, both external constraints, never the
+  // corpus: a `uses:` line is one token by GitHub's grammar
+  // (`{owner}/{repo}/{path}@{ref}`) carrying Dependabot's same-line
+  // `# vX.Y.Z` comment, which a folded scalar would hide from both (84
+  // of the 147 sites over the eight repositories), and a URL is
+  // unbreakable (none yet). Everything else folds — `>-` for prose and
+  // JSON inputs, `|` with continuations for shell: 63 sites, paid by
+  // the adoptions.
+  'yml/max-len': [
+    'error',
+    { code: 80, ignorePattern: String.raw`^\s*(- )?uses: `, ignoreUrls: true },
   ],
   // In neither preset (3.8.1): a plain `true:` key (`on:` under YAML
   // 1.1) reaches readers as a boolean. Zero sites 2026-09-22; YAML 1.2.

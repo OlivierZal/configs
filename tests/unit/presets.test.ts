@@ -249,6 +249,27 @@ describe(homeyApp, () => {
     ).toMatchSnapshot()
   })
 
+  // The exemption travels with the consumer that documents it; the rule
+  // itself is the shared table's, bare where nothing is exempted.
+  it('should hand the namespace exemptions to no-namespace', () => {
+    const rules = mainRulesOf(
+      homeyApp({
+        bundledSourceGlobs: ['settings/**'],
+        defaultExportFiles: ['api.mts', 'app.mts'],
+        jsdocFiles: ['lib/**/*.mts'],
+        namespaceImportIgnore: ['@olivierzal/melcloud-api/classic'],
+        webviewFloorFiles: ['settings/**/*.mts'],
+      }),
+    )
+
+    expect(rules['import-x/no-namespace']).toStrictEqual([
+      'error',
+      { ignore: ['@olivierzal/melcloud-api/classic'] },
+    ])
+    expect(mainRulesOf(appPreset)['import-x/no-namespace']).toBe('error')
+    expect(mainRulesOf(libraryPreset)['import-x/no-namespace']).toBe('error')
+  })
+
   it('should scope the untyped-double offs to the given files', () => {
     expect(untypedDoubleBlockOf(appPreset)?.files).toStrictEqual([
       'tests/unit/app.test.ts',
@@ -847,10 +868,13 @@ describe.each(presets)(
 // resolving half demands a fully clean run rather than the absence of
 // one rule: a parse failure or a misnamed path reports no rule either.
 // The app family writes the real extension instead
-// (`rewriteRelativeImportExtensions`), which `import-x/extensions` holds
-// since 7.0.0 — so on the `.js` stand-in the app preset reports that one
-// rule, naming the `.ts` the resolver reached: a report that could not
-// exist without the resolution, and the only one.
+// (`rewriteRelativeImportExtensions`), and until import-x 4.18 the app
+// preset's `import-x/extensions` reported the `.js` stand-in, naming the
+// `.ts` the resolver reached; 4.18 reads an extension alias as the
+// extension written (`./target.js` for `target.ts` is TypeScript's own
+// ESM spelling), so the stand-in lints clean under both presets, and
+// the clean run alone is the proof — the resolving half reports
+// `import-x/no-unresolved` on every import without the package.
 describe('import resolution', () => {
   it.each([
     {
@@ -869,7 +893,7 @@ describe('import resolution', () => {
       file: 'resolved.ts',
       preset: appPreset,
       presetName: 'homeyApp',
-      reports: ['import-x/extensions'],
+      reports: [],
     },
   ])(
     'should resolve $file to its ts neighbour via $presetName',

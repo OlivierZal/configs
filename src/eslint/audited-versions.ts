@@ -70,7 +70,38 @@
  * `allowed: ['@olivierzal']` for the apps), zero sites on the eight
  * manifests; jsdoc 65.4.1–65.4.3, regexp 3.3.2–3.3.3 and typescript-eslint
  * 8.72.1 are fixes only; `@eslint/css` 2.0.1 is baseline data the consumers'
- * trees already resolve; vitest 5.1.0 ran the eight suites green.
+ * trees already resolve; vitest 5.1.0 ran the eight suites green;
+ * 2026-11-09 (measured with a pack of the bumped tree in APFS clones of
+ * the seven consumers — each clone's own lint first, zero new sites,
+ * import-x 4.18's analysis rewrite included, then a probe config
+ * extending each repository's own with the candidates at their
+ * defaults): import-x 4.18 — four barrel rules ported from
+ * eslint-plugin-barrel-files: `avoid-re-export-all` adopted in the
+ * shared table at zero sites, `avoid-namespace-import` owned by
+ * `no-namespace`, which the app preset now runs with the overlay's
+ * `namespaceImportIgnore`, `avoid-barrel-files` and
+ * `avoid-importing-barrel-files` refused in the ledger (the family's
+ * barrels are package entries, and 331 of 425 import sites a
+ * dependency's entry point); `no-rename-default` refused there too (its
+ * premise fails on published bindings and on the platform's same-named
+ * default exports); `order`'s `'top'` mode owned by
+ * `perfectionist/sort-imports`' leading side-effect group, a ledger
+ * row; `extensions` now reads an extension alias (`./x.js` for `x.ts`,
+ * TypeScript's ESM spelling) as the extension written, so the app
+ * preset's report on the resolver fixture's `.js` stand-in is gone — the
+ * one behaviour change the rewrite brought, caught by the presets suite,
+ * not by the consumers (zero sites: the apps write the real extension) —
+ * and its `checkSelfReference` is inert by construction — an
+ * app declares no `exports` map, so no self-reference resolves, and the
+ * libraries, which do, run no `extensions` (TS2835 owns it there) — and
+ * the `whitelist`s of `no-duplicates` and `no-rename-default` name
+ * nothing here; html-eslint 0.68 — `lowercase` now admits an uppercase
+ * `DOCTYPE`, which Prettier lowercases on every page anyway,
+ * `require-attrs` checks its `value` once a `conditions` clause matched
+ * (the block states none) and `no-extra-spacing-text`'s `skipComments`
+ * is an option on a ledgered refusal; yml 3.10 — `max-len`, adopted in
+ * the YAML block at 80 with the `uses:`-line and URL exemptions, 63
+ * sites paid by the adoptions.
  */
 export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@eslint/css': '2.0',
@@ -78,18 +109,18 @@ export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@eslint/json': '2.1',
   '@eslint/markdown': '8.0',
   '@eslint-community/eslint-plugin-eslint-comments': '4.8',
-  '@html-eslint/eslint-plugin': '0.67',
+  '@html-eslint/eslint-plugin': '0.68',
   '@stylistic/eslint-plugin': '5.10',
   '@vitest/eslint-plugin': '1.6',
   eslint: '10.14',
   'eslint-cssicorn': '0.3',
   'eslint-plugin-es-x': '10.1',
-  'eslint-plugin-import-x': '4.17',
+  'eslint-plugin-import-x': '4.18',
   'eslint-plugin-jsdoc': '65.4',
   'eslint-plugin-package-json': '1.14',
   'eslint-plugin-perfectionist': '5.13',
   'eslint-plugin-regexp': '3.3',
   'eslint-plugin-unicorn': '79.0',
-  'eslint-plugin-yml': '3.9',
+  'eslint-plugin-yml': '3.10',
   'typescript-eslint': '8.72',
 }

@@ -4,8 +4,10 @@ jobs:
     # interactively by claude.yml — skip those to avoid a double response.
     if: |
       !endsWith(github.actor, '[bot]') &&
-      !((contains(github.event.issue.body || '', '@claude') || contains(github.event.issue.title, '@claude')) &&
-        contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association))
+      !((contains(github.event.issue.body || '', '@claude') ||
+          contains(github.event.issue.title, '@claude')) &&
+        contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'),
+          github.event.issue.author_association))
     name: Triage
     permissions:
       contents: read
@@ -29,7 +31,8 @@ jobs:
           allowed_non_write_users: '*'
           claude_args: >-
             --model opus
-            --allowedTools "Read,Glob,Grep,Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh label list:*),Bash(gh search:*)"
+            --allowedTools "Read,Glob,Grep,Bash(gh issue view:*)"
+            "Bash(gh issue list:*),Bash(gh label list:*),Bash(gh search:*)"
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
@@ -66,7 +69,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          result="$(jq -r -s 'flatten | map(select(.type? == "result")) | last | .result // empty' "$EXECUTION_FILE")"
+          result="$(jq -r -s \
+            'flatten | map(select(.type? == "result")) | last
+              | .result // empty' "$EXECUTION_FILE")"
           # Sentinel lines, not JSON: a Markdown comment full of newlines,
           # quotes and fences embeds in a JSON string only if the model
           # escapes it perfectly — the first live run proved it does not.
@@ -75,23 +80,28 @@ jobs:
           # in the message cannot confuse the parse.
           printf '%s\n' "$result" |
             awk '/^TRIAGE COMMENT START[[:space:]]*$/ {flag=1; buf=""; next}
-                 /^TRIAGE COMMENT END[[:space:]]*$/ {if (flag) {latest=buf}; flag=0; next}
+                 /^TRIAGE COMMENT END[[:space:]]*$/ {
+                   if (flag) {latest=buf}; flag=0; next
+                 }
                  flag {buf=buf $0 "\n"}
                  END {printf "%s", latest}' > "$RUNNER_TEMP/triage-comment.md"
           if ! [ -s "$RUNNER_TEMP/triage-comment.md" ]; then
-            echo '::error::No triage comment between the sentinels in the agent output'
+            echo '::error::No triage comment between the sentinels' \
+              'in the agent output'
             exit 1
           fi
-          requested="$(printf '%s\n' "$result" | grep '^TRIAGE LABELS:' | tail -1 |
-            sed 's/^TRIAGE LABELS:[[:space:]]*//' | tr ',' '\n' |
-            sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep -v '^$' | grep -vxi 'none')" || requested=''
+          requested="$(printf '%s\n' "$result" | grep '^TRIAGE LABELS:' |
+            tail -1 | sed 's/^TRIAGE LABELS:[[:space:]]*//' | tr ',' '\n' |
+            sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep -v '^$' |
+            grep -vxi 'none')" || requested=''
           labels="$(printf '%s\n' "$requested" |
             grep -Fxf <(gh label list --limit 100 --json name --jq '.[].name') |
             paste -sd, -)" || labels=''
           if [ -n "$labels" ]; then
             gh issue edit "$ISSUE_NUMBER" --add-label "$labels"
           fi
-          gh issue comment "$ISSUE_NUMBER" --body-file "$RUNNER_TEMP/triage-comment.md"
+          gh issue comment "$ISSUE_NUMBER" \
+            --body-file "$RUNNER_TEMP/triage-comment.md"
     timeout-minutes: 10
 name: Claude Issue Triage
 on:
