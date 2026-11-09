@@ -43,7 +43,9 @@ jobs:
       # boolean from the release event, not text that could inject.
       - env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm publish *.tgz ${{ github.event.release.prerelease && '--tag next' || '' }}
+        run: >-
+          npm publish *.tgz
+          ${{ github.event.release.prerelease && '--tag next' || '' }}
     timeout-minutes: 15
 name: Reusable publish
 on:

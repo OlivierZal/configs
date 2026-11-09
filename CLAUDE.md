@@ -992,6 +992,59 @@ resolves a call on a union of array types against the intersection of
 their element types), so the loop became two typed `filter` passes in
 the adoption.
 
+8.7.0 (2026-11-09) read import-x 4.18, html-eslint 0.68 and yml 3.10,
+measured with a pack of the bumped tree in APFS clones of the seven
+consumers: every clone's own lint stayed at zero (import-x's analysis
+core rewrite included), then a probe config extending each repository's
+own ran the candidates at their defaults. import-x's four barrel rules,
+ported from eslint-plugin-barrel-files, split three ways.
+`avoid-re-export-all` runs at `error` in the shared table: `export *`
+publishes whatever a module happens to export, and the family's barrels
+name every re-export (zero sites). `avoid-namespace-import` is
+`no-namespace`'s twin without the fixer, so `no-namespace` now runs in
+BOTH presets — the app preset had omitted it for com.melcloud's dialect
+namespaces (`import * as Classic/Home from
+'@olivierzal/melcloud-api/{classic,home}'`, the consumption melcloud-api's
+own entries document), which that overlay now names through the new
+`namespaceImportIgnore` knob, the `templateExpressionAllow` shape: the
+rule holds everywhere and the one documented exception travels with the
+consumer that owns it. `avoid-barrel-files` and
+`avoid-importing-barrel-files` are refused in the ledger as `domain`: of
+the 27 barrels the first reports, twelve are `exports` targets — a
+published package's entry point IS a barrel — fourteen the directory
+barrels those entries re-export from, one com.melcloud's JSON import
+seam; of the 425 imports the second reports, 331 reach a dependency's
+entry point (vitest alone 228), the one path an `exports` map admits,
+and the rest those same directory barrels. The premise — modules loaded
+and unused behind a barrel — is void on both runtimes the family ships
+to: Node loads a package whole through its entry, and every manifest
+declares `sideEffects: false`, under which esbuild prunes what a webview
+bundle does not reach. `no-rename-default` is refused as `domain`: it
+takes a default export's binding name for the module's name, which
+published plugins contradict (`plugin`, `_default` — eleven of its 13
+sites are this package's own imports, and 4.18's aliasing admits only
+the specifier's full word sequence) and which Homey's same-named
+`api.mts` defaults make impossible to honour in a test consuming two of
+them. `order`'s new `'top'` mode is `perfectionist/sort-imports`'
+leading `side-effect` group, a ledger row at zero sites. `extensions`'
+`checkSelfReference` is inert by construction (an app has no `exports`
+map to self-reference through; the libraries run no `extensions`), and
+the two new `whitelist`s name nothing here. html-eslint 0.68 changes
+behaviour only: `lowercase` admits an uppercase `DOCTYPE` (Prettier
+lowercases it on every page), `require-attrs` checks `value` once a
+`conditions` clause matched (the block states none), and
+`no-extra-spacing-text` gains `skipComments` on a ledgered refusal. yml
+3.10's `max-len` is adopted in the YAML block at 80: Prettier never
+wraps YAML (a plain, quoted or folded scalar, a comment and a `uses:`
+line all survive a pass at any length), so nothing held YAML to the 80
+columns every other file of the family keeps. Two exemptions, both
+external constraints: `uses:` lines — one token by GitHub's grammar,
+carrying Dependabot's same-line `# vX.Y.Z` comment that a folded scalar
+would hide from both (84 of 147 sites) — and URLs (none yet). The 63
+remaining sites fold in the adoptions: `>-` for prose and JSON inputs,
+`|` with continuations for the shell in `run:` blocks, further breaks
+in the multi-line `if:` expressions; this repository's 26 are in 8.7.0.
+
 Maintenance is a gate — an unmaintained plugin is refused regardless of
 coverage — and the claim is scoped to what was measured: the three
 long-standing refusals (n, promise, security) are active under

@@ -159,7 +159,12 @@ jobs:
       # context — on the exact commit that caused it. Waiting is also
       # what lets the Sonar job read the house bar back from a
       # published analysis rather than a pending one.
-      - if: matrix.coverage && env.SONAR_TOKEN != '' && (github.event_name == 'push' || (github.event.pull_request.user.login != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository))
+      - if: |
+          matrix.coverage && env.SONAR_TOKEN != '' &&
+          (github.event_name == 'push' ||
+            (github.event.pull_request.user.login != 'dependabot[bot]' &&
+              github.event.pull_request.head.repo.full_name ==
+                github.repository))
         uses: SonarSource/sonarqube-scan-action@4d1dc0c91ee400dcf8a6dddf2f705ac36542e304 # v8.4.0
         with:
           args: -Dsonar.qualitygate.wait=true
@@ -186,7 +191,9 @@ on:
       # <version>)`), so changing this list means updating the caller's
       # ruleset in the same move.
       node-versions:
-        default: '[{"node-version": "22", "coverage": true}, {"node-version": "latest"}, {"node-version": "lts/*"}]'
+        default: >-
+          [{"node-version": "22", "coverage": true},
+          {"node-version": "latest"}, {"node-version": "lts/*"}]
         required: false
         type: string
       run-docs:

@@ -67,15 +67,6 @@ const libraryMainBlock = (
       },
       naming,
     }),
-    // A namespace import hides which names a module uses; the
-    // libraries import by name. The app preset OMITS it: com.melcloud
-    // disambiguates the two wire vocabularies with `import * as
-    // Classic/Home from '@olivierzal/melcloud-api/{classic,home}'` —
-    // 86 sites in 70 files, 56 of them type-only (2026-09-27), the
-    // consumption melcloud-api's `src/classic.ts` documents — and the
-    // rule's only option is `ignore` globs, with no type-only
-    // exemption.
-    'import-x/no-namespace': 'error',
     // `src/temporal.ts` is the single sanctioned polyfill entry
     // point.
     'no-restricted-imports': [

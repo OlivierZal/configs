@@ -116,13 +116,25 @@ describe('claude issue triage workflow', () => {
       asRecord(stepBy('id', 'analyze').with, 'analyze inputs').claude_args,
       'claude_args',
     )
-    const [, allowed = ''] = /--allowedTools "(?<tools>[^"]+)"/v.exec(
+    // One variadic flag, its quoted groups split so no line of the
+    // folded scalar exceeds the print width (`yml/max-len`).
+    const [, groups = ''] = /--allowedTools(?<groups>(?: "[^"]+")+)/v.exec(
       claudeArgs,
     ) ?? ['', '']
+    const allowed = groups
+      .matchAll(/"(?<tools>[^"]+)"/gv)
+      .flatMap(({ groups: { tools = '' } = {} }) => tools.split(','))
+      .toArray()
 
-    expect(allowed).toBe(
-      'Read,Glob,Grep,Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh label list:*),Bash(gh search:*)',
-    )
+    expect(allowed).toStrictEqual([
+      'Read',
+      'Glob',
+      'Grep',
+      'Bash(gh issue view:*)',
+      'Bash(gh issue list:*)',
+      'Bash(gh label list:*)',
+      'Bash(gh search:*)',
+    ])
   })
 
   it('should keep the posting script free of template injection', () => {

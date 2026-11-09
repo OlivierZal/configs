@@ -215,6 +215,38 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
     rule: 'html/require-open-graph-protocol',
   },
   {
+    class: 'domain',
+    reason:
+      "Reports the AUTHORING of a module that re-exports more than three runtime names and more than it declares — which is what a published package's entry point is. Of its 27 sites over the eight repositories (4.18.1, 2026-11-09), twelve are `exports` targets (the four libraries' `src/index.ts`, melcloud-api's `classic.ts` and `home.ts` dialect entries, homey-kit's `node`, `settings`, `testing`, `webview` and `widget` entries), fourteen the directory barrels those entries re-export from, and the last com.melcloud's `files.mts`, the JSON import seam. The premise — modules loaded and unused behind a barrel — is void on both runtimes the family ships to: Node loads a package through its entry and keeps the graph, and every manifest declares `sideEffects: false`, the contract under which esbuild drops what a webview bundle does not reach (each app's perimeter test pins its bundles' inputs). Ported from eslint-plugin-barrel-files, whose subject is application code behind a bundler.",
+    rule: 'import-x/avoid-barrel-files',
+  },
+  {
+    class: 'domain',
+    reason:
+      "Reports an import whose target's runtime graph exceeds twenty modules: 331 of its 425 sites over the eight repositories (4.18.1, 2026-11-09) are a dependency's entry point — vitest 228 times, this family's own SDKs 94 (`@olivierzal/api-core`, `@olivierzal/melcloud-api` with its dialect entries, `@olivierzal/heatzy-api`), yaml, chart.js, two ESLint plugins — the one path an `exports` map admits, and the remaining 94 the libraries' own directory barrels, `avoid-barrel-files`' subject. A consumer that may not import `vitest` imports nothing; the graph behind a package entry is the package, and the manifests' `sideEffects: false` is what lets a bundler prune it.",
+    rule: 'import-x/avoid-importing-barrel-files',
+  },
+  {
+    class: 'owned',
+    owner: 'import-x/no-namespace',
+    reason:
+      "The same ban as `import-x/no-namespace` — a namespace import hides which names a module uses — with an exact `allowList` and no fixer, where the owner takes `ignore` globs and fixes direct member access. The owner runs at `error` in both presets since 8.7.0 (the app preset omitted it until then): com.melcloud's 31 namespace imports of melcloud-api's two dialect entries (2026-11-09), the consumption the library documents, are named by its overlay through `namespaceImportIgnore`, and the other seven repositories hold none.",
+    rule: 'import-x/avoid-namespace-import',
+  },
+  {
+    class: 'domain',
+    reason:
+      "Takes the default export's BINDING name for the module's name, a premise published packages contradict: eleven of its 13 sites (4.18.1, 2026-11-09) are this package's plugin imports, whose shipped bindings read `plugin`, `_default` and `eslintPluginUnicorn` — `stylistic`, `perfectionist`, `unicorn`, `vitest`, `esx`, `cssicorn` and `swc` all reported, since 4.18's module-name aliasing admits the specifier's full word sequence and not a plugin's conventional short name. The family's own default exports exist only where a platform demands them — Homey's `api.mts`, each exporting `api`; `eslint.config.ts`, each exporting `config` (`import-x/no-default-export` at `error` keeps it so) — so a module consuming two of them must rename one: com.melcloud's `api-contract.test.ts` takes the widgets' `api` as `ataGroupSettingApi` and `chartsApi`. Its `whitelist` is a list of the corpus, the shape the doctrine refuses.",
+    rule: 'import-x/no-rename-default',
+  },
+  {
+    class: 'owned',
+    owner: 'perfectionist/sort-imports',
+    reason:
+      "Import order is perfectionist's: `sort-imports` at `error` in the shared table, with the family's groups. 4.18 added a `'top'` mode to `warnOnUnassignedImports` — side-effect imports before every assigned one — which the owner already holds through its leading `side-effect` group: zero sites under the mode over the eight repositories (2026-11-09; the two `import 'source-map-support/register.js'` open their `app.mts`).",
+    rule: 'import-x/order',
+  },
+  {
     class: 'owned',
     owner: 'jsdoc/no-types',
     reason:
