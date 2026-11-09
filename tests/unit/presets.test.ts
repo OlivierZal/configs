@@ -251,23 +251,27 @@ describe(homeyApp, () => {
 
   // The exemption travels with the consumer that documents it; the rule
   // itself is the shared table's, bare where nothing is exempted.
-  it('should hand the namespace exemptions to no-namespace', () => {
+  it('should hand the namespace exemptions to avoid-namespace-import', () => {
     const rules = mainRulesOf(
       homeyApp({
         bundledSourceGlobs: ['settings/**'],
         defaultExportFiles: ['api.mts', 'app.mts'],
         jsdocFiles: ['lib/**/*.mts'],
-        namespaceImportIgnore: ['@olivierzal/melcloud-api/classic'],
+        namespaceImportAllow: ['@olivierzal/melcloud-api/classic'],
         webviewFloorFiles: ['settings/**/*.mts'],
       }),
     )
 
-    expect(rules['import-x/no-namespace']).toStrictEqual([
+    expect(rules['import-x/avoid-namespace-import']).toStrictEqual([
       'error',
-      { ignore: ['@olivierzal/melcloud-api/classic'] },
+      { allowList: ['@olivierzal/melcloud-api/classic'] },
     ])
-    expect(mainRulesOf(appPreset)['import-x/no-namespace']).toBe('error')
-    expect(mainRulesOf(libraryPreset)['import-x/no-namespace']).toBe('error')
+    expect(mainRulesOf(appPreset)['import-x/avoid-namespace-import']).toBe(
+      'error',
+    )
+    expect(mainRulesOf(libraryPreset)['import-x/avoid-namespace-import']).toBe(
+      'error',
+    )
   })
 
   it('should scope the untyped-double offs to the given files', () => {

@@ -487,9 +487,10 @@ export interface SharedMainRulesOptions {
   }
   readonly naming: NamingConventionOptions
   // Import sources kept in namespace form — a dependency's documented
-  // consumption, never a convenience — as `import-x/no-namespace`'s
-  // `ignore` takes them (exact specifiers or globs).
-  readonly namespaceImportIgnore?: readonly string[]
+  // consumption, never a convenience — as
+  // `import-x/avoid-namespace-import`'s `allowList` takes them (exact
+  // specifiers).
+  readonly namespaceImportAllow?: readonly string[]
   readonly templateExpressionAllow?: readonly TemplateExpressionAllowEntry[]
   readonly unassignedImportAllow?: readonly string[]
 }
@@ -1214,7 +1215,7 @@ const templateExpressionOptions = (
 // Merges the static table with the measured family knobs.
 export const sharedMainRules = ({
   extraneous,
-  namespaceImportIgnore,
+  namespaceImportAllow,
   naming,
   templateExpressionAllow = [],
   unassignedImportAllow,
@@ -1228,6 +1229,24 @@ export const sharedMainRules = ({
     'error',
     templateExpressionOptions(templateExpressionAllow),
   ],
+  // A namespace import hides which names a module uses; the family
+  // imports by name. 4.18's rule rather than `no-namespace`, its
+  // fixable twin, because this one exempts `import type * as` by
+  // construction — the module-type naming a mocked module needs
+  // (`mockModule<typeof HomeyLib>`: `consistent-type-imports` refuses a
+  // `typeof import()` annotation) and the same-name disambiguation of
+  // com.melcloud's `types/classic-capabilities.mts`, twelve sites over
+  // the three apps (2026-11-09) that `no-namespace`'s `ignore` globs
+  // cannot carve out. The one documented VALUE exception travels in
+  // `namespaceImportAllow`: com.melcloud disambiguates melcloud-api's
+  // two wire vocabularies with `import * as Classic/Home from
+  // '@olivierzal/melcloud-api/{classic,home}'` — 31 sites in 27 files
+  // — the consumption the library's `classic.ts` and `home.ts` entries
+  // document, and names those two entries in its overlay.
+  'import-x/avoid-namespace-import':
+    namespaceImportAllow === undefined
+      ? 'error'
+      : ['error', { allowList: [...namespaceImportAllow] }],
   'import-x/no-extraneous-dependencies': [
     'error',
     {
@@ -1238,20 +1257,6 @@ export const sharedMainRules = ({
       peerDependencies: false,
     },
   ],
-  // A namespace import hides which names a module uses; the family
-  // imports by name. The one documented exception travels in
-  // `namespaceImportIgnore`: com.melcloud disambiguates melcloud-api's
-  // two wire vocabularies with `import * as Classic/Home from
-  // '@olivierzal/melcloud-api/{classic,home}'` — 31 sites in 27 files
-  // (2026-11-09), the consumption the library's `classic.ts` and
-  // `home.ts` entries document — and names those two entries in its
-  // overlay. Until 8.7.0 the app preset omitted the rule for them;
-  // import-x 4.18's `avoid-namespace-import` (an exact `allowList`, no
-  // fixer) is the same verdict and sits in the refusal ledger as owned.
-  'import-x/no-namespace':
-    namespaceImportIgnore === undefined
-      ? 'error'
-      : ['error', { ignore: [...namespaceImportIgnore] }],
   'import-x/no-unassigned-import':
     unassignedImportAllow === undefined
       ? 'error'

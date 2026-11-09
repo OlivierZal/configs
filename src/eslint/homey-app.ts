@@ -47,11 +47,11 @@ export interface HomeyAppOptions {
   readonly jsdocFiles: readonly string[]
   // Sources that run in the phone webview and carry the es2023 floor.
   readonly webviewFloorFiles: readonly string[]
-  // Import sources kept in namespace form, as `import-x/no-namespace`'s
-  // `ignore` takes them: a dependency's documented consumption (the two
-  // melcloud-api dialect entries), never a convenience — the shared
-  // table states the verdict.
-  readonly namespaceImportIgnore?: readonly string[]
+  // Import sources kept in namespace form, as
+  // `import-x/avoid-namespace-import`'s `allowList` takes them: a
+  // dependency's documented consumption (the two melcloud-api dialect
+  // entries), never a convenience — the shared table states the verdict.
+  readonly namespaceImportAllow?: readonly string[]
   readonly templateExpressionAllow?: readonly TemplateExpressionAllowEntry[]
   // Test files whose Homey driver/device doubles proxy untyped SDK
   // surfaces; omit when the app has none (ESLint rejects `files: []`).
@@ -638,10 +638,10 @@ const appNaming = (
 
 const appMainBlock = ({
   bundledSourceGlobs,
-  namespaceImportIgnore,
+  namespaceImportAllow,
   naming,
   templateExpressionAllow,
-}: Pick<HomeyAppOptions, 'bundledSourceGlobs' | 'namespaceImportIgnore'> & {
+}: Pick<HomeyAppOptions, 'bundledSourceGlobs' | 'namespaceImportAllow'> & {
   readonly naming: NamingConventionOptions
   readonly templateExpressionAllow: readonly TemplateExpressionAllowEntry[]
 }): ConfigWithExtends => ({
@@ -659,7 +659,7 @@ const appMainBlock = ({
           ...bundledSourceGlobs,
         ],
       },
-      ...(namespaceImportIgnore !== undefined && { namespaceImportIgnore }),
+      ...(namespaceImportAllow !== undefined && { namespaceImportAllow }),
       naming,
       templateExpressionAllow,
       unassignedImportAllow: ['source-map-support/register.js'],
@@ -757,7 +757,7 @@ export const homeyApp = ({
   bundledSourceGlobs,
   defaultExportFiles,
   jsdocFiles,
-  namespaceImportIgnore,
+  namespaceImportAllow,
   templateExpressionAllow = [],
   untypedDoubleTestFiles = [],
   webviewFloorFiles,
@@ -771,7 +771,7 @@ export const homeyApp = ({
     linterOptionsBlock,
     appMainBlock({
       bundledSourceGlobs,
-      ...(namespaceImportIgnore !== undefined && { namespaceImportIgnore }),
+      ...(namespaceImportAllow !== undefined && { namespaceImportAllow }),
       naming: isScoped ? appNaming([]) : naming,
       templateExpressionAllow,
     }),

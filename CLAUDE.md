@@ -992,7 +992,7 @@ resolves a call on a union of array types against the intersection of
 their element types), so the loop became two typed `filter` passes in
 the adoption.
 
-8.7.0 (2026-11-09) read import-x 4.18, html-eslint 0.68 and yml 3.10,
+8.7.0 and 8.8.0 (2026-11-09) read import-x 4.18, html-eslint 0.68 and yml 3.10,
 measured with a pack of the bumped tree in APFS clones of the seven
 consumers: every clone's own lint stayed at zero (import-x's analysis
 core rewrite included), then a probe config extending each repository's
@@ -1000,14 +1000,22 @@ own ran the candidates at their defaults. import-x's four barrel rules,
 ported from eslint-plugin-barrel-files, split three ways.
 `avoid-re-export-all` runs at `error` in the shared table: `export *`
 publishes whatever a module happens to export, and the family's barrels
-name every re-export (zero sites). `avoid-namespace-import` is
-`no-namespace`'s twin without the fixer, so `no-namespace` now runs in
-BOTH presets — the app preset had omitted it for com.melcloud's dialect
-namespaces (`import * as Classic/Home from
-'@olivierzal/melcloud-api/{classic,home}'`, the consumption melcloud-api's
-own entries document), which that overlay now names through the new
-`namespaceImportIgnore` knob, the `templateExpressionAllow` shape: the
-rule holds everywhere and the one documented exception travels with the
+name every re-export (zero sites). `avoid-namespace-import` runs at
+`error` in the shared table and `no-namespace`, its fixable twin, moves
+from the library preset into the ledger as owned: the new rule exempts
+`import type * as` by construction, which `no-namespace`'s `ignore`
+globs cannot — a type namespace is erased and is the one way to name a
+module's type (`mockModule<typeof HomeyLib>` in the three apps' tests,
+since `consistent-type-imports` refuses a `typeof import()` annotation)
+or to disambiguate same-name types across modules
+(`types/classic-capabilities.mts`), twelve sites the pre-flight of the
+adoptions surfaced after 8.7.0 had put `no-namespace` in the app preset
+(8.8.0 corrects it the same day; 8.7.0 was never adopted). The one
+documented VALUE exception — com.melcloud's dialect namespaces,
+`import * as Classic/Home from '@olivierzal/melcloud-api/{classic,home}'`,
+the consumption melcloud-api's own entries document — travels through
+the new `namespaceImportAllow` knob, the `templateExpressionAllow`
+shape: the rule holds everywhere and the exception stays with the
 consumer that owns it. `avoid-barrel-files` and
 `avoid-importing-barrel-files` are refused in the ledger as `domain`: of
 the 27 barrels the first reports, twelve are `exports` targets — a

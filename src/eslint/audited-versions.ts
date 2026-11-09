@@ -77,9 +77,13 @@
  * extending each repository's own with the candidates at their
  * defaults): import-x 4.18 — four barrel rules ported from
  * eslint-plugin-barrel-files: `avoid-re-export-all` adopted in the
- * shared table at zero sites, `avoid-namespace-import` owned by
- * `no-namespace`, which the app preset now runs with the overlay's
- * `namespaceImportIgnore`, `avoid-barrel-files` and
+ * shared table at zero sites, `avoid-namespace-import` adopted there too
+ * — it exempts `import type * as` by construction, the module-type
+ * naming the apps' tests need (twelve sites), and the overlay's
+ * `namespaceImportAllow` names com.melcloud's two dialect entries —
+ * with `no-namespace`, its fixable twin without that exemption, retired
+ * from the library preset into the ledger as owned (8.8.0; 8.7.0 had
+ * kept the twin and was never adopted), `avoid-barrel-files` and
  * `avoid-importing-barrel-files` refused in the ledger (the family's
  * barrels are package entries, and 331 of 425 import sites a
  * dependency's entry point); `no-rename-default` refused there too (its
