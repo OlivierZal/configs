@@ -326,6 +326,13 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
     rule: 'unicorn/name-replacements',
   },
   {
+    class: 'owned',
+    owner: '@typescript-eslint/strict-void-return',
+    reason:
+      'Bans an async function as a `Promise#finally()` callback. unicorn 80 took it out of `recommended` and `unopinionated` because it polices a spelling, not the hazard: by its own docs a non-async callback returning the same promise passes, and an async one that handles its own errors is reported. The type-aware owner reports the hazard in both spellings — `finally` takes a `() => void`, so a promise-returning callback, async or not, is a value returned where none is expected — on awaited and `void`-discarded chains alike, and `unicorn/prefer-await` already reports the `.finally()` chain itself. What only this rule sees is a callback whose type was made void on purpose (an `as () => void` cast, a void overload over an async implementation, a JSDoc `@type` in a JavaScript file), measured over 61 shapes (2026-11-18); 0 sites over the eight repositories when forced on (2026-11-16). On through `recommended` until 79, so the family ran it.',
+    rule: 'unicorn/no-async-promise-finally',
+  },
+  {
     class: 'vocabulary',
     reason:
       "Bans `new` and `class` as identifier prefixes. NOT owned: `@typescript-eslint/naming-convention` as configured checks formats and boolean prefixes, never a forbidden prefix. Refused as vocabulary: 87 sites would fire family-wide (2026-09-27), `newSettings` ×29 and `className` ×8 among them — the latter the DOM's own property name — and unicorn itself keeps the rule out of `recommended`.",

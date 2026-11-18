@@ -3,7 +3,9 @@ import { fileURLToPath } from 'node:url'
 import type { Config } from 'eslint/config'
 import { ESLint } from 'eslint'
 import { format } from 'prettier'
+import { parser } from 'typescript-eslint'
 import { describe, expect, it } from 'vitest'
+import unicorn from 'eslint-plugin-unicorn'
 
 import { homeyApp } from '../../src/eslint/homey-app.ts'
 import { library } from '../../src/eslint/library.ts'
@@ -349,6 +351,69 @@ const lintCss = async (text: string): Promise<(string | null)[]> => {
   })
   return result?.messages.map(({ ruleId }) => ruleId) ?? []
 }
+
+// `unicorn/require-spread-parentheses` is a live `off` on one claim:
+// the formatter already writes every parenthesis it asks for. Only a
+// real Prettier run can hold that claim, so the rule runs here alone,
+// over one spread of each node kind it checks — reported as written,
+// silent once formatted.
+const UNPARENTHESIZED_SPREADS = `export const spreads = async function* (
+  flag: boolean,
+  list: number[],
+  other: number[],
+  loose: unknown,
+  pending: Promise<number[]>,
+): AsyncGenerator<unknown, void, number[]> {
+  let target: number[] = []
+  yield { ...flag && { list } }
+  yield [...list ?? other]
+  yield [...flag ? list : other]
+  yield [...'a' + 'b']
+  yield [...target = list]
+  yield [...loose as number[]]
+  yield [...list satisfies number[]]
+  yield [...<number[]>loose]
+  yield [...await pending]
+  yield [...yield target]
+}
+`
+
+const SPREAD_KINDS = 10
+
+const lintSpreads = async (text: string): Promise<(string | null)[]> => {
+  const eslint = new ESLint({
+    overrideConfig: [
+      {
+        files: ['**/*.ts'],
+        languageOptions: { parser },
+        plugins: { unicorn },
+        rules: { 'unicorn/require-spread-parentheses': 'error' },
+      },
+    ],
+    overrideConfigFile: true,
+  })
+  const [result] = await eslint.lintText(text, { filePath: 'src/spreads.ts' })
+  return result?.messages.map(({ ruleId }) => ruleId) ?? []
+}
+
+describe('spread parentheses handover', () => {
+  it('should report each spread as written', async () => {
+    await expect(lintSpreads(UNPARENTHESIZED_SPREADS)).resolves.toStrictEqual(
+      Array.from(
+        { length: SPREAD_KINDS },
+        () => 'unicorn/require-spread-parentheses',
+      ),
+    )
+  })
+
+  it('should find nothing left in what Prettier produces', async () => {
+    const formatted = await format(UNPARENTHESIZED_SPREADS, {
+      parser: 'typescript',
+    })
+
+    await expect(lintSpreads(formatted)).resolves.toStrictEqual([])
+  })
+})
 
 // The CSS gate is bound to the same engine as the JS floor — the iOS
 // 16.4 WebKit — through a Baseline year, plus an exact-name allowlist
@@ -800,6 +865,29 @@ describe.each(presets)('resolved config via $presetName', ({ preset }) => {
 
       expect(severityOf(rules['@typescript-eslint/no-this-alias'])).toBe(2)
       expect(severityOf(rules['unicorn/no-this-assignment'])).toBe(0)
+    },
+  )
+
+  // `prefer-regexp-exec` (stylistic-type-checked) is the one owner of exec
+  // over match: unicorn 80's twin would report the common call twice.
+  it(
+    'should leave exec over match to the typescript-eslint owner',
+    { timeout: 60_000 },
+    async () => {
+      const rules = await resolveRules(preset, 'src/index.ts')
+
+      expect(severityOf(rules['@typescript-eslint/prefer-regexp-exec'])).toBe(2)
+      expect(severityOf(rules['unicorn/prefer-regexp-exec'])).toBe(0)
+    },
+  )
+
+  it(
+    'should leave spread parentheses to the formatter',
+    { timeout: 60_000 },
+    async () => {
+      const rules = await resolveRules(preset, 'src/index.ts')
+
+      expect(severityOf(rules['unicorn/require-spread-parentheses'])).toBe(0)
     },
   )
 

@@ -1,6 +1,6 @@
 {
   "name": "@olivierzal/configs",
-  "version": "8.8.0",
+  "version": "8.9.0",
   "description": "Shared tooling presets for the OlivierZal repo family: eslint, prettier, tsconfig, typedoc and vitest fragments",
   "keywords": [
     "configs",
@@ -84,7 +84,7 @@
     "eslint-plugin-package-json": "1.14.0",
     "eslint-plugin-perfectionist": "5.13.0",
     "eslint-plugin-regexp": "3.3.3",
-    "eslint-plugin-unicorn": "79.0.0",
+    "eslint-plugin-unicorn": "80.0.0",
     "eslint-plugin-yml": "3.10.0",
     "prettier-plugin-packagejson": "^3.0.2",
     "typescript-eslint": "8.72.1",

@@ -105,7 +105,23 @@
  * (the block states none) and `no-extra-spacing-text`'s `skipComments`
  * is an option on a ledgered refusal; yml 3.10 — `max-len`, adopted in
  * the YAML block at 80 with the `uses:`-line and URL exemptions, 63
- * sites paid by the adoptions.
+ * sites paid by the adoptions; 2026-11-18 (measured on 2026-11-16 with a
+ * pack of the bumped tree in APFS clones of the seven consumers, each
+ * verdict then challenged by refuters and, for the contested one, by two
+ * advocates): unicorn 80 — its three new `recommended` rules arrive as
+ * live offs in the main table, `require-spread-parentheses` (redundant,
+ * Prettier writes the parentheses), `prefer-regexp-exec` (owned by
+ * `@typescript-eslint/prefer-regexp-exec`) and `prefer-options-parameter`
+ * (refused: it bans the platform's `(subject?, options?)` idiom, and its
+ * `checkWithoutOptionsObject` only adds reports to that check);
+ * `no-async-promise-finally`, out of `recommended` in 80, is a ledger row
+ * owned by `@typescript-eslint/strict-void-return`; `prefer-ternary`'s new
+ * `checkNestedTernaries` stays off, 32 of its 35 rewrites rejected by
+ * `no-nested-ternary`; the two new opt-out options, `no-immediate-mutation`'s
+ * `checkCollections` and `prefer-smaller-scope`'s `checkTypeAliases`, keep
+ * their `true` defaults; `checkBufferDecoding` is an option on two floor
+ * refusals; and the widenings cost one site, com.melcloud's error count
+ * (`prefer-minimal-ternary` on a member chain), rewritten in the adoption.
  */
 export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@eslint/css': '2.0',
@@ -124,7 +140,7 @@ export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   'eslint-plugin-package-json': '1.14',
   'eslint-plugin-perfectionist': '5.13',
   'eslint-plugin-regexp': '3.3',
-  'eslint-plugin-unicorn': '79.0',
+  'eslint-plugin-unicorn': '80.0',
   'eslint-plugin-yml': '3.10',
   'typescript-eslint': '8.72',
 }
