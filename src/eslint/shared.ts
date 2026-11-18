@@ -1177,13 +1177,44 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // Stricter than the v72 default (see `prefer-global-number-constants`
   // above).
   'unicorn/prefer-number-properties': ['error', { checkNaN: true }],
+  // Refused, a live off: it bans `(subject?, options?)`, the platform's own
+  // idiom — WebIDL's `Response(body?, init = {})`, `Blob(parts?, options =
+  // {})`, `TextDecoder(label?, options = {})`, ECMA-402's `(locales?,
+  // options?)` — where the W3C TAG's design principles (§6.5) fold a
+  // SERIES of optional arguments into the dictionary, not the subject
+  // that precedes it. Its options object is a type-shape heuristic (any
+  // record): 10 of its 16 sites over the eight repositories (unicorn 80,
+  // 2026-11-16) end on an injected collaborator (the `Redaction` engine),
+  // an adapter double or a data record. And its remedy keys the dominant
+  // call to spare the rare padded one (`createSettingStore`: 110 of 114
+  // calls pass the seed alone or nothing, 2 pad a `{}`), the trade WebIDL
+  // rejects. `checkWithoutOptionsObject` only adds reports to this check,
+  // so it cannot be taken alone.
+  'unicorn/prefer-options-parameter': 'off',
+  // Owned by `@typescript-eslint/prefer-regexp-exec` (through
+  // `stylisticTypeChecked`): one owner for exec over match, as for
+  // `regexp/prefer-regexp-exec` (refused 7.0.0). Both report the common
+  // `text.match(/re/)`, so running both doubles every report. Neither is a
+  // superset, measured over 82 shapes (2026-11-18): the owner alone reports
+  // string patterns, boolean contexts and template-literal receivers; this
+  // rule alone reaches a receiver typed by a generic's string constraint
+  // (`T['name']`, `Extract<keyof T, string>`) and a RegExp subtype — 0
+  // sites over the eight repositories. New in unicorn 80's `recommended`.
+  'unicorn/prefer-regexp-exec': 'off',
   'unicorn/prefer-short-arrow-method': 'error',
   // Owned by `@typescript-eslint/prefer-string-starts-ends-with`.
   'unicorn/prefer-string-starts-ends-with': 'off',
   'unicorn/prefer-temporal': 'error',
   // The statement-side twin of `prefer-minimal-ternary` (unicorn 78 added
   // the option): the same shape policy, stated once in
-  // `ternaryShapeOptions`, so the two rules cannot drift apart.
+  // `ternaryShapeOptions`, so the two rules cannot drift apart. Unicorn
+  // 80's `checkNestedTernaries` stays at its `false` default: it lifts
+  // the boundary the `always` verdict relies on — a guard is left alone
+  // when merging it would put a ternary inside a ternary — and what it
+  // writes the family forbids. Its 36 reports over the eight
+  // repositories fix into 35 rewrites: 32 are rejected by
+  // `no-nested-ternary`, the other three bury a ternary inside one
+  // branch of the new one (2026-11-16).
   'unicorn/prefer-ternary': ['error', 'always', ternaryShapeOptions],
   // Same move as `no-unsafe-dom-html`. Caveat recorded: the rule flags
   // ANY one-argument `.postMessage(x)` regardless of receiver, so a
@@ -1191,6 +1222,18 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // a library would false-positive — the answer then is to rename this
   // reason to what it really guards, never to disable.
   'unicorn/require-post-message-target-origin': 'error',
+  // REDUNDANT: Prettier writes these parentheses itself. The rule is a
+  // `layout` rule by its own `meta.type`, and on every node kind it
+  // checks (logical, binary, conditional, assignment, `as`, `satisfies`,
+  // type assertion, `await`, `yield`) Prettier's needs-parens adds them
+  // and never strips one: 14 reports on an unformatted fixture, 0 on its
+  // formatted twin, 0 sites over the eight repositories (2026-11-16).
+  // Only a node under `prettier-ignore`, which Prettier leaves verbatim,
+  // escapes it — the family writes none (28 shapes, 2026-11-18). New in
+  // unicorn 80's `recommended`; eslint-config-prettier 10.1.8 predates
+  // it — delete this line the day it lists the rule, as for
+  // `no-leading-empty-lines` above.
+  'unicorn/require-spread-parentheses': 'off',
   'unicorn/try-complexity': 'error',
   'use-isnan': ['error', { enforceForIndexOf: true }],
   'valid-typeof': ['error', { requireStringLiterals: true }],

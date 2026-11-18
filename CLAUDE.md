@@ -1053,6 +1053,50 @@ remaining sites fold in the adoptions: `>-` for prose and JSON inputs,
 `|` with continuations for the shell in `run:` blocks, further breaks
 in the multi-line `if:` expressions; this repository's 26 are in 8.7.0.
 
+8.9.0 (2026-11-18) reads unicorn 80, measured on 2026-11-16 with a pack
+of the bumped tree in APFS clones of the seven consumers — each clone's
+own lint, then a probe config for the opt-ins — and every verdict then
+put to an adversarial check: one refuter per ownership or redundancy
+claim, and two advocates, one per side, on the contested rule. None of
+the three new `recommended` rules is adopted; each is a live `off` at
+its rule site, since the preset turns it on. `require-spread-parentheses`
+is a `layout` rule Prettier already satisfies — its needs-parens adds
+every parenthesis the rule wants and strips none, so only a node under
+`prettier-ignore` escapes it, and the family writes none.
+`prefer-regexp-exec` duplicates `@typescript-eslint/prefer-regexp-exec`,
+the owner of exec over match since `regexp/prefer-regexp-exec` was
+refused in 7.0.0: both report the common call, and the refuter's 82
+shapes showed neither a superset — the owner alone takes string
+patterns, boolean contexts and template literals, this rule alone a
+receiver typed by a generic's string constraint (`T['name']`) — so the
+gap is recorded at the rule site, at 0 sites, rather than paid for with
+a double report everywhere. `prefer-options-parameter` is the contested
+one, refused on practice: it bans `(subject?, options?)`, which WebIDL
+and ECMA-402 use for `Response`, `Blob`, `TextDecoder` and every `Intl`
+constructor, while the W3C TAG folds a SERIES of optional arguments into
+the dictionary; its options object is any record type, so 10 of its 16
+sites end on a collaborator, an adapter double or a data record; and
+its remedy keys the dominant call (`createSettingStore`: 110 of 114
+calls pass the seed alone or nothing) to spare the rare padded one. The
+adoption advocate's case — 37 padded calls and two boolean traps gone,
+every gate green after an api-core major and 233 hand edits — survived
+its own scrutiny but rested on judging those keyed calls clearer, which
+the platform's own design does not. Its `checkWithoutOptionsObject` only
+adds reports to the same check, so it is refused with it, though TAG
+§6.5 reads close to its text. `no-async-promise-finally` left
+`recommended` in 80 and enters the ledger as owned by
+`@typescript-eslint/strict-void-return`, which reports the hazard in
+both spellings; the refuter found only callbacks whose type was made
+void on purpose (a cast, a void overload, a JSDoc `@type`) escaping the
+owner. `prefer-ternary`'s `checkNestedTernaries` stays off: 32 of the 35
+rewrites it adds are rejected by `no-nested-ternary` and the other three
+bury a ternary in a branch. The two new options that default to `true`
+(`no-immediate-mutation`'s `checkCollections`, `prefer-smaller-scope`'s
+`checkTypeAliases`) stay as they are, and `checkBufferDecoding` sits on
+two floor refusals. The widenings cost one site over the eight
+repositories, com.melcloud's error count (`prefer-minimal-ternary` on a
+member chain), rewritten by hand in its adoption.
+
 Maintenance is a gate — an unmaintained plugin is refused regardless of
 coverage — and the claim is scoped to what was measured: the three
 long-standing refusals (n, promise, security) are active under
