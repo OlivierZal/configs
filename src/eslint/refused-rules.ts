@@ -80,12 +80,6 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
   {
     class: 'conflicting',
     reason:
-      "Fights Prettier on both axes. The `code` axis conflicts with the printer's own output — nine declarations in melcloud-api and seven in com.melcloud it cannot break below 80 — and the `comments` axis, the one Prettier leaves alone, would cost 195 hand-wrapped prose lines behind a `code` sentinel the rule needs, having no comments-only mode (measured 2026-09-15). House comments wrap at print width by convention; a rule that cannot fix what it reports is not what would hold it. As an `off` it was dead twice over: no `@stylistic` preset is extended, and eslint-config-prettier already lists the rule at 0.",
-    rule: '@stylistic/max-len',
-  },
-  {
-    class: 'conflicting',
-    reason:
       "TypeScript owns the real case: with `noImplicitReturns` in both tsconfig bases and `@typescript-eslint/explicit-function-return-type` at `error`, a path that genuinely drops off the end of a value-returning function is a compile error. What the rule adds is two false positives (heatzy-api `src/facades/manager.ts:13`, melcloud-api `src/facades/classic-factory.ts:54`; measured 2026-09-27 and 2026-10-09 under eslint 10.12): exhaustive `switch` statements whose end TypeScript proves unreachable, where the only edit that would satisfy the rule — a `default` branch — is exactly what `@typescript-eslint/switch-exhaustiveness-check` forbids under the family's `allowDefaultCaseForExhaustiveSwitch: false` (reproduced on one fixture: the two rules report it one each way). Adopting it would force dead code the house's own rule rejects. Class `conflicting`, not `owned`: the owner is the compiler, which the ledger cannot name.",
     rule: 'consistent-return',
   },
@@ -335,7 +329,7 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
   {
     class: 'vocabulary',
     reason:
-      "Bans `new` and `class` as identifier prefixes. NOT owned: `@typescript-eslint/naming-convention` as configured checks formats and boolean prefixes, never a forbidden prefix. Refused as vocabulary: 87 sites would fire family-wide (2026-09-27), `newSettings` ×29 and `className` ×8 among them — the latter the DOM's own property name — and unicorn itself keeps the rule out of `recommended`.",
+      "Bans `new` and `class` as identifier prefixes. NOT owned: `@typescript-eslint/naming-convention` as configured checks formats and boolean prefixes, never a forbidden prefix. Refused as vocabulary, on what the prefixes say rather than how often they occur: `className` is the DOM's and the platform's own property name, `newSettings` names the state a write moves to, and the confusion the rule guards against — `newFoo` read as `new Foo` — is one a camelCase identifier never invites, a keyword being followed by a space. unicorn itself keeps the rule out of `recommended`.",
     rule: 'unicorn/no-keyword-prefix',
   },
   {

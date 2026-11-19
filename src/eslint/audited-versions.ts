@@ -121,13 +121,19 @@
  * `checkCollections` and `prefer-smaller-scope`'s `checkTypeAliases`, keep
  * their `true` defaults; `checkBufferDecoding` is an option on two floor
  * refusals; and the widenings cost one site, com.melcloud's error count
- * (`prefer-minimal-ternary` on a member chain), rewritten in the adoption.
+ * (`prefer-minimal-ternary` on a member chain), rewritten in the adoption;
+ * 2026-11-20: `@eslint/markdown` 9.0 — its rules declare `meta.languages`
+ * (`no-bare-urls` and `table-column-count` GFM-only, the Markdown
+ * block's language) and `table-column-count` leaves `recommended`,
+ * which the block enables by name; unused-directive locations remapped;
+ * its fixes measured zero sites old and new over the eight
+ * repositories' Markdown.
  */
 export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@eslint/css': '2.0',
   '@eslint/js': '10.0',
   '@eslint/json': '2.1',
-  '@eslint/markdown': '8.0',
+  '@eslint/markdown': '9.0',
   '@eslint-community/eslint-plugin-eslint-comments': '4.8',
   '@html-eslint/eslint-plugin': '0.68',
   '@stylistic/eslint-plugin': '5.10',

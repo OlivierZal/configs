@@ -570,18 +570,28 @@ unsafe on identifiers), `import-x/no-commonjs`, the four
 `import-x/extensions` (app preset only; TS2835 owns it under
 `nodenext`) and the `package-json` verdicts of the ownership section
 below. REFUSED, with the reason: `strict` (owned by
-`unicorn/prefer-module`); `no-div-regex` (taste); `max-lines` — at
-1000 it would fit the largest file, and a `max` loosened ABOVE its
-default to fit the corpus is the corpus-derived option the doctrine
-refuses, every family ceiling tightening BELOW its default;
-`vitest/require-hook` — 93 of 96 sites are the parametrised-contract
-suite factories, so fitting it needs a curated allow-list, the shape
-that drifts; `import-x/max-dependencies`, for the same reason;
+`unicorn/prefer-module`); `no-div-regex` (taste); `max-lines` — a
+file's length measures nothing the family holds code to: what makes
+code hard to follow is a long function, deep nesting, branching and
+statement count, each capped BELOW its default (`max-lines-per-function`,
+`max-depth`, `complexity`, `max-statements`), while a module's boundary
+follows cohesion, and a cohesive module split to meet a number exports
+its private helpers as a cross-module surface for the same lines
+(com.melcloud's verdict on `settings/index.mts`, 2026-09-14); ESLint's
+own docs grant there is no objective maximum; `vitest/require-hook` —
+it cannot tell setup code from a suite factory, a top-level call that
+registers `describe` blocks, which is how the kit's contract kernels
+run, so holding it needs an `allowedFunctionCalls` list of the kit's
+factory names here, every new kernel a configs release;
+`import-x/max-dependencies` — an import count measures no coupling: ten
+type imports from one barrel weigh what ten runtime modules do, so the
+number carries no signal worth a cap (these three re-reasoned
+2026-11-20: a site count, many or none, decides no rule);
 `unicorn/no-missing-local-resource` on TypeScript and
 `jsdoc/imports-as-dependencies`, inert by construction; the
-`unicorn/consistent-boolean-name` split, which covers nothing
-(`checkFunctions` reaches only `function` declarations and the family
-writes arrows); `package-json/require-devEngines` (no options schema
+`unicorn/consistent-boolean-name` split, empty by construction
+(`checkFunctions` reaches only `function` declarations, which
+`func-style` forbids); `package-json/require-devEngines` (no options schema
 to shape it); `package-json/restrict-top-level-properties` (a
 corpus-derived allow-list). A refusal of a rule no preset turns on
 lives in `src/eslint/refused-rules.ts`, never as an `'off'` line (the
@@ -1096,6 +1106,43 @@ bury a ternary in a branch. The two new options that default to `true`
 two floor refusals. The widenings cost one site over the eight
 repositories, com.melcloud's error count (`prefer-minimal-ternary` on a
 member chain), rewritten by hand in its adoption.
+
+8.10.0 (2026-11-20) reads @eslint/markdown 9.0 and re-examines the
+refusals that rested on a count, on the owner's principle: a rule
+serves the code, so neither the absence of a violation nor their number
+decides it — only whether the practice is right, without
+overengineering. @eslint/markdown 9 moves nothing the Markdown block
+configures: its rules declare `meta.languages`, `no-bare-urls` and
+`table-column-count` GFM-only (the block's language), and
+`table-column-count` leaves `recommended`, which the block never relied
+on — it enables the rule by name, with `checkMissingCells`. The
+unused-directive locations are remapped, and the fixes
+(`no-missing-label-refs` after definitions, `no-missing-link-fragments`
+keeping HTML anchor values, `no-reversed-media-syntax`, `no-bare-urls`'
+`www` autofix, `require-alt-text`) measured zero sites old and new over
+the 38 Markdown files of the eight repositories. The re-examination
+returned one verdict. `@stylistic/max-len` is ADOPTED for comments, at
+the print width: its 2026-09-15 refusal rested on its cost (195
+hand-wrapped lines) and on the rule having no fixer — neither a reason
+— while 8.7.0 had already held YAML to the same 80 columns through
+`yml/max-len`, on the very argument comments share: Prettier never
+wraps that prose. The rule has no comments-only mode, so `code` sits at
+the largest safe integer and every code line stays Prettier's (the
+split eslint-config-prettier's special-rule note describes). Two lines
+cannot wrap and are exempt, both external constraints: a URL, and
+vitest's `@vitest-environment-options` pragma, whose JSON the runner
+reads from one line. A long `eslint-disable-next-line` description
+wraps in block form, which ESLint reads across lines — only
+`eslint-disable-line` must hold one, and `multiline-comment-style`
+leaves directives alone. 232 comment lines over the eight repositories
+(2026-11-20: 172 doc-block lines, 30 directives, 30 line comments) are
+paid by the adoptions. Five refusals keep their verdict on a reason of
+their own instead of a count: `unicorn/no-keyword-prefix` on what the
+prefixes say (the platform's `className`, a state's `newSettings`), not
+on its 87 sites; the `unicorn/consistent-boolean-name` residual, empty
+by construction under `func-style`, not merely unused; and `max-lines`,
+`vitest/require-hook` and `import-x/max-dependencies` in the 2026-09-27
+list above.
 
 Maintenance is a gate — an unmaintained plugin is refused regardless of
 coverage — and the claim is scoped to what was measured: the three
