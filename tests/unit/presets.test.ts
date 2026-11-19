@@ -5,6 +5,7 @@ import { ESLint } from 'eslint'
 import { format } from 'prettier'
 import { parser } from 'typescript-eslint'
 import { describe, expect, it } from 'vitest'
+import stylistic from '@stylistic/eslint-plugin'
 import unicorn from 'eslint-plugin-unicorn'
 
 import { homeyApp } from '../../src/eslint/homey-app.ts'
@@ -413,6 +414,69 @@ describe('spread parentheses handover', () => {
 
     await expect(lintSpreads(formatted)).resolves.toStrictEqual([])
   })
+})
+
+// `@stylistic/max-len` holds comments to the print width and leaves
+// every code line to Prettier. The preset's own options run alone over
+// one line of each kind they must tell apart: a long comment reports,
+// long code, a URL and vitest's one-line pragma pass, and a directive
+// description wrapped in block form still disables the next line.
+const COMMENT_WIDTH_SAMPLE = `// ${'word '.repeat(16).trimEnd()}
+export const value = '${'x'.repeat(100)}'
+// https://example.com/${'a'.repeat(80)}
+// @vitest-environment-options {"settings": {"disableJavaScriptFileLoading": true}}
+/* eslint-disable-next-line no-debugger -- a description long enough to
+   wrap onto a second line of its block */
+debugger
+`
+
+const lintCommentWidth = async (
+  maxLen: NonNullable<Config['rules']>[string],
+): Promise<{ line: number; ruleId: string | null }[]> => {
+  const eslint = new ESLint({
+    overrideConfig: [
+      {
+        files: ['**/*.ts'],
+        languageOptions: { parser },
+        linterOptions: { reportUnusedDisableDirectives: 'error' },
+        plugins: { '@stylistic': stylistic },
+        rules: { '@stylistic/max-len': maxLen, 'no-debugger': 'error' },
+      },
+    ],
+    overrideConfigFile: true,
+  })
+  const [result] = await eslint.lintText(COMMENT_WIDTH_SAMPLE, {
+    filePath: 'src/comments.ts',
+  })
+  return result?.messages.map(({ line, ruleId }) => ({ line, ruleId })) ?? []
+}
+
+// Resolved per file, so the run proves the rule survives the whole
+// preset — eslint-config-prettier's `0` included, and the test and
+// config blocks layered after the main one — in sources, suites and
+// config files alike.
+describe('comment width', () => {
+  it.each([
+    { file: 'app.mts', preset: appPreset },
+    { file: 'tests/unit/app.test.ts', preset: appPreset },
+    { file: 'eslint.config.ts', preset: appPreset },
+    { file: 'src/index.ts', preset: libraryPreset },
+    { file: 'tests/unit/x.test.ts', preset: libraryPreset },
+  ])(
+    'should report the long comment alone in $file',
+    async ({ file, preset }) => {
+      const rules = await resolveRules(preset, file)
+      const [severity, ...options] = asArray(
+        rules['@stylistic/max-len'],
+        `the resolved max-len entry of ${file}`,
+      )
+
+      expect(severity).toBe(2)
+      await expect(
+        lintCommentWidth(['error', ...options]),
+      ).resolves.toStrictEqual([{ line: 1, ruleId: '@stylistic/max-len' }])
+    },
+  )
 })
 
 // The CSS gate is bound to the same engine as the JS floor — the iOS

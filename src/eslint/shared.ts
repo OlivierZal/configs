@@ -519,6 +519,28 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // the eight undescribed enables got their description with the 7.0.0
   // adoptions (measured 2026-09-28).
   '@eslint-community/eslint-comments/require-description': 'error',
+  // Comments are the one prose Prettier never wraps, so the house's 80
+  // columns reach them through this rule, as they reach YAML through
+  // `yml/max-len`: eslint-config-prettier lists it as a special rule
+  // for exactly what the printer cannot break. It has no comments-only
+  // mode, so `code` sits at the largest safe integer and every code
+  // line stays Prettier's, whose printer owns code layout. Two lines
+  // cannot wrap, both external constraints: a URL, and vitest's
+  // per-file environment pragma, whose JSON the runner reads from one
+  // line. A long `eslint-disable-next-line` description wraps in block
+  // form, which ESLint reads across lines (only `eslint-disable-line`
+  // must hold one). Refused on 2026-09-15 for its cost (195 lines then,
+  // 232 over the eight repositories on 2026-11-20), a reason the family
+  // no longer takes: a rule holds the convention, and the code follows.
+  '@stylistic/max-len': [
+    'error',
+    {
+      code: Number.MAX_SAFE_INTEGER,
+      comments: 80,
+      ignorePattern: String.raw`^\s*// @vitest-environment-options `,
+      ignoreUrls: true,
+    },
+  ],
   // `checkJSDoc` stays at its default (false): it would rewrite `/** */`
   // blocks into line comments, which the jsdoc plugin and typedoc
   // cannot read.
@@ -1065,10 +1087,10 @@ const staticMainRules: NonNullable<Config['rules']> = {
   'unicode-bom': 'error',
   // Owned by `@typescript-eslint/naming-convention` for variables,
   // parameters and class properties (identical prefix set). What the
-  // owner leaves unowned is boolean-RETURNING functions — and the rule's
-  // `checkFunctions` reaches only `function` declarations, while the
-  // family writes arrows (0 declarations returning a boolean,
-  // 2026-09-27), so the split it could add would cover nothing.
+  // owner leaves unowned is boolean-RETURNING functions, and the rule's
+  // `checkFunctions` reaches only `function` declarations, which
+  // `func-style` (`expression`) forbids: the split it could add is empty
+  // by construction, not merely unused.
   'unicorn/consistent-boolean-name': 'off',
   // Owned by `perfectionist/sort-classes`.
   'unicorn/consistent-class-member-order': 'off',
