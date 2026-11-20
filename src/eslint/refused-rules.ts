@@ -221,6 +221,12 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
     rule: 'import-x/avoid-importing-barrel-files',
   },
   {
+    class: 'domain',
+    reason:
+      'Counts how imports are spelled, not what a module depends on: a Set of distinct specifiers, so one barrel weighs 1 however many modules sit behind it while the same names taken from their own modules weigh one each, and `ignoreTypeImports` drops not only `import type` but every `export … from` and dynamic `import()` (4.18.1, read 2026-11-20). A cap would reward routing imports through a barrel, not fewer dependencies, so the number carries no signal worth one.',
+    rule: 'import-x/max-dependencies',
+  },
+  {
     class: 'owned',
     owner: 'import-x/avoid-namespace-import',
     reason:
@@ -246,6 +252,12 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
     reason:
       "Reports Google Closure `{type=}` syntax, which has no surface in the family's TypeScript doc blocks: `jsdoc/no-types` (preset, `error`) strips every type brace from `@param`/`@returns`, and `jsdoc/check-tag-names` under `typed` (preset, `error`) forbids `@typedef`, `@property` and `@type` outright, so the only tag this rule alone could name is `@throws {T=}` — an 'optional thrown type' the house `@throws {@link X} when …` form never produces (0 across the eight repositories on jsdoc 65.2, 2026-10-09). Its 65.1 fixer (`enableFixer`) rewrites `{T=} n` to `{T} [n]`, the bracketed optional `no-defaults` with `noOptionalParamNames` refuses, so the fixer is never the best practice here either.",
     rule: 'jsdoc/check-syntax',
+  },
+  {
+    class: 'domain',
+    reason:
+      "A file's length measures nothing the family holds code to: what makes code hard to follow is a long function, deep nesting, branching and statement count, each capped in production code (`max-depth` 3 and `complexity` 10 below ESLint's defaults, `max-lines-per-function` 50 and `max-statements` 10 at them, the two length caps lifted in the test block), while a module's boundary follows cohesion, and a cohesive module split to meet a number exports its private helpers as a cross-module surface for the same lines (com.melcloud's verdict on `settings/index.mts`, 2026-09-14). ESLint's own docs grant there is no objective maximum.",
+    rule: 'max-lines',
   },
   {
     class: 'conflicting',
@@ -392,5 +404,12 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
     reason:
       "CSS has no line comment, so the MULTILINE default turns a one-line section label — `/* Zone selector */` — into a three-line block: 18 sites over the three apps' stylesheets (com.melcloud 14, com.heatzy 1, com.melcloud.extension 3; 2026-10-09), the shape the family exempts for the JS config files at their block. At `error` on TS/JS through `recommended`, where a line comment exists; on CSS nothing enables it (the CSS block extends no unicorn preset).",
     rule: 'unicorn/single-line-block-comment-style',
+  },
+  {
+    class: 'conflicting',
+    files: ['tests/**/*.ts'],
+    reason:
+      "Cannot tell setup code from a suite factory — a top-level call that registers `describe` blocks, which is how the kit's contract kernels run — so holding it needs an `allowedFunctionCalls` list of the kit's factory names here, every new kernel a configs release: a list of the corpus, the shape the doctrine refuses.",
+    rule: 'vitest/require-hook',
   },
 ]
