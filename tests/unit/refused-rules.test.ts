@@ -105,6 +105,18 @@ const scopedRepresentatives: Readonly<
       presetName: 'library',
     },
   ],
+  'tests/**/*.ts': [
+    {
+      file: 'tests/unit/app.test.ts',
+      preset: appPreset,
+      presetName: 'homeyApp',
+    },
+    {
+      file: 'tests/unit/x.test.ts',
+      preset: libraryPreset,
+      presetName: 'library',
+    },
+  ],
 }
 
 const representativesOf = ({

@@ -573,9 +573,10 @@ below. REFUSED, with the reason: `strict` (owned by
 `unicorn/prefer-module`); `no-div-regex` (taste); `max-lines` — a
 file's length measures nothing the family holds code to: what makes
 code hard to follow is a long function, deep nesting, branching and
-statement count, each capped BELOW its default (`max-lines-per-function`,
-`max-depth`, `complexity`, `max-statements`), while a module's boundary
-follows cohesion, and a cohesive module split to meet a number exports
+statement count, each capped in production code (`max-depth` 3 and
+`complexity` 10 below ESLint's defaults, `max-lines-per-function` 50
+and `max-statements` 10 at them, the two length caps lifted in the
+test block), while a module's boundary follows cohesion, and a cohesive module split to meet a number exports
 its private helpers as a cross-module surface for the same lines
 (com.melcloud's verdict on `settings/index.mts`, 2026-09-14); ESLint's
 own docs grant there is no objective maximum; `vitest/require-hook` —
@@ -583,15 +584,22 @@ it cannot tell setup code from a suite factory, a top-level call that
 registers `describe` blocks, which is how the kit's contract kernels
 run, so holding it needs an `allowedFunctionCalls` list of the kit's
 factory names here, every new kernel a configs release;
-`import-x/max-dependencies` — an import count measures no coupling: ten
-type imports from one barrel weigh what ten runtime modules do, so the
-number carries no signal worth a cap (these three re-reasoned
-2026-11-20: a site count, many or none, decides no rule);
+`import-x/max-dependencies` — the count follows how imports are
+spelled, not what a module depends on: it counts distinct specifiers,
+so one barrel weighs 1 however many modules sit behind it while the
+same names taken from their own modules weigh one each, and
+`ignoreTypeImports` drops not only `import type` but every
+`export … from` and dynamic `import()` (4.18.1); a cap would reward
+routing imports through a barrel, not fewer dependencies (these three
+re-reasoned 2026-11-20 and carried by the ledger: a site count, many
+or none, decides no rule);
 `unicorn/no-missing-local-resource` on TypeScript and
 `jsdoc/imports-as-dependencies`, inert by construction; the
-`unicorn/consistent-boolean-name` split, empty by construction
-(`checkFunctions` reaches only `function` declarations, which
-`func-style` forbids); `package-json/require-devEngines` (no options schema
+`unicorn/consistent-boolean-name` split, a live off at its rule site:
+what it adds over `naming-convention` is boolean-returning functions,
+and a boolean return makes no predicate (actions answering whether
+they acted keep their verb, predicates already read as questions;
+measured 2026-11-20); `package-json/require-devEngines` (no options schema
 to shape it); `package-json/restrict-top-level-properties` (a
 corpus-derived allow-list). A refusal of a rule no preset turns on
 lives in `src/eslint/refused-rules.ts`, never as an `'off'` line (the
@@ -1140,8 +1148,9 @@ leaves directives alone. 224 comment lines over the eight repositories
 the release. Five refusals keep their verdict on a reason of
 their own instead of a count: `unicorn/no-keyword-prefix` on what the
 prefixes say (the platform's `className`, a state's `newSettings`), not
-on its 87 sites; the `unicorn/consistent-boolean-name` residual, empty
-by construction under `func-style`, not merely unused; and `max-lines`,
+on its 87 sites; the `unicorn/consistent-boolean-name` residual on what
+the names it would rewrite say (actions and worded predicates), not on
+how many there are; and `max-lines`,
 `vitest/require-hook` and `import-x/max-dependencies` in the 2026-09-27
 list above.
 

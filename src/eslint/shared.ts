@@ -530,7 +530,7 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // line. A long `eslint-disable-next-line` description wraps in block
   // form, which ESLint reads across lines (only `eslint-disable-line`
   // must hold one). Refused on 2026-09-15 for its cost (195 lines then,
-  // 232 over the eight repositories on 2026-11-20), a reason the family
+  // 224 over the eight repositories on 2026-11-20), a reason the family
   // no longer takes: a rule holds the convention, and the code follows.
   '@stylistic/max-len': [
     'error',
@@ -1085,12 +1085,20 @@ const staticMainRules: NonNullable<Config['rules']> = {
   'require-unicode-regexp': ['error', { requireFlag: 'v' }],
   'symbol-description': 'error',
   'unicode-bom': 'error',
-  // Owned by `@typescript-eslint/naming-convention` for variables,
-  // parameters and class properties (identical prefix set). What the
-  // owner leaves unowned is boolean-RETURNING functions, and the rule's
-  // `checkFunctions` reaches only `function` declarations, which
-  // `func-style` (`expression`) forbids: the split it could add is empty
-  // by construction, not merely unused.
+  // Owned by `@typescript-eslint/naming-convention` for boolean-TYPED
+  // variables, parameters and class properties (identical prefix set),
+  // which `checkVariables` would report a second time. What it adds is
+  // boolean-RETURNING functions — function-valued consts through
+  // `checkVariables`, the declarations `func-style` allows (overloads,
+  // `export default`) through `checkFunctions` — and a boolean return
+  // makes no predicate: most of its reports are actions answering
+  // whether they acted (`hideErrorLine`, `stampPackagedPages`,
+  // `refetchOnce`) or what a user chose (`homeyConfirm`), whose verb
+  // says what they do, and the rest predicates already worded as
+  // questions (`carriesCode`, `supportsGlow`, `routeMatches`) and typed
+  // doubles named after what they stand in for; it also reads a type
+  // guard (`isKeyOf`) as a non-boolean. Refused on what the names say,
+  // measured 2026-11-20.
   'unicorn/consistent-boolean-name': 'off',
   // Owned by `perfectionist/sort-classes`.
   'unicorn/consistent-class-member-order': 'off',
