@@ -1134,9 +1134,10 @@ vitest's `@vitest-environment-options` pragma, whose JSON the runner
 reads from one line. A long `eslint-disable-next-line` description
 wraps in block form, which ESLint reads across lines — only
 `eslint-disable-line` must hold one, and `multiline-comment-style`
-leaves directives alone. 232 comment lines over the eight repositories
-(2026-11-20: 172 doc-block lines, 30 directives, 30 line comments) are
-paid by the adoptions. Five refusals keep their verdict on a reason of
+leaves directives alone. 224 comment lines over the eight repositories
+(2026-11-20, at the shipped options: 172 doc-block lines, 30 directives,
+22 line comments) are paid by the adoptions, this repository's one with
+the release. Five refusals keep their verdict on a reason of
 their own instead of a count: `unicorn/no-keyword-prefix` on what the
 prefixes say (the platform's `className`, a state's `newSettings`), not
 on its 87 sites; the `unicorn/consistent-boolean-name` residual, empty
