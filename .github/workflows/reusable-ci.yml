@@ -161,7 +161,7 @@ jobs:
       # published analysis rather than a pending one.
       - if: |
           matrix.coverage && env.SONAR_TOKEN != '' &&
-          (github.event_name == 'push' ||
+          (github.event_name == 'push' || github.event_name == 'schedule' ||
             (github.event.pull_request.user.login != 'dependabot[bot]' &&
               github.event.pull_request.head.repo.full_name ==
                 github.repository))

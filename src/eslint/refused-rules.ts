@@ -93,6 +93,13 @@ const SEO_HTML =
  */
 export const REFUSED_RULES: readonly RefusedRule[] = [
   {
+    class: 'owned',
+    owner: '@typescript-eslint/naming-convention',
+    reason:
+      "Reports a JSX tag whose name is not PascalCase, at the place it is used. A tag names a binding, and a binding's spelling is decided where it is declared: `naming-convention` owns every declared name of the family, and a component format enters that table the day a tsconfig base admits JSX (none sets `jsx`, and no JSX file exists across the eight repositories, 2026-11-21). An imported component keeps the name its package gave it, which no rule of ours renames. The third `suggestion` rule of @stylistic's JSX half, beside the two the main table adopts with 6.0 (`jsx-shorthand-boolean`, `jsx-shorthand-fragment`); the others are layout, the formatter's.",
+    rule: '@stylistic/jsx-pascal-case',
+  },
+  {
     class: 'conflicting',
     reason:
       "TypeScript owns the real case: with `noImplicitReturns` in both tsconfig bases and `@typescript-eslint/explicit-function-return-type` at `error`, a path that genuinely drops off the end of a value-returning function is a compile error. What the rule adds is two false positives (heatzy-api `src/facades/manager.ts:13`, melcloud-api `src/facades/classic-factory.ts:54`; measured 2026-09-27 and 2026-10-09 under eslint 10.12): exhaustive `switch` statements whose end TypeScript proves unreachable, where the only edit that would satisfy the rule — a `default` branch — is exactly what `@typescript-eslint/switch-exhaustiveness-check` forbids under the family's `allowDefaultCaseForExhaustiveSwitch: false` (reproduced on one fixture: the two rules report it one each way). Adopting it would force dead code the house's own rule rejects. Class `conflicting`, not `owned`: the owner is the compiler, which the ledger cannot name.",

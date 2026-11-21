@@ -32,6 +32,17 @@ export interface TypedocBaseOptions {
 }
 
 const staticTypedocOptions: Record<string, unknown> = {
+  // The MDN-links plugin resolves a symbol by the package its
+  // declaration sits in, and knows three by name (`typescript`,
+  // `@types/web`, `@webgpu/types`). Under the 6/7 side-by-side layout
+  // the lib declarations typedoc reads sit in `@typescript/old`, the
+  // TypeScript 6 the `typescript` alias depends on: without this
+  // entry `Promise`, `Map` or `Error` stay plain text and a
+  // `{@link TypeError}` fails the validation (measured 2026-11-21 on
+  // the fixture, that link apart: 5 MDN links, the inherited members
+  // of `Error`, against 12). Inert the day the lib is `typescript`'s
+  // own again.
+  additionalModuleSources: ['@typescript/old'],
   cacheBust: true,
   categorizeByGroup: false,
   cleanOutputDir: true,

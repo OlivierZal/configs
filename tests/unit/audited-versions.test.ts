@@ -68,4 +68,18 @@ describe('audited plugin versions', () => {
       expect(majorMinor(installedVersion(name))).toBe(audited)
     },
   )
+
+  // What the ledger read is what a consumer installs. The ledger
+  // watches this repository's own tree: an audited package shipped on
+  // a range resolves, in a consumer's lock, to a minor nobody read
+  // (nine of them were on a caret until 8.12.0).
+  it.each(
+    Object.keys(AUDITED_PLUGIN_VERSIONS).filter((name) =>
+      Object.hasOwn(packageJson.dependencies, name),
+    ),
+  )('should ship %s at an exact version', (name) => {
+    expect(asRecord(packageJson.dependencies, 'dependencies')[name]).toMatch(
+      /^\d+\.\d+\.\d+$/v,
+    )
+  })
 })

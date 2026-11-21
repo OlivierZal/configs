@@ -2,6 +2,9 @@
 
 exports[`export contracts > should build a typedoc config around the consumer identity 1`] = `
 {
+  "additionalModuleSources": [
+    "@typescript/old",
+  ],
   "cacheBust": true,
   "categorizeByGroup": false,
   "categoryOrder": [

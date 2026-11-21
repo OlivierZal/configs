@@ -12,8 +12,7 @@ updates:
       default-days: 7
     # `/` reaches `.github/workflows` and a root `action.yml` only. The
     # composite action every job of the family runs is named beside it,
-    # or its `actions/setup-node` pin is never proposed: unseen, it
-    # stood still from 2026-08-06 while three releases went by.
+    # or the pins it holds are never proposed.
     directories:
       - /
       - /.github/actions/setup-node-and-install
