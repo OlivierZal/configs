@@ -121,6 +121,17 @@ shaped keys (`fan_speed`; platform-imposed), each repo passes its own
 filter-scoped `wireNamingEntries`, and test files widen property
 formats (doubles mirror wire payloads and key mocks by export names).
 
+Doc blocks follow the publication. A library's `src/**/*.ts` is a
+contract read without its source — the typedoc site, the emitted
+`.d.ts`, a consumer's hover — so every export and every public callable
+member carries its own block (`jsdoc/require-jsdoc`). The files an app
+names in `jsdocFiles` publish nothing, and no block is required of
+them. Either way a block that exists is held to the whole table: a
+description, one `@param` per parameter under a name a caller can use,
+`@returns`, `@throws` as a sentence that names the class with
+`{@link}`, one `@template` per type parameter, and no type in braces —
+TypeScript states the types.
+
 A library shipping webview-bundled sources composes the runtime floor
 rather than restating it — `webviewFloorBlock(files)` is the very
 fragment the Homey preset applies, so it cannot drift from it. The

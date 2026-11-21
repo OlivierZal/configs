@@ -25,6 +25,11 @@ import {
   typeSortOptions,
 } from './helpers.ts'
 
+/**
+ * One type a template literal may interpolate, as the `allow` option of
+ * `@typescript-eslint/restrict-template-expressions` takes it: where it
+ * is declared (`lib`, `package` or `file`) and its name.
+ */
 export interface TemplateExpressionAllowEntry {
   readonly from: string
   readonly name: string
@@ -32,6 +37,10 @@ export interface TemplateExpressionAllowEntry {
 
 // Typed more narrowly than the `Config` slot (`Record<string,
 // unknown>`) so consumers can spread `parserOptions`.
+/**
+ * The parser options of both main blocks: the project service, with
+ * the root JavaScript config files typed by its default project.
+ */
 export const mainLanguageOptions: { parserOptions: Linter.ParserOptions } = {
   parserOptions: {
     // Root `*.config.js` files (typedoc) live outside every tsconfig;
@@ -42,6 +51,10 @@ export const mainLanguageOptions: { parserOptions: Linter.ParserOptions } = {
   },
 }
 
+/**
+ * Makes an `eslint-disable` directive or an inline configuration that
+ * changes nothing an error, in every file a preset lints.
+ */
 export const linterOptionsBlock: Config = {
   linterOptions: {
     reportUnusedDisableDirectives: 'error',
@@ -53,6 +66,10 @@ export const linterOptionsBlock: Config = {
 // accepts, and the flat `Config` it exports has no `extends`: a block
 // that extends is typed as one element of `defineConfig`'s own
 // parameter, which is exactly where a consumer passes it.
+/**
+ * One element of what `defineConfig` accepts: a config block that may
+ * carry `extends`, which the flat `Config` type has no slot for.
+ */
 export type ConfigWithExtends = Exclude<
   Parameters<typeof defineConfig>[number],
   readonly unknown[]
@@ -64,6 +81,10 @@ export type ConfigWithExtends = Exclude<
 // must win over the preset's bare `'error'` (rules apply after extends;
 // pinned by a test). `prettier` is last so it can neutralize formatting
 // rules from the presets above it.
+/**
+ * The third-party presets both main blocks extend, in the order they
+ * apply; the family table comes after them and wins.
+ */
 export const mainExtends: NonNullable<ConfigWithExtends['extends']> = [
   js.configs.recommended,
   unicorn.configs.recommended,
@@ -103,6 +124,11 @@ const ternaryShapeOptions: { readonly checkVaryingBase: boolean } = {
 // `checkDatesOnPullRequests` stays at its default (false): an expiry is
 // a clock event outside the pull request — the dependency-review split
 // by TIME — and lands on `main`'s push run instead.
+/**
+ * The entry of unicorn's rule on warning comments, for every block
+ * that runs it: such a comment names its expiry, and the date is
+ * checked.
+ */
 export const expiringTodoComments: Linter.RuleEntry = [
   'error',
   { allowWarningComments: false, checkDates: true },
@@ -171,23 +197,53 @@ const confusingBrowserGlobals: readonly string[] = [
   'top',
 ]
 
+// The nodes that carry a signature: the plugin's four function
+// contexts, plus the one it leaves out. An abstract method and each
+// signature of an overload set are `TSEmptyBodyFunctionExpression`
+// nodes, and their block is the contract subclasses and callers read.
+const JSDOC_SIGNATURE_CONTEXTS = [
+  'ArrowFunctionExpression',
+  'FunctionDeclaration',
+  'FunctionExpression',
+  'TSDeclareFunction',
+  'TSEmptyBodyFunctionExpression',
+]
+
+// Every declaration that has a signature or a type of its own: the
+// nodes above, plus the signature-only kinds of a class, an interface
+// and a type alias. The `:not()` keeps a class field holding a function
+// from being read twice, as the field and as its function.
+const JSDOC_DECLARATION_CONTEXTS = [
+  ...JSDOC_SIGNATURE_CONTEXTS,
+  'ClassDeclaration',
+  'PropertyDefinition:not([value.type=/^(Arrow)?FunctionExpression$/])',
+  'TSAbstractPropertyDefinition',
+  'TSCallSignatureDeclaration',
+  'TSConstructSignatureDeclaration',
+  'TSMethodSignature',
+  'TSPropertySignature',
+  'TSTypeAliasDeclaration',
+]
+
+// A generic the plugin's `require-template` cannot see: it reads
+// classes, interfaces, type aliases and function declarations, and
+// `func-style` leaves the family arrow functions, methods and
+// function-typed members.
+const JSDOC_GENERIC_CONTEXTS = [
+  'ArrowFunctionExpression[typeParameters]',
+  'FunctionExpression[typeParameters]',
+  'TSEmptyBodyFunctionExpression[typeParameters]',
+  'TSPropertySignature[typeAnnotation.typeAnnotation.typeParameters]',
+]
+
 const jsdocRules: NonNullable<Config['rules']> = {
-  // The fixer reorders `@param` blocks into signature order and drops
-  // duplicates — the same handover as `sort-tags` and perfectionist:
-  // mechanical order belongs to the tool, not to the reader. It is safe
-  // to automate precisely because the error DETERMINES its correction —
-  // the names already match, only their positions differ, so exactly one
-  // result is right, and each description travels with its own tag.
-  //
-  // The rule's two other fixers stay off (`extraParams`, `badParamNames`),
-  // which is a verdict rather than an oversight: an orphan `@param` means
-  // either "delete this doc" or "you forgot the parameter", and a name
-  // mismatch means either the doc or the signature is wrong. Two opposite
-  // corrections explain the same symptom, so the tool cannot choose —
-  // and it would be choosing by deleting or rewriting prose a human
-  // wrote. Both keep reporting, and the plugin offers its suggestions in
-  // the editor regardless of these options, which is where a judgment
-  // call belongs.
+  // REDUNDANT: the asterisk column is the formatter's. Prettier
+  // re-indents every block comment whose lines all start with `*`, one
+  // space under the opener (this rule's `innerIndent: 1`), and
+  // `require-asterisk-prefix` below reports the line that would keep a
+  // block out of its reach: nothing passes `prettier --check` and that
+  // rule yet fails this one. A live off, the preset turning it on.
+  'jsdoc/check-alignment': 'off',
   // Tags and the first line flush, Markdown sections may indent — the
   // cut Prettier's list layout (a wrapped `-` item at +2, a `1.` item
   // at +3) and typedoc's rendering both need. The DEFAULT stays refused
@@ -204,59 +260,243 @@ const jsdocRules: NonNullable<Config['rules']> = {
   // repositories with the option (2026-10-09). Adds what nothing else
   // owns: a space after every asterisk (`require-asterisk-prefix` tests
   // only the delimiter), a flush first line, indented tag lines beyond
-  // `check-line-alignment`'s eight tags. Known residual the family does
+  // `check-line-alignment`'s tags. Known residual the family does
   // not write (0 of 290 files): a list item whose first continuation is
   // an indented code block, then prose at the content column — write
   // fences at the content column, which pass.
   'jsdoc/check-indentation': ['error', { allowIndentedSections: true }],
   // `never`: no column-aligned tag blocks, and a wrapped description
-  // continues unindented — the house layout measured (2026-09-15).
-  // Doc-comment layout is the plugin's because Prettier never enters a
-  // comment. Whitespace fixer, determinate.
-  'jsdoc/check-line-alignment': ['error', 'never'],
-  'jsdoc/check-param-names': ['error', { enableFixer: true }],
+  // continues unindented — the layout of TypeScript's own declarations,
+  // and the one a new parameter never re-aligns. What follows the
+  // asterisk is the plugin's: Prettier re-indents the asterisk column
+  // and nothing after it. `tags` is the rule's eight defaults plus the
+  // three tags the table holds to a description (`throws`, `yields`,
+  // `next`), which the default leaves with padded columns unreported.
+  // Whitespace fixer, determinate.
+  'jsdoc/check-line-alignment': [
+    'error',
+    'never',
+    {
+      tags: [
+        'param',
+        'arg',
+        'argument',
+        'property',
+        'prop',
+        'returns',
+        'return',
+        'template',
+        'throws',
+        'yields',
+        'next',
+      ],
+    },
+  ],
+  // No fixer, on purpose: `enableFixer` is one flag for two fixers.
+  // Reordering `@param` tags that already carry the signature's names
+  // is determined — one arrangement is right, and each description
+  // travels with its tag. Removing a duplicate is not: a second
+  // `@param` whose name is taken is a stale copy or a mistyped name for
+  // another parameter, and the fixer settles it by deleting the later
+  // tag with whatever a human wrote there (reproduced 2026-11-20: the
+  // description meant for `count` is gone, a bare `@param count` in
+  // its place). No option separates the two, so both stay reports, as
+  // the orphan and the mismatch already were (`extraParams`,
+  // `badParamNames`: "delete this doc" or "you forgot the parameter",
+  // the doc or the signature is wrong). The plugin offers its
+  // suggestions in the editor regardless, where a judgment call belongs.
+  'jsdoc/check-param-names': 'error',
+  // OWNED by `check-tag-names` under `typed`, like the three
+  // `require-property*` rules below: `@property`, and the `@typedef`
+  // and `@namespace` that call for it, are forbidden outright — the
+  // type lives in TypeScript — so each of the four speaks only of a
+  // tag the owner says to delete, and what they ask for is that tag
+  // repaired. Live offs, the preset turning them on.
+  'jsdoc/check-property-names': 'off',
+  // `typed` is the preset's: TypeScript states types, access and
+  // inheritance, and a tag restating them drifts. The removal fixer is
+  // withheld: a redundant tag either repeats a keyword or claims what
+  // the code lacks, typedoc honours `@private`, `@protected` and
+  // `@readonly`, so deleting one changes what is published, and a tag
+  // carrying text loses its name while the text is re-attached to the
+  // tag above it (reproduced 2026-11-20). The synonym renames keep
+  // their fixer (`@return`, `@arg`): there the error names its
+  // correction.
+  'jsdoc/check-tag-names': ['error', { enableFixer: false, typed: true }],
   'jsdoc/check-template-names': 'error',
-  'jsdoc/informative-docs': 'error',
+  // THE TRAP: the rule's fixer deletes whatever follows a modifier tag
+  // (`@internal`, `@override`, `@readonly`, the access tags), and it
+  // has no switch. The report is right — a modifier takes no content,
+  // TSDoc discards it and typedoc appends it to the block above — but
+  // the correction is to move the text into the description, which an
+  // unattended `--fix` does not do. Kept at the preset's default, with
+  // no `tags` added: a wider list would be a wider deletion.
+  'jsdoc/empty-tags': 'error',
+  // `@category` is a taxonomy label, not prose: it legitimately shares
+  // its words with what it groups, and the plugin reads the label's
+  // first word as the tag's name and judges the rest as a description.
+  // `excludedTags` exists for this tag; every description and every
+  // other tag stays judged.
+  'jsdoc/informative-docs': ['error', { excludedTags: ['category'] }],
   // Pins the FORM of every block the way `informative-docs` pins its
-  // content: a description starts with a capital, a backtick, a digit
-  // or a `{@link …}` reference (the one opener the default pattern
-  // refuses, hence the custom regex) and ends in `.`, `?`, `!` or a
-  // backtick. `contexts: ['any']` reaches type, interface, enum and
-  // member blocks, not only the three function kinds. `throws` stays
-  // out: the family writes `@throws {@link X} when …`, a tag form of
-  // its own. Measured 0 across the eight repos (2026-09-15).
+  // content: a description starts with a capital (of any alphabet), a
+  // backtick, a digit or a `{@link …}` reference (the one opener the
+  // default pattern refuses, hence the custom regex) and ends in `.`,
+  // `?`, `!` or a backtick. `contexts: ['any']` reaches type,
+  // interface, enum and member blocks, not only the three function
+  // kinds. Every tag that carries prose is held to it, `@throws`
+  // included: its house form is a sentence — `@throws A {@link X} when
+  // …` — since the brace that used to open it breaks the hover
+  // (`no-restricted-syntax` below).
   'jsdoc/match-description': [
     'error',
     {
       contexts: ['any'],
-      matchDescription: String.raw`^\n?(?:(?:[A-Z\x60\d_]|\{@)[\s\S]*[.?!\x60]\s*)?$`,
-      tags: { param: true, returns: true, template: true, yields: true },
+      matchDescription: String.raw`^\n?(?:(?:[\p{Lu}\x60\d_]|\{@)[\s\S]*[.?!\x60]\s*)?$`,
+      tags: {
+        deprecated: true,
+        param: true,
+        returns: true,
+        template: true,
+        throws: true,
+        yields: true,
+      },
     },
   ],
+  // The one name the family declares: a destructured parameter is
+  // documented under a name its reader can use. `root0` is the
+  // placeholder the `require-param` fixer invents, and typedoc
+  // publishes the root of the `@param` tags as the parameter's name.
+  // No `replacement`, hence no fixer: the name is the author's.
+  'jsdoc/match-name': [
+    'error',
+    {
+      match: [
+        {
+          disallowName: String.raw`^root\d+(?:\.|$)`,
+          message:
+            'Name the destructured parameter: `root0` is a placeholder, and typedoc publishes it as the parameter name.',
+          tags: ['param'],
+        },
+      ],
+    },
+  ],
+  // One shape, so a block never changes form when it gains a sentence
+  // or a tag, and the rule that knows what a doc block is owns it: the
+  // main table turns `unicorn/single-line-block-comment-style` off,
+  // whose fixer wrote the starless form. `singleLineTags` is emptied:
+  // its defaults (`@type`, `@lends`) are JavaScript typing idioms.
+  'jsdoc/multiline-blocks': [
+    'error',
+    { noSingleLineBlocks: true, singleLineTags: [] },
+  ],
   // The default reports a `/***` block only when it carries tags; the
-  // option reports every one, so a mistyped opener cannot silently
-  // drop a surface out of the docs. Fixable.
+  // option reports every one. A REPORT, not a repair, at the top level:
+  // `@stylistic/multiline-comment-style` claims the same comment first
+  // under `--fix` and rewrites it into `//` lines (the trap named at
+  // its rule site).
   'jsdoc/no-bad-blocks': ['error', { preventAllMultiAsteriskBlocks: true }],
   'jsdoc/no-blank-block-descriptions': 'error',
-  'jsdoc/no-blank-blocks': 'error',
   // Optionality lives in the signature (`name?:` under
   // exactOptionalPropertyTypes); a `@param [name]` restates it and
   // drifts — the duplication `no-types` refuses for types. Fixable.
-  'jsdoc/no-defaults': ['error', { noOptionalParamNames: true }],
-  'jsdoc/normalize-see-links': 'error',
-  'jsdoc/prefer-import-tag': 'error',
+  // The signature contexts, not `any`: the rule's other half would
+  // then strip the value of a `@default` on an interface property, the
+  // one place a default has no initializer to live in.
+  'jsdoc/no-defaults': [
+    'error',
+    { contexts: JSDOC_SIGNATURE_CONTEXTS, noOptionalParamNames: true },
+  ],
+  // Doc blocks are Markdown: at its default the rule takes an emphasis
+  // or a `*` bullet that starts a line for a stray asterisk, and its
+  // fixer deletes the marker — the list becomes prose (reproduced
+  // 2026-11-20). `allowWhitespace` keeps it on its target, an asterisk
+  // glued to the prefix and a `**/` closer.
+  'jsdoc/no-multi-asterisks': ['error', { allowWhitespace: true }],
+  // Two practices the plugin's own rules cannot hold.
+  //
+  // A thrown class is named inside the sentence — `@throws A
+  // {@link RangeError} when …` — never as the tag's opener: TypeScript
+  // reads a brace right after `@throws` as a type, and the hover of the
+  // published declaration shows `{` then a stray `@link` tag
+  // (language service 6.0.3, 2026-11-21). typedoc renders both forms,
+  // which is how the opener lasted.
+  //
+  // A documented generic names its type parameters. `require-template`
+  // holds that on the declarations it reads; the selector extends it to
+  // the family's function forms, as one `@template` at least — which
+  // one is missing is the author's to see.
+  //
+  // Node contexts only, and each context string once: the rule keys its
+  // handlers by that string, and an `any` context switches it to block
+  // iteration, where a node selector no longer matches (measured: the
+  // generic entries then report interface members alone).
+  'jsdoc/no-restricted-syntax': [
+    'error',
+    {
+      contexts: [
+        ...JSDOC_DECLARATION_CONTEXTS.map((context) => ({
+          comment: 'JsdocBlock:has(JsdocTag[tag=throws][rawType=/^@/])',
+          context,
+          message:
+            'Name the thrown class inside the sentence (`@throws A {@link X} when …`): TypeScript reads a brace right after `@throws` as a type, and the hover breaks.',
+        })),
+        ...JSDOC_GENERIC_CONTEXTS.map((context) => ({
+          comment: 'JsdocBlock:not(:has(JsdocTag[tag=template]))',
+          context,
+          message:
+            'Describe the type parameters of a documented generic: one `@template Name - role` each.',
+        })),
+      ],
+    },
+  ],
+  // TypeScript is the type system: a type in a doc block repeats the
+  // signature and drifts unseen. The default contexts stop at function
+  // bodies, ambient functions and interface methods; the list names
+  // every declaration that has a signature, so a `@param {string}` on
+  // an abstract method, an overload, a call signature, a function-typed
+  // member or alias no longer passes.
+  'jsdoc/no-types': ['error', { contexts: JSDOC_DECLARATION_CONTEXTS }],
+  // TSDoc has one hyperlink syntax, `{@link}`, and typedoc prints the
+  // Markdown and bare forms of a `@see` as text. The fixer is withheld:
+  // it writes the pipe glued to its target (`{@link url|label}`), and
+  // typedoc reads a URL up to the first whitespace — write it by hand
+  // with spaces around the pipe. `wrapBareUrls` holds the unlabelled
+  // URL to the same form.
+  'jsdoc/normalize-see-links': [
+    'error',
+    { enableFixer: false, wrapBareUrls: true },
+  ],
   // The house style keeps the `*` line prefix (the main table turns
   // `unicorn/no-asterisk-prefix-in-documentation-comments`, its
-  // mutually exclusive twin, off as owned by this rule); until
-  // 2026-09-15 nothing checked it. Fixable; adoption cost 39 lines in
-  // homey-kit, 0 elsewhere.
+  // mutually exclusive twin, off as owned by this rule). It is also
+  // what keeps a block under the formatter: Prettier re-indents only a
+  // comment whose every line starts with `*`. Fixable.
   'jsdoc/require-asterisk-prefix': ['error', 'always'],
   // Every documented surface carries prose: the default contexts are
   // the three function kinds, so a tags-only block on a class, a type
-  // or a member passed. Measured 0 across the family.
+  // or a member passed. It also owns the empty block, which is a block
+  // without a description (`no-blank-blocks`, in the ledger).
   'jsdoc/require-description': ['error', { contexts: ['any'] }],
-  // `@template T - desc` uniformly (37/37 measured); `property` is
-  // forbidden outright by `check-tag-names`, so it is not listed.
+  // When a file overview exists it is the only one and it leads the
+  // file: a `@packageDocumentation` block written after the first
+  // import is no longer the file's comment, and typedoc drops it
+  // without a word. The rule's default is not taken — `@file` is JSDoc
+  // vocabulary, and an overview demanded of every module restates the
+  // block of its main export.
+  'jsdoc/require-file-overview': [
+    'error',
+    {
+      tags: {
+        packageDocumentation: {
+          initialCommentsOnly: true,
+          preventDuplicates: true,
+        },
+      },
+    },
+  ],
+  // `@template T - desc` uniformly; `property` is forbidden outright by
+  // `check-tag-names`, so it is not listed.
   'jsdoc/require-hyphen-before-param-description': [
     'error',
     'always',
@@ -266,30 +506,170 @@ const jsdocRules: NonNullable<Config['rules']> = {
   // `require-*-description`: no `@next` tag exists in the family, and
   // the day one does it carries prose.
   'jsdoc/require-next-description': 'error',
+  // The signature contexts, so the block of an abstract method or of an
+  // overload is held to its parameters too. No fixer: a missing
+  // `@param` does not determine its correction — the fixer invents the
+  // name of a destructured parameter (`root0`, which `match-name`
+  // above refuses), and each stub it writes leaves
+  // `require-param-description` red.
+  'jsdoc/require-param': [
+    'error',
+    { contexts: JSDOC_SIGNATURE_CONTEXTS, enableFixer: false },
+  ],
+  // `any`, as on `require-description`: a `@param` or a `@returns` with
+  // nothing after it is a stub wherever its block stands — on a type
+  // alias, an interface member or an abstract method too.
+  'jsdoc/require-param-description': ['error', { contexts: ['any'] }],
+  // 65.5 gives it a fixer no option withholds: a nameless tag takes the
+  // name of the parameter at its position, and only in a block with one
+  // tag per plain-identifier parameter. Where the position misnames it —
+  // tags out of signature order — the fix leaves a duplicate, which
+  // `check-param-names` reports: the wrong guess cannot pass in silence.
+  'jsdoc/require-param-name': ['error', { contexts: ['any'] }],
+  'jsdoc/require-property': 'off',
+  'jsdoc/require-property-description': 'off',
+  'jsdoc/require-property-name': 'off',
   'jsdoc/require-rejects': 'error',
+  // A `@returns` the body contradicts, `async` functions and generators
+  // included: the defaults skip both, and most of the family's API is
+  // `async`. What a `Promise<void>` settles on belongs in the
+  // description; a generator's stream is `@yields`, so its `@returns`
+  // is its return value, checked like any other.
+  'jsdoc/require-returns-check': [
+    'error',
+    { exemptAsync: false, exemptGenerators: false },
+  ],
+  'jsdoc/require-returns-description': ['error', { contexts: ['any'] }],
   // One `@template` per type parameter, so `require-template-description`
   // cannot be satisfied by one description shared across two.
   'jsdoc/require-template': ['error', { requireSeparateTemplates: true }],
   'jsdoc/require-template-description': 'error',
   'jsdoc/require-throws': 'error',
   'jsdoc/require-throws-description': 'error',
+  // The truth half of `require-next-description`: a `@next` on a
+  // generator that never reads what `next()` sends is reported, the way
+  // a `@yields` without a `yield` is. No obligation to write one.
+  'jsdoc/require-yields-check': ['error', { next: true }],
   'jsdoc/require-yields-description': 'error',
   'jsdoc/sort-tags': 'error',
+  // `never`, the compact layout of TypeScript's own declarations: the
+  // `@` already delimits a tag. The two options close what the default
+  // leaves open — a block without tags ending on blank lines, and runs
+  // of blank lines inside a description, which Markdown reads as one.
+  // Both fixers only remove blank lines.
+  'jsdoc/tag-lines': [
+    'error',
+    'never',
+    { maxBlockLines: 1, startLinesWithNoTags: 0 },
+  ],
 }
 
+// Presence is the publication's. A library's export is a contract read
+// without its source — the typedoc site, the emitted `.d.ts`, a
+// consumer's hover — so each declaration a module exports and each
+// public callable member carries its own block, attached. typedoc asks
+// the same of what an entry point reaches, but it answers a lost class
+// or member block with the text of the interface or the base class
+// (two published classes read their interface's description that way,
+// 2026-11-20), and it never sees a module's own exports. An app
+// publishes nothing: its comments are `//` notes stating intent or a
+// constraint the code cannot show, and a block it does write is held
+// to the whole table above.
+//
+// `publicOnly` leaves unexported code to those notes. Data properties
+// stay out (a wire field names itself, the typedoc base's verdict); a
+// const's same-name value type shares its symbol, hence its block. An
+// override is not exempt: an inherited text can be false, and
+// `@inheritDoc` states a true inheritance. An explicit constructor does
+// something (`no-useless-constructor`), so it is described. No fixer:
+// the report has two corrections the tool cannot tell apart — write
+// the prose, or move back a block that exists — and its output is an
+// empty block.
+const publishedPresence: Linter.RuleEntry = [
+  'error',
+  {
+    contexts: [
+      'TSInterfaceDeclaration',
+      'TSInterfaceDeclaration > TSInterfaceBody > TSPropertySignature[typeAnnotation.typeAnnotation.type="TSFunctionType"]',
+      'TSTypeAliasDeclaration:not([typeAnnotation.type="TSIndexedAccessType"][typeAnnotation.objectType.type="TSTypeQuery"][typeAnnotation.indexType.operator="keyof"])',
+      'ExportNamedDeclaration > VariableDeclaration:not([declarations.0.init.type=/^(ArrowFunction|Function|Class)Expression$/])',
+    ],
+    enableFixer: false,
+    exemptEmptyConstructors: false,
+    publicOnly: true,
+    require: {
+      ArrowFunctionExpression: true,
+      ClassDeclaration: true,
+      ClassExpression: true,
+      FunctionDeclaration: true,
+      FunctionExpression: true,
+      MethodDefinition: true,
+    },
+  },
+]
+
+// The table plus the one rule the two presets set apart. A live off in
+// an app: the preset turns the rule on for function declarations, the
+// one form `func-style` forbids.
+const presenceRules = (isPublished: boolean): NonNullable<Config['rules']> => ({
+  ...jsdocRules,
+  'jsdoc/require-jsdoc': isPublished ? publishedPresence : 'off',
+})
+
 // One jsdoc policy for the family; each repo names the files that
-// carry API documentation.
-export const jsdocBlock = (files: string[]): Config => ({
+// carry API documentation, and each preset says whether those files
+// are published (the presence rule above).
+//
+// The settings. `rejects: 'throws'`: TSDoc and typedoc have one tag
+// for an error surfacing from a call, awaited or not. `defaultValue:
+// 'default'`: the one TSDoc synonym the plugin's table lacks, so the
+// standard tag is an unknown name with no correction — the entry makes
+// it a rename to the spelling `no-defaults` reads. `structuredTags`:
+// with `@param` and `@returns` (`no-types`), these are every tag of the
+// family's vocabulary that takes a JSDoc type, and none may:
+// `valid-types` then reports `@throws {TypeError}`, which typedoc
+// drops from the published text. `ignoreReplacesDocs: false`: at the
+// default one `@ignore` exempts a block from the whole require family,
+// silently, where `@internal` and `@hidden` exempt it from nothing.
+/**
+ * The jsdoc block of a preset: the family table over the files a
+ * repository names.
+ * @param files - The globs of the files that carry API documentation.
+ * @param options - What the preset knows of those files.
+ * @param options.isPublished - Whether their exports are a published
+ * contract, which is what makes a doc block mandatory on each.
+ * @returns The config block.
+ */
+export const jsdocBlock = (
+  files: string[],
+  { isPublished }: { readonly isPublished: boolean },
+): Config => ({
   ...jsdoc({
     config: 'flat/recommended-tsdoc-error',
-    rules: jsdocRules,
-    settings: { tagNamePreference: { rejects: 'throws' } },
+    rules: presenceRules(isPublished),
+    settings: {
+      ignoreReplacesDocs: false,
+      structuredTags: {
+        template: {
+          name: 'namepath-referencing',
+          required: ['name'],
+          type: false,
+        },
+        throws: { type: false },
+        yields: { type: false },
+      },
+      tagNamePreference: { defaultValue: 'default', rejects: 'throws' },
+    },
   }),
   files,
 })
 
 // Class-member order shared by both families; the Homey preset splices
 // its lifecycle groups after the constructor.
+/**
+ * The head of the class-member order both families share: the fields,
+ * static first and public before private, then the constructor.
+ */
 export const sharedClassGroups: (string | string[])[] = [
   'index-signature',
   'static-decorated-property',
@@ -324,6 +704,10 @@ export const sharedClassGroups: (string | string[])[] = [
   'constructor',
 ]
 
+/**
+ * The rest of the shared class-member order: the methods, static first
+ * and public before private.
+ */
 export const sharedClassGroupsTail: (string | string[])[] = [
   'static-decorated-method',
   'static-function-property',
@@ -373,6 +757,10 @@ const booleanNamingEntry = (filter?: {
   types: ['boolean'],
 })
 
+/**
+ * What a preset or a repository adds to the strict core of the naming
+ * convention.
+ */
 export interface NamingConventionOptions {
   readonly booleanFilter?: { match: boolean; regex: string }
   readonly extraEntries?: readonly unknown[]
@@ -452,6 +840,13 @@ const namingConventionEntries = ({
 // scoped it by hand would carry its own copy of the family policy, the
 // shape that drifts. The preset emits the scoped block instead: the
 // caller names its files, never the policy.
+/**
+ * The block that admits a wire vocabulary on the files that speak it:
+ * the whole naming policy, restated with the vocabulary's entries.
+ * @param files - The globs the vocabulary is allowed on.
+ * @param naming - The naming options that carry the wire entries.
+ * @returns The config block.
+ */
 export const wireNamingBlock = (
   files: readonly string[],
   naming: NamingConventionOptions,
@@ -468,6 +863,12 @@ export const wireNamingBlock = (
 // The tests override: same per-repo naming options, properties
 // widened — test doubles mirror wire payloads verbatim and key module
 // mocks by their PascalCase export names.
+/**
+ * The naming convention of the test block: a repository's own options,
+ * with the property formats widened.
+ * @param naming - The repository's naming options.
+ * @returns The rule entry, under its rule id.
+ */
 export const testNamingRules = (
   naming: NamingConventionOptions,
 ): NonNullable<Config['rules']> => ({
@@ -480,6 +881,11 @@ export const testNamingRules = (
   ],
 })
 
+/**
+ * The knobs a preset hands to {@link sharedMainRules}, each one a
+ * measured difference between the two families or between two
+ * repositories.
+ */
 export interface SharedMainRulesOptions {
   readonly extraneous: {
     readonly devDependencies: readonly string[]
@@ -543,7 +949,12 @@ const staticMainRules: NonNullable<Config['rules']> = {
   ],
   // `checkJSDoc` stays at its default (false): it would rewrite `/** */`
   // blocks into line comments, which the jsdoc plugin and typedoc
-  // cannot read.
+  // cannot read. THE TRAP: what counts as a doc block here is this
+  // rule's own reading, not the jsdoc plugin's. A malformed one — a
+  // `/***` opener — is a plain block comment to it, and its fixer,
+  // which runs first, rewrites the block into `//` lines: the jsdoc
+  // fixers never see it, and what was documentation is a comment. Such
+  // a block is repaired by hand, from the jsdoc plugin's report.
   '@stylistic/multiline-comment-style': [
     'error',
     'separate-lines',
@@ -1085,21 +1496,33 @@ const staticMainRules: NonNullable<Config['rules']> = {
   'require-unicode-regexp': ['error', { requireFlag: 'v' }],
   'symbol-description': 'error',
   'unicode-bom': 'error',
-  // Owned by `@typescript-eslint/naming-convention` for boolean-TYPED
-  // variables, parameters and class properties (identical prefix set),
-  // which `checkVariables` would report a second time. What it adds is
-  // boolean-RETURNING functions — function-valued consts through
-  // `checkVariables`, the declarations `func-style` allows (overloads,
-  // `export default`) through `checkFunctions` — and a boolean return
-  // makes no predicate: most of its reports are actions answering
-  // whether they acted (`hideErrorLine`, `stampPackagedPages`,
-  // `refetchOnce`) or what a user chose (`homeyConfirm`), whose verb
-  // says what they do, and the rest predicates already worded as
-  // questions (`carriesCode`, `supportsGlow`, `routeMatches`) and typed
-  // doubles named after what they stand in for; it also reads a type
-  // guard (`isKeyOf`) as a non-boolean. Refused on what the names say,
-  // measured 2026-11-20.
-  'unicorn/consistent-boolean-name': 'off',
+  // The converse of the boolean naming entry: a predicate prefix
+  // promises a boolean, so a name that carries one and holds a count,
+  // an un-awaited promise, a tri-state or a factory named after the
+  // guard it returns reads as a condition and is not one. `prohibit`
+  // runs that check alone, on variables, parameters, functions and
+  // methods; it has no fixer. The forward check stays with
+  // `@typescript-eslint/naming-convention`, the type-aware owner of
+  // boolean variables, parameters and class properties (the same
+  // prefixes but `does`): under `always` this rule reports them a
+  // second time, renames the local ones to `is…` on every unattended
+  // `--fix`, and demands a prefix of every boolean-returning function —
+  // and a boolean return makes no predicate. An action answering
+  // whether it acted keeps its verb, as the platform's `Set#delete` and
+  // `confirm` do (`hideErrorLine`, `homeyConfirm`), and a relation
+  // reads as one (`supportsGlow`, `routeMatches`). `checkFields` stays
+  // at `never`: a zod shape keys a schema by the boolean it validates
+  // (`hasSwing: z.boolean()`), a report with no correction. Read by two
+  // advocates, one per side, 2026-11-20.
+  'unicorn/consistent-boolean-name': [
+    'error',
+    {
+      checkArguments: 'prohibit',
+      checkFunctions: 'prohibit',
+      checkMethods: 'prohibit',
+      checkVariables: 'prohibit',
+    },
+  ],
   // Owned by `perfectionist/sort-classes`.
   'unicorn/consistent-class-member-order': 'off',
   'unicorn/consistent-destructuring': 'error',
@@ -1264,6 +1687,21 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // it — delete this line the day it lists the rule, as for
   // `no-leading-empty-lines` above.
   'unicorn/require-spread-parentheses': 'off',
+  // CONFLICTING with `@stylistic/multiline-comment-style` at
+  // `separate-lines`, in either of its styles. `multiline`, the default
+  // `recommended` turns on, expands a one-line block into three lines,
+  // which `separate-lines` then rewrites into a `//` group padded with
+  // two empty lines; on a one-line doc block it writes the starless
+  // form, and at column zero that block ends as line comments too — a
+  // published description, or the `@type` of a JS config file, demoted
+  // by an unattended `--fix` with no report left (reproduced
+  // 2026-11-20). `single-line` collapses the very three-line block
+  // `separate-lines` rewrites: two fixers on one range. Its `ignore`
+  // patterns read the text without its delimiters, so a doc block
+  // cannot be exempted. The shape of a doc block is
+  // `jsdoc/multiline-blocks`'; a plain one-line `/* … */` is left to
+  // review, no rule of the loaded plugins turning it into a `//` line.
+  'unicorn/single-line-block-comment-style': 'off',
   'unicorn/try-complexity': 'error',
   'use-isnan': ['error', { enforceForIndexOf: true }],
   'valid-typeof': ['error', { requireStringLiterals: true }],
@@ -1285,7 +1723,23 @@ const templateExpressionOptions = (
   allowRegExp: false,
 })
 
-// Merges the static table with the measured family knobs.
+/**
+ * The main rule table of a preset: the static table, merged with the
+ * entries that preset's knobs shape.
+ * @param options - The preset's knobs.
+ * @param options.extraneous - What `import-x/no-extraneous-dependencies`
+ * admits: the globs that may import a devDependency, and whether type
+ * imports count.
+ * @param options.namespaceImportAllow - The import sources kept in
+ * namespace form.
+ * @param options.naming - The preset's share of the naming convention:
+ * its boolean filter and the entries spliced into the family policy.
+ * @param options.templateExpressionAllow - The types a template literal
+ * may interpolate.
+ * @param options.unassignedImportAllow - The side-effect imports
+ * admitted.
+ * @returns The rule table.
+ */
 export const sharedMainRules = ({
   extraneous,
   namespaceImportAllow,
@@ -1336,6 +1790,10 @@ export const sharedMainRules = ({
       : ['error', { allow: [...unassignedImportAllow] }],
 })
 
+/**
+ * The perfectionist settings of both main blocks: one alphabet, case
+ * sensitive, and members kept contiguous.
+ */
 export const perfectionistSettings: Record<string, Record<string, unknown>> = {
   perfectionist: {
     alphabet: Alphabet.generateRecommendedAlphabet()
@@ -1376,17 +1834,29 @@ export const perfectionistSettings: Record<string, Record<string, unknown>> = {
 // 7.0.0 the rule was `off` on those files with no recorded reason; the
 // shape over an exact list is a declared verdict (CLAUDE.md, naming
 // doctrine).
+/**
+ * The naming entry that admits an uppercase-initial key in a library's
+ * root config files, where typedoc imposes the spelling.
+ */
 export const typedocKeyEntry: Readonly<Record<string, unknown>> = {
   filter: { match: true, regex: '^[A-Z][A-Za-z0-9]*$' },
   format: null,
   selector: 'objectLiteralProperty',
 }
 
-// Root config files (`eslint.config.ts`, `vitest.config.ts`,
-// `typedoc.config.js`, …): the main table applies, with the departures
-// below.
+/**
+ * The glob of a repository's root config files (`eslint.config.ts`,
+ * `vitest.config.ts`, `typedoc.config.js`…).
+ */
 export const configFileGlob = '*.config.{js,mjs,mts,ts}'
 
+/**
+ * The block of the root config files: the main table applies there,
+ * with the departures a config file imposes.
+ * @param naming - The preset's share of the naming convention, never
+ * a wire vocabulary.
+ * @returns The block, scoped to the root config files.
+ */
 export const configTsBlock = (naming: NamingConventionOptions): Config => ({
   files: [configFileGlob],
   rules: {
@@ -1419,10 +1889,13 @@ export const configTsBlock = (naming: NamingConventionOptions): Config => ({
 })
 
 // The JS config files (`@ts-check` + JSDoc types) keep the full typed
-// rule set; the only rules stepping aside are those whose fix JS
-// cannot spell: a return-type annotation is TypeScript-only syntax,
-// and a JSDoc `@type` is semantic exactly because it is a block
-// comment — a line comment carries no type.
+// rule set; the only rule stepping aside is the one whose fix JS
+// cannot spell: a return-type annotation is TypeScript-only syntax.
+/**
+ * The block of the JavaScript config files: the four rules a
+ * TypeScript-scoped layer leaves them without, and the one annotation
+ * they cannot write.
+ */
 export const configJsBlock: Config = {
   files: ['*.config.{js,mjs}'],
   rules: {
@@ -1435,10 +1908,16 @@ export const configJsBlock: Config = {
     'prefer-const': 'error',
     'prefer-rest-params': 'error',
     'prefer-spread': 'error',
-    'unicorn/single-line-block-comment-style': 'off',
   },
 }
 
+/**
+ * The JSON block: `@eslint/json`'s recommended rules and the two
+ * unicorn rules that read the language, the manifest and the lock
+ * aside.
+ * @param extraIgnores - The JSON files a preset keeps out of it.
+ * @returns The config block.
+ */
 export const jsonBlock = (
   extraIgnores: readonly string[] = [],
 ): ConfigWithExtends => ({
@@ -1479,6 +1958,10 @@ export const jsonBlock = (
   },
 })
 
+/**
+ * The Markdown block: every `@eslint/markdown` rule on GitHub-flavoured
+ * Markdown, and the unicorn rules that read the language.
+ */
 export const markdownBlock: ConfigWithExtends = {
   extends: [markdown.configs.recommended],
   files: ['**/*.md'],
@@ -1520,7 +2003,10 @@ export const markdownBlock: ConfigWithExtends = {
   },
 }
 
-// Release sections repeat their own headings by design.
+/**
+ * The changelog's departure from the Markdown block: release sections
+ * repeat their own headings by design, so only siblings are compared.
+ */
 export const changelogBlock: Config = {
   files: ['CHANGELOG.md'],
   rules: {
@@ -1659,6 +2145,12 @@ const sharedTestRules: NonNullable<Config['rules']> = {
 
 // Both presets pass their family's test rules; there is no caller for
 // which an empty table would be right.
+/**
+ * The test block: vitest's recommended rules and the shared test
+ * table, then the family's own.
+ * @param extraRules - The test rules of the calling preset.
+ * @returns The config block.
+ */
 export const testsBlock = (
   extraRules: NonNullable<Config['rules']>,
 ): ConfigWithExtends => ({
@@ -1788,6 +2280,10 @@ const stepKeyOrder = [
   'run',
 ]
 
+/**
+ * The YAML block: the `yml` and unicorn presets for the language, and
+ * the family's order of a workflow step's keys.
+ */
 export const yamlBlock: ConfigWithExtends = {
   // `files` keeps the `yml/*` rules off every non-YAML file.
   extends: [
@@ -1903,6 +2399,12 @@ const sharedPackageJsonRules: NonNullable<Config['rules']> = {
   'package-json/sort-collections': 'off',
 }
 
+/**
+ * The manifest block: `eslint-plugin-package-json`'s two presets and
+ * the shared manifest table, then the family's own.
+ * @param familyRules - The manifest rules of the calling preset.
+ * @returns The config block.
+ */
 export const packageJsonBlock = (
   familyRules: NonNullable<Config['rules']>,
 ): ConfigWithExtends => ({

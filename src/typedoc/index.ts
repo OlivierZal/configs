@@ -1,12 +1,33 @@
-// The structural typedoc base both published libraries share; each
-// consumer supplies its identity (name, hostedBaseUrl, links) and its
-// documented internals ledger.
+/**
+ * What a library supplies to {@link typedocBase}: its identity and the
+ * ledger of the internals it documents without exporting.
+ */
 export interface TypedocBaseOptions {
+  /**
+   * The `@category` names of the library, in the order the site lists
+   * them; a category left out is appended after the last one.
+   */
   readonly categoryOrder: readonly string[]
+  /**
+   * The URL the docs site is served from.
+   */
   readonly hostedBaseUrl: string
+  /**
+   * The site's title.
+   */
   readonly name: string
+  /**
+   * The header links, keyed by the label typedoc renders.
+   */
   readonly navigationLinks: Readonly<Record<string, string>>
+  /**
+   * The modules to document; `src/index.ts` alone when left out.
+   */
   readonly entryPoints?: readonly string[]
+  /**
+   * The symbols a published signature names without exporting them,
+   * each one a verdict of the library.
+   */
   readonly intentionallyNotExported?: readonly string[]
 }
 
@@ -30,8 +51,8 @@ const staticTypedocOptions: Record<string, unknown> = {
   out: 'docs',
   plugin: ['typedoc-plugin-mdn-links', 'typedoc-plugin-coverage'],
   readme: 'README.md',
-  // Property and EnumMember excluded: most public types mirror a wire
-  // protocol verbatim, where field names speak for themselves.
+  // Property excluded: most public types mirror a wire protocol
+  // verbatim, where field names speak for themselves.
   requiredToBeDocumented: [
     'Accessor',
     'Class',
@@ -63,6 +84,20 @@ const staticTypedocOptions: Record<string, unknown> = {
   },
 }
 
+/**
+ * The structural typedoc options the published libraries share: the
+ * validation that fails the build on an undocumented or unresolved
+ * symbol, the plugins, the output. A library adds what only it knows.
+ * @param options - The library's identity.
+ * @param options.categoryOrder - The `@category` names, in site order.
+ * @param options.entryPoints - The modules to document.
+ * @param options.hostedBaseUrl - The URL the site is served from.
+ * @param options.intentionallyNotExported - The symbols documented
+ * without being exported.
+ * @param options.name - The site's title.
+ * @param options.navigationLinks - The header links, by label.
+ * @returns The typedoc options, to export from `typedoc.config.js`.
+ */
 export const typedocBase = ({
   categoryOrder,
   // The single-barrel library shape; multi-entry packages (one entry

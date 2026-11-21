@@ -1,6 +1,6 @@
-// Self-hosted on the package's own library preset (dogfooding). The
-// jsdoc scope is empty by this repo's verdict: the sources are config
-// fragments whose intent comments live inline, not an API-doc surface.
+// Self-hosted on the package's own library preset (dogfooding): what
+// it publishes is documented like any library's exports, the fragments
+// beneath keeping their intent comments inline.
 import { type Config, defineConfig } from 'eslint/config'
 
 import { library } from './src/eslint/library.ts'
@@ -12,15 +12,16 @@ const config: Config[] = defineConfig([
   ...library({
     wireNamingEntries: [
       // This repo's domain vocabulary: rule options keyed by
-      // tool-imposed names (AST node types for `prefer-destructuring`,
-      // case-style names for `unicorn/filename-case`, the `Date` type
-      // `no-restricted-types` bans) and the typedoc navigation label the
-      // contract tests exercise.
+      // tool-imposed names (AST node types for `prefer-destructuring`
+      // and `jsdoc/require-jsdoc`, case-style names for
+      // `unicorn/filename-case`, the `Date` type `no-restricted-types`
+      // bans) and the typedoc navigation label the contract tests
+      // exercise.
       {
         filter: {
           match: true,
           regex:
-            '^(?:AssignmentExpression|VariableDeclarator|SCREAMING_SNAKE_CASE|snake_case|GitHub|Date)$',
+            '^(?:ArrowFunctionExpression|AssignmentExpression|ClassDeclaration|ClassExpression|FunctionDeclaration|FunctionExpression|MethodDefinition|VariableDeclarator|SCREAMING_SNAKE_CASE|snake_case|GitHub|Date)$',
         },
         format: null,
         selector: 'objectLiteralProperty',
