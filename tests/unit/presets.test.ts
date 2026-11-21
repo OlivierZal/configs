@@ -200,10 +200,11 @@ const lintHtml = async (text: string): Promise<(string | null)[]> => {
 
 const lintJsdoc = async (
   text: string,
+  { isPublished = true }: { isPublished?: boolean } = {},
 ): Promise<{ output: string | undefined; ruleIds: (string | null)[] }> => {
   const eslint = new ESLint({
     fix: true,
-    overrideConfig: jsdocBlock(['lib/*.js']),
+    overrideConfig: jsdocBlock(['lib/*.js'], { isPublished }),
     overrideConfigFile: true,
   })
   const [result] = await eslint.lintText(text, { filePath: 'lib/sample.js' })
@@ -545,38 +546,173 @@ describe('css unknown pseudo-selectors', () => {
   })
 })
 
-// Two fixers of one rule, adopted and refused for the same reason, so
-// only a real `--fix` run can show the line holding: an out-of-order
-// block has exactly one correct arrangement, while an orphan `@param`
-// has two opposite corrections and must stay a human call.
+// `check-param-names` has ONE switch for two fixes: `enableFixer`
+// reorders out-of-order tags, and deletes a duplicate `@param` with the
+// prose a human wrote after it. Nothing keeps the first without the
+// second, so the fixer is withheld, and only a real `--fix` run can
+// show the three cases stay reports.
 describe('jsdoc param fixers', () => {
-  it('should reorder param tags into signature order', async () => {
-    const { output } = await lintJsdoc(`/**
- * Joins a building name to its device count.
+  it.each([
+    {
+      block: ` * @param count - How many devices the building holds.
+ * @param name - The building's display name.`,
+      caseName: 'out-of-order param tags',
+    },
+    {
+      block: ` * @param name - The building's display name.
  * @param count - How many devices the building holds.
+ * @param count - The same count, said twice.`,
+      caseName: 'a duplicate param',
+    },
+    {
+      block: ` * @param name - The building's display name.
+ * @param count - How many devices the building holds.
+ * @param ghost - A parameter this function does not take.`,
+      caseName: 'an orphan param',
+    },
+  ])(
+    'should report $caseName without rewriting the block',
+    async ({ block }) => {
+      const { output, ruleIds } = await lintJsdoc(`/**
+ * Joins a building name to its device count.
+${block}
+ * @returns The joined label.
+ */
+export const label = (name, count) => \`\${name} (\${count})\`
+`)
+
+      expect(ruleIds).toContain('jsdoc/check-param-names')
+      expect(output).toBeUndefined()
+    },
+  )
+})
+
+// The verdicts of the 2026-11-21 reading that a table entry alone does
+// not show: what each rule reports, and what its fixer is allowed to
+// write, on a real `--fix` run.
+describe('the jsdoc table on real blocks', () => {
+  // `check-tag-names` keeps its synonym renames with the fixer off. What
+  // the switch withholds is the removal of a tag TypeScript makes
+  // redundant: it strips the tag's name alone, and the text it leaves
+  // reads as the end of the tag above.
+  it('should rename a synonym and leave a redundant tag to its author', async () => {
+    const { output, ruleIds } = await lintJsdoc(`/**
+ * Joins a building name to its device count.
+ * @param name - The building's display name.
+ * @enum Of labels.
+ * @return The joined label.
+ */
+export const label = (name) => \`\${name}\`
+`)
+
+    expect(ruleIds).toStrictEqual(['jsdoc/check-tag-names'])
+    expect(output).toContain(' * @returns The joined label.')
+    expect(output).toContain(' * @enum Of labels.')
+  })
+
+  // The fixer writes \`{@link url|label}\` with the label glued on.
+  it('should report a bare see URL without rewriting it', async () => {
+    const { output, ruleIds } = await lintJsdoc(`/**
+ * Joins a building name to its device count.
+ * @param name - The building's display name.
+ * @returns The joined label.
+ * @see https://example.com/labels
+ */
+export const label = (name) => \`\${name}\`
+`)
+
+    expect(ruleIds).toContain('jsdoc/normalize-see-links')
+    expect(output).toBeUndefined()
+  })
+
+  // A missing `@param` does not determine its correction: the fixer
+  // writes a stub with no description, and a placeholder name for a
+  // destructured parameter.
+  it('should report a missing param without writing a stub', async () => {
+    const { output, ruleIds } = await lintJsdoc(`/**
+ * Joins a building name to its device count.
  * @param name - The building's display name.
  * @returns The joined label.
  */
 export const label = (name, count) => \`\${name} (\${count})\`
 `)
 
-    expect(output).toContain(`@param name - The building's display name.
- * @param count - How many devices the building holds.`)
-  })
-
-  it('should report an orphan param without removing it', async () => {
-    const { output, ruleIds } = await lintJsdoc(`/**
- * Joins a building name to its device count.
- * @param name - The building's display name.
- * @param ghost - A parameter this function does not take.
- * @returns The joined label.
- */
-export const label = (name) => \`\${name}\`
-`)
-
-    expect(ruleIds).toContain('jsdoc/check-param-names')
+    expect(ruleIds).toStrictEqual(['jsdoc/require-param'])
     expect(output).toBeUndefined()
   })
+
+  // What the `require-param` fixer writes for a destructured parameter:
+  // a placeholder name nobody chose.
+  it('should refuse a placeholder parameter name', async () => {
+    const { ruleIds } = await lintJsdoc(`/**
+ * Joins a building name to its device count.
+ * @param root0 - The building.
+ * @param root0.name - The building's display name.
+ * @returns The joined label.
+ */
+export const label = ({ name }) => \`\${name}\`
+`)
+
+    expect(ruleIds).toContain('jsdoc/match-name')
+  })
+
+  // TypeScript's language service reads a \`@throws\` that opens on an
+  // inline link as a brace type: the hover shows the tag broken.
+  it('should refuse a throws tag that opens on an inline link', async () => {
+    const { ruleIds } = await lintJsdoc(`/**
+ * Joins a building name to its device count.
+ * @param name - The building's display name.
+ * @returns The joined label.
+ * @throws {@link RangeError} when the name is empty.
+ */
+export const label = (name) => {
+  if (name === '') {
+    throw new RangeError('empty')
+  }
+  return \`\${name}\`
+}
+`)
+
+    expect(ruleIds).toContain('jsdoc/no-restricted-syntax')
+  })
+
+  it('should accept a throws tag that names its error before the link', async () => {
+    const { ruleIds } = await lintJsdoc(`/**
+ * Joins a building name to its device count.
+ * @param name - The building's display name.
+ * @returns The joined label.
+ * @throws A {@link RangeError} when the name is empty.
+ */
+export const label = (name) => {
+  if (name === '') {
+    throw new RangeError('empty')
+  }
+  return \`\${name}\`
+}
+`)
+
+    expect(ruleIds).toStrictEqual([])
+  })
+
+  // Presence is the publication's: a library's export carries its own
+  // block, an app publishes nothing and keeps \`//\` notes.
+  it.each([
+    { expected: ['jsdoc/require-jsdoc'], isPublished: true },
+    { expected: [], isPublished: false },
+  ])(
+    'should ask an undocumented export for a block only when published ($isPublished)',
+    async ({ expected, isPublished }) => {
+      const { output, ruleIds } = await lintJsdoc(
+        `// Joins a building name to its device count.
+export const label = (name) => \`\${name}\`
+`,
+        { isPublished },
+      )
+
+      expect(ruleIds).toStrictEqual(expected)
+      expect(output).toBeUndefined()
+    },
+  )
 })
 
 // The unicorn 77 HTML rules, taken one by one rather than through the

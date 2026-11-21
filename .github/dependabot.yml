@@ -1,14 +1,22 @@
 updates:
   # Both ecosystems share the `build(deps)` type: it keeps every bump under
   # one `git log --grep` and leaves `ci` to mean hand-written CI changes.
-  # Pinned rather than left to Dependabot, which otherwise infers prefix and
-  # capitalization from each repo's history and lands a different style per
-  # repo.
+  # The prefix is pinned rather than left to Dependabot, which otherwise
+  # infers it from each repo's history and lands a different one per repo.
+  # The case of the subject's first word cannot be pinned (`commit-message`
+  # takes `prefix`, `prefix-development` and `include` only) and follows
+  # that history: `Bump` in api-core and melcloud-api, `bump` elsewhere.
   - commit-message:
       prefix: build(deps)
     cooldown:
       default-days: 7
-    directory: /
+    # `/` reaches `.github/workflows` and a root `action.yml` only. The
+    # composite action every job of the family runs is named beside it,
+    # or its `actions/setup-node` pin is never proposed: unseen, it
+    # stood still from 2026-08-06 while three releases went by.
+    directories:
+      - /
+      - /.github/actions/setup-node-and-install
     groups:
       actions:
         patterns:

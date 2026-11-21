@@ -24,7 +24,13 @@ jobs:
           persist-credentials: false
       - uses: anthropics/claude-code-action@4fa93a88de49bbef68b10eb15aabedf28ca0e1ed # v1.0.271
         with:
-          claude_args: --model opus
+          # The permission mode is STATED, never left to the action's
+          # default: claude-code-action 1.0.273 starts a session in
+          # `auto` mode when no mode is given, where 1.0.271 passed
+          # none in prompt mode. The workflow's flag comes last and
+          # wins, so the pin can move without the posture moving with
+          # it; taking `auto` is a decision, made on this line.
+          claude_args: --model opus --permission-mode default
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           display_report: true
           plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'

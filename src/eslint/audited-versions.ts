@@ -127,7 +127,27 @@
  * block's language) and `table-column-count` leaves `recommended`,
  * which the block enables by name; unused-directive locations remapped;
  * its fixes measured zero sites old and new over the eight
- * repositories' Markdown.
+ * repositories' Markdown; 2026-11-21 (measured with a pack of the
+ * bumped tree in clones of the seven consumers): eslint 10.15 —
+ * behaviour only, zero new sites: `func-names` reads `__proto__` and
+ * assignment targets, `accessor-pairs` string and computed descriptor
+ * keys, `no-invalid-this` TypeScript assertions, `no-shadow` a
+ * specifier's own `type` modifier; jsdoc 65.5 — the occasion of a FULL
+ * reading of the plugin, every rule and option against the table and
+ * not the release's delta (CLAUDE.md, the 8.11.0 entry), each fixer
+ * tried on a fixture before it was kept or withheld. The release
+ * itself: `publicOnly` on the three description rules is not taken — a
+ * block that exists is held to the whole table wherever it stands;
+ * `require-param-name` gains a fixer no option withholds, reasoned at
+ * its rule site; `useObjectTypeForDestructuredRoots` shapes a fixer
+ * the table withholds, and writes a JSDoc type; the `fix` option of
+ * `implements-on-classes` writes one too; the new options of
+ * `imports-as-dependencies` sit on a ledgered refusal; the `flat/all`
+ * configs are not extended, the family building on the TSDoc preset;
+ * and `require-throws` now sees a throw under a bare `finally` and in
+ * a function called where it is defined, zero sites. jsdoc
+ * 65.4.4–65.4.12 are fixes and one speed-up, typescript-eslint 8.72.2
+ * fixes only.
  */
 export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@eslint/css': '2.0',
@@ -138,11 +158,11 @@ export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@html-eslint/eslint-plugin': '0.68',
   '@stylistic/eslint-plugin': '5.10',
   '@vitest/eslint-plugin': '1.6',
-  eslint: '10.14',
+  eslint: '10.15',
   'eslint-cssicorn': '0.3',
   'eslint-plugin-es-x': '10.1',
   'eslint-plugin-import-x': '4.18',
-  'eslint-plugin-jsdoc': '65.4',
+  'eslint-plugin-jsdoc': '65.5',
   'eslint-plugin-package-json': '1.14',
   'eslint-plugin-perfectionist': '5.13',
   'eslint-plugin-regexp': '3.3',

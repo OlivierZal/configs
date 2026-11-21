@@ -504,23 +504,34 @@ A rule's fixer is adopted when the ERROR DETERMINES ITS CORRECTION, and
 refused when it does not — the same question for every opt-in fixer the
 family meets, asked once here rather than re-argued per rule.
 
-`jsdoc/check-param-names` carries both answers at once, which is why it
-is the worked example (`enableFixer` on, `extraParams` and
-`badParamNames` off, reasoned at the rule site). Out-of-order `@param`
-tags have exactly one correct arrangement — the names already match the
-signature, only their positions differ, and each description travels
-with its own tag — so automating it is the same handover as `sort-tags`
-and perfectionist. An orphan `@param` has two opposite corrections
-("delete this doc" / "you forgot the parameter"), as does a name
-mismatch ("the doc is wrong" / "the signature is"), and a fixer choosing
-between them deletes or rewrites prose a human wrote. Those stay
-reports; the plugin offers its suggestions in the editor regardless,
-which is where a judgment call belongs.
+`jsdoc/check-param-names` is the worked example, because its one
+switch (`enableFixer`) drives two fixers that answer the question
+differently. Out-of-order `@param` tags have exactly one correct
+arrangement — the names already match the signature, only their
+positions differ, and each description travels with its own tag — so
+automating that would be the same handover as `sort-tags` and
+perfectionist. A duplicate `@param` has two opposite corrections (a
+stale copy to delete, a mistyped name for another parameter), and the
+fixer settles it by deleting the later tag with whatever a human wrote
+there (reproduced 2026-11-20: the description meant for `count` gone, a
+bare `@param count` in its place). No option separates the two, so the
+switch is off since 8.11.0 — it was on until then, taken for the first
+fixer before the second was reproduced — and both stay reports, as the
+orphan and the mismatch always were (`extraParams`, `badParamNames`:
+"delete this doc" or "you forgot the parameter", "the doc is wrong" or
+"the signature is"). A fixer that chooses between two corrections
+deletes or rewrites prose a human wrote. The same question withholds
+four more jsdoc fixers, each reasoned at its rule site: `require-param`
+(it invents the name of a destructured parameter and writes stubs),
+`require-jsdoc` (it writes an empty block), `check-tag-names` under
+`typed` (it deletes a tag typedoc publishes) and `normalize-see-links`
+(it writes a link typedoc misreads). The plugin offers its suggestions
+in the editor regardless, which is where a judgment call belongs.
 
-`--fix` runs unattended in every consumer, so an adopted fixer is
-family policy, not a convenience: pin it behaviorally (a real `--fix`
-run, both halves mutation-checked) rather than by asserting the option
-value back.
+`--fix` runs unattended in every consumer, so a fixer is family policy
+either way, never a convenience: pin it behaviourally (a real `--fix`
+run that rewrites, or a real one that leaves the block alone) rather
+than by asserting the option value back.
 
 ## Plugin triage — evaluated once, here
 
@@ -1153,6 +1164,43 @@ the names it would rewrite say (actions and worded predicates), not on
 how many there are; and `max-lines`,
 `vitest/require-hook` and `import-x/max-dependencies` in the 2026-09-27
 list above.
+
+8.11.0 (2026-11-21) reads eslint-plugin-jsdoc 65.5 and, on that
+occasion, the whole plugin: its 78 rules and every option of each,
+against the table and not the release's delta, each fixer tried on a
+fixture before it was kept or withheld. The table holds 42 of them, the
+ledger 23 (22 new rows, each on its reason: a JSDoc type brace the
+family does not write, a rule another rule owns, a practice the house
+holds the other way) and 13 run at the TSDoc preset's default. What
+moved, by practice. PRESENCE is the publication's:
+`jsdoc/require-jsdoc` asks a block of every export and public callable
+member of a library (`library` passes `isPublished: true`) and nothing
+of an app, whose doc blocks publish nothing; a block that exists is
+held to the whole table wherever it stands (`contexts: ['any']` on the
+description rules, the signature contexts on `require-param`,
+`no-defaults` and `no-types`, so an abstract method, an overload and a
+function-typed member are read too). A doc block has ONE shape
+(`multiline-blocks`, `no-bad-blocks` on every multi-asterisk opener,
+`tag-lines`, `check-line-alignment` over eleven tags), and the main
+table turns `unicorn/single-line-block-comment-style` off: its fixer
+and `@stylistic/multiline-comment-style`'s, chained by an unattended
+`--fix`, demoted a published description to `//` lines. A fixer is kept
+only where the error determines its correction (the section above):
+five are withheld. Two practices the plugin has no rule for ride
+`jsdoc/no-restricted-syntax` — a thrown class is named inside the
+sentence, never as the tag's opener, which TypeScript reads as a type
+and the hover shows broken; a documented generic names its type
+parameters — and `match-name` refuses `root0`, the placeholder typedoc
+would publish as a parameter's name. `unicorn/consistent-boolean-name`
+enters for its reverse check alone (`prohibit`): a predicate prefix on
+what is not a boolean. Measured with a pack over the seven consumers
+(2026-11-21), 210 reports, none of them a reason for or against a rule:
+`match-name` 94, `no-restricted-syntax` 49, `require-jsdoc` 47,
+`match-description` 14, six on three other rules; melcloud-api 129,
+api-core 47, heatzy-api 14, homey-kit 8, com.melcloud 8,
+com.melcloud.extension 4, com.heatzy 0. The adoptions pay them in code
+and by hand: a description is written, never stubbed. eslint 10.15 rode
+along, behaviour only (`src/eslint/audited-versions.ts` has the detail).
 
 Maintenance is a gate — an unmaintained plugin is refused regardless of
 coverage — and the claim is scoped to what was measured: the three

@@ -36,6 +36,10 @@ import {
   yamlBlock,
 } from './shared.ts'
 
+/**
+ * What one Homey app states of itself to the app preset: its globs
+ * and its documented exceptions. The family policy is the preset's.
+ */
 export interface HomeyAppOptions {
   // Sources bundled by esbuild, whose imports may live in
   // devDependencies (e.g. `settings/**`, `widgets/**`).
@@ -753,17 +757,24 @@ const appPackageJsonBlock: ConfigWithExtends = packageJsonBlock({
   'package-json/restrict-private-properties': 'error',
 })
 
-export const homeyApp = ({
-  bundledSourceGlobs,
-  defaultExportFiles,
-  jsdocFiles,
-  namespaceImportAllow,
-  templateExpressionAllow = [],
-  untypedDoubleTestFiles = [],
-  webviewFloorFiles,
-  wireNamingEntries = [],
-  wireNamingFiles = [],
-}: HomeyAppOptions): Config[] => {
+/**
+ * The Homey-app family preset: everything the three apps share. Each
+ * app's overlay keeps its globs and its documented verdicts.
+ * @param options - What the app states of itself.
+ * @returns The flat config blocks, in the order ESLint applies them.
+ */
+export const homeyApp = (options: HomeyAppOptions): Config[] => {
+  const {
+    bundledSourceGlobs,
+    defaultExportFiles,
+    jsdocFiles,
+    namespaceImportAllow,
+    templateExpressionAllow = [],
+    untypedDoubleTestFiles = [],
+    webviewFloorFiles,
+    wireNamingEntries = [],
+    wireNamingFiles = [],
+  } = options
   const naming = appNaming(wireNamingEntries)
   const isScoped = wireNamingFiles.length > 0
 
@@ -777,7 +788,7 @@ export const homeyApp = ({
     }),
     // After the main block, so the scoped files win the override.
     ...(isScoped ? [wireNamingBlock(wireNamingFiles, naming)] : []),
-    jsdocBlock([...jsdocFiles]),
+    jsdocBlock([...jsdocFiles], { isPublished: false }),
     webviewFloorBlock(webviewFloorFiles),
     homeyShimBlock,
     defaultExportBlock(defaultExportFiles),

@@ -29,7 +29,13 @@ jobs:
         with:
           additional_permissions: |
             actions: read
-          claude_args: --model opus
+          # The permission mode is STATED, never left to the action's
+          # default: claude-code-action 1.0.273 starts a session in
+          # `auto` mode when no mode is given, where 1.0.271 passed
+          # `acceptEdits` in mention mode. The workflow's flag comes
+          # last and wins, so the pin can move without the posture
+          # moving with it; taking `auto` is a decision, made here.
+          claude_args: --model opus --permission-mode acceptEdits
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
     timeout-minutes: 15
 name: Claude

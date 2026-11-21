@@ -35,11 +35,13 @@ export interface RefusedRule {
   readonly until?: { readonly deviceNodeFloorAtLeast: number }
 }
 
-// The Homey Pro runtime's Node major: 22 since firmware 12.9.0, 22.20
-// measured on the device 2026-08 (CLAUDE.md, the boundary — the four
-// runtime libraries declare it as `engines`; this package's own
-// `engines` is the toolchain's, derived from the dependency tree). Every
-// `floor` entry below waits on this number.
+/**
+ * The Homey Pro runtime's Node major: 22 since firmware 12.9.0, 22.20
+ * measured on the device 2026-08 (CLAUDE.md, the boundary — the four
+ * runtime libraries declare it as `engines`; this package's own
+ * `engines` is the toolchain's, derived from the dependency tree). Every
+ * `floor` entry of the ledger waits on this number.
+ */
 export const DEVICE_NODE_FLOOR = 22
 
 // The Node major that ships each waited-on API, measured 2026-09-28 by
@@ -76,6 +78,10 @@ const REDUNDANT_HTML =
 const SEO_HTML =
   'SEO: a Homey settings page or widget renders inside the Homey app and no crawler reads it. The `<meta name="description">` tags the apps carry are cargo (2024-09, no recorded reason), free to leave.'
 
+/**
+ * The ledger: every refusal of a rule no preset turns on, one entry
+ * each, proven against the installed plugins by the suite.
+ */
 export const REFUSED_RULES: readonly RefusedRule[] = [
   {
     class: 'conflicting',
@@ -247,11 +253,153 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
     rule: 'import-x/order',
   },
   {
+    class: 'domain',
+    reason:
+      "Inert by construction on ESLint 8 and later: the rule reports its own obsolescence and returns before reading an example, its engine being the removed `CLIEngine`. Its successor is not a rule but the plugin's examples processor, whose verdict is recorded with the plugin triage (CLAUDE.md). Not flagged `meta.deprecated` in jsdoc 65.5: the day it is, this row goes.",
+    rule: 'jsdoc/check-examples',
+  },
+  {
     class: 'owned',
     owner: 'jsdoc/no-types',
     reason:
-      "Reports Google Closure `{type=}` syntax, which has no surface in the family's TypeScript doc blocks: `jsdoc/no-types` (preset, `error`) strips every type brace from `@param`/`@returns`, and `jsdoc/check-tag-names` under `typed` (preset, `error`) forbids `@typedef`, `@property` and `@type` outright, so the only tag this rule alone could name is `@throws {T=}` — an 'optional thrown type' the house `@throws {@link X} when …` form never produces (0 across the eight repositories on jsdoc 65.2, 2026-10-09). Its 65.1 fixer (`enableFixer`) rewrites `{T=} n` to `{T} [n]`, the bracketed optional `no-defaults` with `noOptionalParamNames` refuses, so the fixer is never the best practice here either.",
+      "Reports the Google Closure `{type=}` suffix, a detail of a type brace the family does not write: the brace itself is the error on every tag of the family's vocabulary that takes a JSDoc type: `jsdoc/no-types` on `@param` and `@returns` in every signature context, `jsdoc/valid-types` through `structuredTags` on `@template`, `@throws` and `@yields`, and `jsdoc/check-tag-names` under `typed` forbids `@typedef`, `@property` and `@type` outright. Alone, the rule can only name a `{T=}` on `@next`, whose structure the plugin's helper pins, or after a tag that has no type position. Its fixer (`enableFixer`) writes `{T} [name]`, which `jsdoc/no-defaults` with `noOptionalParamNames` refuses, and `{T|undefined}` on the other tags, which keeps the brace (jsdoc 65.5, 2026-11-20).",
     rule: 'jsdoc/check-syntax',
+  },
+  {
+    class: 'conflicting',
+    reason:
+      "Turns the comment before a function, a variable or a property into a doc block, on the premise that such a comment is documentation. The family holds two channels by role: `//` is an implementation note (`@stylistic/multiline-comment-style` at `separate-lines`), absent from the emitted `.d.ts`, the hover and the typedoc site; the doc block is the contract, held to the whole jsdoc table. A converted note becomes a contract, so the house's own rules then ask `@param`, `@returns` and `@throws` of private members and unexported helpers, and deleting the note is the cheapest way to comply: a rule that penalises explaining. Where a note sits between a doc block and its declaration the fixer writes a second block that orphans the real one. Which declarations must carry a doc block is `jsdoc/require-jsdoc`'s question.",
+    rule: 'jsdoc/convert-to-jsdoc-comments',
+  },
+  {
+    class: 'owned',
+    owner: 'jsdoc/no-types',
+    reason:
+      "Checks that the package named by an inline `import()` type in a doc brace is listed in `package.json`. In the family's TypeScript there is no such brace to check: the brace itself is the error on every tag of the family's vocabulary that takes a JSDoc type: `jsdoc/no-types` on `@param` and `@returns` in every signature context, `jsdoc/valid-types` through `structuredTags` on `@template`, `@throws` and `@yields`, and `jsdoc/check-tag-names` under `typed` forbids `@typedef`, `@property` and `@type` outright. It never reads a real import, whose dependency status is TypeScript's and `import-x/no-extraneous-dependencies`'.",
+    rule: 'jsdoc/imports-as-dependencies',
+  },
+  {
+    class: 'conflicting',
+    reason:
+      'Requires a blank line before every multi-line doc block and names no context, so it reports the second and later documented member of every interface, object type and object literal, where the perfectionist settings hold the opposite layout (`newlinesBetween: 0`, `newlinesInside: 0`): with both on, ESLint ends on `ESLintCircularFixesWarning` and one rule stays red. It also counts a `//` note or an `eslint-disable` directive as the text before the block and separates the note from the doc block it introduces. Where a blank line IS the layout — module-level types, functions and classes, class members — `perfectionist/sort-modules` and `sort-classes` already report a glued block.',
+    rule: 'jsdoc/lines-before-block',
+  },
+  {
+    class: 'owned',
+    owner: 'jsdoc/require-description',
+    reason:
+      "An empty block is a block without a description, and `jsdoc/require-description`, at `error` on `contexts: ['any']`, reports every one of them wherever it sits. What this rule adds is its fixer, which deletes the block: an empty block has two opposite corrections (write the description, or delete the block), and where `jsdoc/require-jsdoc` demands the block the deletion trades one report for another. The ownership holds as long as `require-description` keeps its `any` context.",
+    rule: 'jsdoc/no-blank-blocks',
+  },
+  {
+    class: 'conflicting',
+    reason:
+      "Its resolver is a syntactic stand-in for TypeScript's: a `{@link}` name must be declared or imported in the file, or be a sibling of a concrete class member. So it rejects links the compiler resolves (an inherited member, an interface sibling) and accepts links it cannot (a missing member of an imported class). Satisfying it means importing a module only to name it in prose, an import the house's unused-import rules then report. Its other half, type names in braces, has no object where braces are forbidden. Link validity belongs to the tools that resolve as TypeScript does: the checker in the editor, typedoc's `invalidLink` in the libraries.",
+    rule: 'jsdoc/no-undefined-types',
+  },
+  {
+    class: 'owned',
+    owner: 'jsdoc/check-tag-names',
+    reason:
+      "Judges JSDoc casts, `/** @type {T} */ (value)`, the assertion syntax of type-checked JavaScript. It acts only on blocks that carry `@type`, a tag `jsdoc/check-tag-names` under `typed` forbids outright in the family's TypeScript; real assertions (`as`) are held by `@typescript-eslint/no-unnecessary-type-assertion`.",
+    rule: 'jsdoc/no-unnecessary-type-assertion',
+  },
+  {
+    class: 'owned',
+    owner: 'jsdoc/no-types',
+    reason:
+      "Replaces an inline `import()` type in a doc brace by a JSDoc `@import` tag, the idiom of JSDoc-typed JavaScript. In a TypeScript file that tag is inert, the compiler does not read it, and the brace that carries the `import()` is itself the error: the brace itself is the error on every tag of the family's vocabulary that takes a JSDoc type: `jsdoc/no-types` on `@param` and `@returns` in every signature context, `jsdoc/valid-types` through `structuredTags` on `@template`, `@throws` and `@yields`, and `jsdoc/check-tag-names` under `typed` forbids `@typedef`, `@property` and `@type` outright. Its fixer, on by default and run unattended in every consumer, would write into TypeScript sources a block the house then rejects. At `error` in the table until 8.11.0, on no stated reason.",
+    rule: 'jsdoc/prefer-import-tag',
+  },
+  {
+    class: 'conflicting',
+    reason:
+      "Its sentence model is a splitter on full stops, and the family's blocks are Markdown: it reads a sentence that opens on an inline `{@link}` as lower-case and a Markdown list as a paragraph missing its period, two forms the house holds on purpose (the `{@` opener of `jsdoc/match-description`, the indented sections of `jsdoc/check-indentation`). Its fixer then rewrites prose: it capitalises the word after the link and puts a period on the last list item only. The two ends of a description are held by `jsdoc/match-description`.",
+    rule: 'jsdoc/require-description-complete-sentence',
+  },
+  {
+    class: 'conflicting',
+    reason:
+      'An `@example` body is code, and no gate of the family compiles, lints or runs it: a mandated example restates the call in a comment and drifts from the signature, the duplication `jsdoc/no-types` and `jsdoc/no-defaults` refuse for types and optionality. The family keeps examples where recovery code is the documentation and demonstrates the rest in tests, which fail when a signature moves. The fixer writes an empty `@example` tag: a stub, never a correction.',
+    rule: 'jsdoc/require-example',
+  },
+  {
+    class: 'conflicting',
+    reason:
+      "The type of the value fed back through `next()` is the third argument of `Generator<T, TReturn, TNext>`, checked by the compiler; a brace on `@next` repeats it and nothing verifies the copy. The plugin's own tsdoc preset turns the rule off; the house keeps the description half (`jsdoc/require-next-description`) and leaves the type to the signature.",
+    rule: 'jsdoc/require-next-type',
+  },
+  {
+    class: 'conflicting',
+    reason:
+      "A parameter's type is in the signature, checked by the compiler; a brace in the doc block repeats it and nothing checks the copy. `jsdoc/no-types` holds that practice at `error`, and this rule demands exactly what it forbids: no block satisfies both.",
+    rule: 'jsdoc/require-param-type',
+  },
+  {
+    class: 'owned',
+    owner: 'jsdoc/check-tag-names',
+    reason:
+      '`@property` documents the shape of a `@typedef`, the JSDoc way to declare a type; in TypeScript the interface or the alias declares it, and `jsdoc/check-tag-names` under `typed` forbids the tag outright, typed or not. Every tag this rule could report is already an error.',
+    rule: 'jsdoc/require-property-type',
+  },
+  {
+    class: 'conflicting',
+    reason:
+      'The return type is in the signature, checked by the compiler; a brace on `@returns` repeats it unverified, and typedoc drops it from the published text. `jsdoc/no-types` holds the practice at `error` and this rule demands what it forbids: no block satisfies both.',
+    rule: 'jsdoc/require-returns-type',
+  },
+  {
+    class: 'conflicting',
+    reason:
+      "Requires the JSDoc brace `@throws {Type}`, the one form typedoc drops from the published text, and reports every form that survives publication. The exception's class is information TypeScript does not carry, so it is written where the docs keep it: as a `{@link}` inside the sentence, which typedoc renders and link-checks. `jsdoc/valid-types`, through the `structuredTags` setting, forbids the brace this rule asks for.",
+    rule: 'jsdoc/require-throws-type',
+  },
+  {
+    class: 'conflicting',
+    reason:
+      "The yielded type is the first argument of the function's `Generator<…>` return type, checked by the compiler; a brace on `@yields` repeats it, drifts unverified, and typedoc drops it from the published text. The rule reports the brace-free tag, the house form, and `jsdoc/valid-types` reports the brace it asks for.",
+    rule: 'jsdoc/require-yields-type',
+  },
+  {
+    class: 'conflicting',
+    reason:
+      "Both of its modes assume a renderer the family does not have. The doc blocks are Markdown, read by typedoc and by the editor's hover, and a code span is how the house writes a type or an identifier (`jsdoc/match-description` accepts one as a description's first or last character). `escapeMarkdown` puts a backslash before every code span's opening backtick, which unmakes the span; `escapeHTML` turns `<` and `&` inside code spans into entities, which Markdown shows verbatim. The rule always fixes.",
+    rule: 'jsdoc/text-escaping',
+  },
+  {
+    class: 'owned',
+    owner: '@typescript-eslint/ban-ts-comment',
+    reason:
+      "A port of `@typescript-eslint/ban-ts-comment` for projects that lint JavaScript without typescript-eslint. The original runs at `error` on every file of the family, the libraries' JavaScript config files included; every site this rule reports, the original reports.",
+    rule: 'jsdoc/ts-ban-ts-comment',
+  },
+  {
+    class: 'owned',
+    owner: 'jsdoc/no-types',
+    reason:
+      "Chooses between `{run(): void}` and `{run: () => void}` inside a doc-block type: the style of a brace the house does not write, since the brace itself is the error on every tag of the family's vocabulary that takes a JSDoc type: `jsdoc/no-types` on `@param` and `@returns` in every signature context, `jsdoc/valid-types` through `structuredTags` on `@template`, `@throws` and `@yields`, and `jsdoc/check-tag-names` under `typed` forbids `@typedef`, `@property` and `@type` outright. The real declarations are held by `@typescript-eslint/method-signature-style`.",
+    rule: 'jsdoc/ts-method-signature-style',
+  },
+  {
+    class: 'owned',
+    owner: 'jsdoc/no-types',
+    reason:
+      "Simplifies a template-literal type written inside a doc brace: a refinement of a brace the house does not write, since the brace itself is the error on every tag of the family's vocabulary that takes a JSDoc type: `jsdoc/no-types` on `@param` and `@returns` in every signature context, `jsdoc/valid-types` through `structuredTags` on `@template`, `@throws` and `@yields`, and `jsdoc/check-tag-names` under `typed` forbids `@typedef`, `@property` and `@type` outright. Template-literal types in code are held by `@typescript-eslint/no-unnecessary-template-expression`.",
+    rule: 'jsdoc/ts-no-unnecessary-template-expression',
+  },
+  {
+    class: 'owned',
+    owner: 'jsdoc/no-types',
+    reason:
+      "Rewrites a lone call signature `{(): void}` into a function type inside a doc-block type: the style of a brace the house does not write, since the brace itself is the error on every tag of the family's vocabulary that takes a JSDoc type: `jsdoc/no-types` on `@param` and `@returns` in every signature context, `jsdoc/valid-types` through `structuredTags` on `@template`, `@throws` and `@yields`, and `jsdoc/check-tag-names` under `typed` forbids `@typedef`, `@property` and `@type` outright. The real declarations are held by `@typescript-eslint/prefer-function-type`.",
+    rule: 'jsdoc/ts-prefer-function-type',
+  },
+  {
+    class: 'owned',
+    owner: 'jsdoc/no-types',
+    reason:
+      "Normalises the inside of a type brace (spacing, array style, quotes). The house does not style those braces, it forbids them: the brace itself is the error on every tag of the family's vocabulary that takes a JSDoc type: `jsdoc/no-types` on `@param` and `@returns` in every signature context, `jsdoc/valid-types` through `structuredTags` on `@template`, `@throws` and `@yields`, and `jsdoc/check-tag-names` under `typed` forbids `@typedef`, `@property` and `@type` outright. Its fixer, on by default, would rewrite in place a brace every owner wants removed.",
+    rule: 'jsdoc/type-formatting',
   },
   {
     class: 'domain',
@@ -402,14 +550,14 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
     class: 'conflicting',
     files: CSS_FILES,
     reason:
-      "CSS has no line comment, so the MULTILINE default turns a one-line section label — `/* Zone selector */` — into a three-line block: 18 sites over the three apps' stylesheets (com.melcloud 14, com.heatzy 1, com.melcloud.extension 3; 2026-10-09), the shape the family exempts for the JS config files at their block. At `error` on TS/JS through `recommended`, where a line comment exists; on CSS nothing enables it (the CSS block extends no unicorn preset).",
+      "CSS has no line comment, so the MULTILINE default turns a one-line section label — `/* Zone selector */` — into a three-line block: 18 sites over the three apps' stylesheets (com.melcloud 14, com.heatzy 1, com.melcloud.extension 3; 2026-10-09), the shape the family exempts for the JS config files at their block. On TS/JS, where a line comment exists, `recommended` turns it on and the main table turns it off for a conflict of its own, stated at the entry; on CSS nothing enables it (the CSS block extends no unicorn preset).",
     rule: 'unicorn/single-line-block-comment-style',
   },
   {
     class: 'conflicting',
     files: ['tests/**/*.ts'],
     reason:
-      "Cannot tell setup code from a suite factory — a top-level call that registers `describe` blocks, which is how the kit's contract kernels run — so holding it needs an `allowedFunctionCalls` list of the kit's factory names here, every new kernel a configs release: a list of the corpus, the shape the doctrine refuses.",
+      "Reads syntax, not effect: at collection scope it reports a bare call that is not the runner's own, and an initialised `let`. A shared suite — a helper of a consumer's own test tree that owns its `describe`, called once per implementation — is such a call, and it is registration: Vitest admits a suite function only at the top level or inside another suite, and drops or rejects one moved into a hook, as the message asks (5.1.0, reproduced 2026-11-20). `vitest/require-top-level-describe` and `vitest/valid-describe-callback`, both at `error`, refuse the other shapes a suite shared between test files can take; only this call passes them, or the same call one `for…of` deep, which the rule does not report. Setup itself passes behind `const`, `await` or any `vi.*` call, and the `let` half reads the initialiser, so a variable a hook already assigns is reported for its placeholder. `allowedFunctionCalls` matches spellings and validates none: it could only list each consumer's own helpers.",
     rule: 'vitest/require-hook',
   },
 ]

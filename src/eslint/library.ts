@@ -32,6 +32,10 @@ import {
   yamlBlock,
 } from './shared.ts'
 
+/**
+ * What one library states of itself to the library preset: its wire
+ * vocabulary and where it speaks it. The family policy is the preset's.
+ */
 export interface LibraryOptions {
   // The wire-protocol naming entry (e.g. a `__brand` sentinel or split
   // register names) spliced into the naming convention.
@@ -158,16 +162,21 @@ const libraryPackageJsonRules: NonNullable<Config['rules']> = {
   'package-json/require-types': 'error',
 }
 
-export const library = ({
-  wireNamingEntries = [],
-  wireNamingFiles = [],
-}: LibraryOptions = {}): Config[] => {
+/**
+ * The published-library family preset: everything the API clients and
+ * the shared runtimes have in common. Each library's overlay keeps its
+ * documented verdicts and its wire-protocol naming entry.
+ * @param options - What the library states of itself.
+ * @returns The flat config blocks, in the order ESLint applies them.
+ */
+export const library = (options: LibraryOptions = {}): Config[] => {
+  const { wireNamingEntries = [], wireNamingFiles = [] } = options
   const naming = libraryNaming(wireNamingEntries)
   const isScoped = wireNamingFiles.length > 0
 
   return defineConfig([
     linterOptionsBlock,
-    jsdocBlock(['src/**/*.ts']),
+    jsdocBlock(['src/**/*.ts'], { isPublished: true }),
     libraryMainBlock(isScoped ? libraryNaming([]) : naming),
     // After the main block, so the scoped files win the override.
     ...(isScoped ? [wireNamingBlock(wireNamingFiles, naming)] : []),
