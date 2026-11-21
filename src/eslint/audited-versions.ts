@@ -147,7 +147,49 @@
  * and `require-throws` now sees a throw under a bare `finally` and in
  * a function called where it is defined, zero sites. jsdoc
  * 65.4.4–65.4.12 are fixes and one speed-up, typescript-eslint 8.72.2
- * fixes only.
+ * fixes only; same day, for 8.12.0 (a pack of the bumped tree in the
+ * seven consumers' clones, then a probe config for the one opt-in):
+ * `@stylistic` 6.0 — the four rules the table sets keep their options
+ * (`quotes` loses spellings it never used), and two widen what they
+ * leave alone: `multiline-comment-style` skips the `@ts-` directives,
+ * `prettier-ignore`, the `v8`, `c8` and `node:coverage` pragmas,
+ * webpack's magic comments and the triple-slash references, where it
+ * skipped the linters' directives and istanbul's, and `spaced-comment`
+ * a triple-slash reference written without its space; zero sites over
+ * the seven consumers. Its two new rules, `jsx-shorthand-boolean` and
+ * `jsx-shorthand-fragment`, enter the main table as latent guards, and
+ * `jsx-pascal-case`, the third `suggestion` rule of its JSX half, the
+ * ledger; `jsx-indent`, `jsx-props-no-multi-spaces` and
+ * `jsx-sort-props` are gone, none of them configured; the rest of the
+ * release is layout, the formatter's. perfectionist 5.14 —
+ * `sort-modules` gains `sortArrowFunctions`, kept at its default and
+ * reasoned at the rule site, and reads the dependencies a decorator
+ * names, zero sites. typescript-eslint 8.73 is read and HELD, the
+ * entry staying at 8.72: for the experimental TypeScript 7.1 backend
+ * of its project service, the parser declares an optional peer on
+ * `@typescript/native` at `>=7.1.0-dev.20261009.1`, the name under
+ * which the family's 6/7 layout installs the 7.0 compiler. The peer is
+ * there and too old, and npm settles it with a compiler nobody chose:
+ * npm 10.9.8 and 11.20.0 both nest the day's nightly
+ * (`7.1.0-dev.20261121.1`) beneath `@typescript-eslint/utils` when
+ * they resolve this package's manifest from nothing, and on the lock
+ * npm 11 writes from the previous one, npm 10's `npm ci` stops
+ * (`Missing: @typescript/native@7.1.0-dev.20261121.1 from lock file`).
+ * The hold is re-examined the day `@typescript/native` is a 7.1 here,
+ * a version that range admits. A hand brings that day: Dependabot
+ * proposes no `npm:` alias (its run of 2026-11-21 looked at 34 of the
+ * 36 dependencies this manifest declares, the two compilers left out),
+ * so the suite carries a date that asks, and `.github/dependabot.yml`
+ * ignores the releases in between. What 8.73 brings was measured
+ * before the hold:
+ * `no-unsafe-class-instance-assignment` arrives through
+ * `strictTypeChecked` (a value used where a class instance is expected
+ * and that no constructor of that class made), 17 sites, every one in
+ * a test (api-core 10, two tables of errors whose rows TypeScript
+ * reduces to one of their classes; melcloud-api 6 and heatzy-api 1, a
+ * helper meant for doubles taken for a non-null assertion, and a
+ * foreign transport handed over on purpose), and
+ * `consistent-type-imports` narrows the place it reports at.
  */
 export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@eslint/css': '2.0',
@@ -156,7 +198,7 @@ export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@eslint/markdown': '9.0',
   '@eslint-community/eslint-plugin-eslint-comments': '4.8',
   '@html-eslint/eslint-plugin': '0.68',
-  '@stylistic/eslint-plugin': '5.10',
+  '@stylistic/eslint-plugin': '6.0',
   '@vitest/eslint-plugin': '1.6',
   eslint: '10.15',
   'eslint-cssicorn': '0.3',
@@ -164,7 +206,7 @@ export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   'eslint-plugin-import-x': '4.18',
   'eslint-plugin-jsdoc': '65.5',
   'eslint-plugin-package-json': '1.14',
-  'eslint-plugin-perfectionist': '5.13',
+  'eslint-plugin-perfectionist': '5.14',
   'eslint-plugin-regexp': '3.3',
   'eslint-plugin-unicorn': '80.0',
   'eslint-plugin-yml': '3.10',

@@ -14,7 +14,8 @@
 # on the commit that caused it, and the wait leaves the analysis
 # published for the read-back here. The split by window mirrors the
 # platform's: a pull request answers for its new code, a branch for
-# both windows.
+# both windows — on a push, and on the scheduled run that re-reads
+# `main` after the merges no push workflow follows.
 #
 # Two facts make the read-back a verification rather than a dashboard:
 # the measures are fetched for the event's own pull request or branch,
@@ -100,14 +101,15 @@ if [[ -z $project_key ]]; then
   pass 'no Sonar project is declared for this repo; nothing to gate'
 fi
 
-# The gate predicate, stated once: a push is analysed; a pull request is
-# analysed when it comes from a branch of this repository and a person
-# opened it — Dependabot's receive no analysis and are accepted on the
+# The gate predicate, stated once: a push and a scheduled run are
+# analysed, on the branch they run on; a pull request is analysed when
+# it comes from a branch of this repository and a person opened it —
+# Dependabot's receive no analysis and are accepted on the
 # proof that every commit is Dependabot's, since it authors manifests and
 # pinned references rather than source. Every clause states a fact this
 # script checked; none of them is an assumption about who opened what.
 case $event in
-push) ;;
+push | schedule) ;;
 pull_request)
   [[ $head_repo == "$this_repo" ]] ||
     fail "a pull request from the fork \`$head_repo\` receives no SONAR_TOKEN, so the bar cannot be verified here; land it from a branch of $this_repo"

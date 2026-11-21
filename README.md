@@ -32,7 +32,13 @@ floor here and in the apps, whose device floor lives in
 `EBADENGINE` warning, which is how the apps' 22.20 coverage leg installs
 at all. Re-derive it when the tree moves. The peers are the tools every
 consumer runs: `eslint >=10.6.0` (es-x's own floor), `prettier >=3.5`,
-`vitest >=4`.
+`vitest >=4`. Every rule-bearing package the presets load is a
+dependency of this one at an exact version, in the minor its release
+notes were read against, so a consumer's lock cannot resolve a minor
+nobody read. `eslint` itself is the consumer's: it moves with the
+adoption of the release that read it
+(`npm install -D eslint@~<that minor>`), and the consumer's Dependabot
+leaves its minors and majors alone.
 
 ### eslint
 
@@ -252,7 +258,10 @@ export default config
 
 The preset names two plugins (`typedoc-plugin-mdn-links`,
 `typedoc-plugin-coverage`) that typedoc loads by name from the
-consumer's tree, so they install beside typedoc itself:
+consumer's tree, so they install beside typedoc itself. It also tells
+the first where the lib declarations sit under the TypeScript 6/7
+layout (`additionalModuleSources: ['@typescript/old']`), so `Promise`,
+`Map` or a `{@link TypeError}` resolve to their MDN pages:
 
 ```sh title="install"
 npm install --save-dev typedoc typedoc-plugin-coverage typedoc-plugin-mdn-links
@@ -314,7 +323,22 @@ jobs:
     uses: OlivierZal/configs/.github/workflows/reusable-ci.yml@<commit sha> # vX.Y.Z
     with:
       run-lint-package: true # libs
+name: CI
+on:
+  pull_request: {}
+  push:
+    branches: [main]
+  schedule:
+    - cron: '23 4 * * *'
+permissions: {}
 ```
+
+The three triggers are the ones the reusable has a rule for. The
+scheduled run is the push the Dependabot lane never raises: a merge it
+performs is pushed with the repository's `GITHUB_TOKEN`, which starts no
+workflow, so without it the tree the lane leaves on `main` is built,
+tested and analysed only by the next push a person makes. It answers
+for the branch as a push does, on both windows of the bar.
 
 `node-versions` describes the test legs, one JSON object each (default
 `[{"node-version": "22", "coverage": true}, {"node-version": "latest"},
@@ -390,7 +414,10 @@ become stubs. The Homey apps' process — `reusable-homey-validate.yml`,
 `reusable-homey-publish.yml` and the iOS floor watch — lives in
 `@olivierzal/homey-kit` (6.1.0), the second two-channel package
 `check-pins.sh` polices. `check-declarations.sh` runs beside it, over
-the repository's own `.d.ts` files (see tsconfig above).
+the repository's own `.d.ts` files (see tsconfig above), and
+`check-lock.sh` over the lock: a prerelease there is one a manifest
+names at an exact version, the repository's or a dependency's, never
+one a range picked on the day the lock was written.
 
 ```yaml title=".github/workflows/publish.yml"
 jobs:

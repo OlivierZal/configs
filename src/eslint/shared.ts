@@ -925,6 +925,16 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // the eight undescribed enables got their description with the 7.0.0
   // adoptions (measured 2026-09-28).
   '@eslint-community/eslint-comments/require-description': 'error',
+  // The two rules @stylistic 6 adds are the JSX idiom Prettier does not
+  // write: `<Field disabled />` for `disabled={true}`, `<>…</>` for a
+  // fragment that carries no attribute. Latent guards on the footing of
+  // `perfectionist/sort-jsx-props` below: no JSX file exists across the
+  // eight repositories and neither tsconfig base sets `jsx`, but the TS
+  // blocks' globs reach `**/*.tsx`, so the shorthand is the default
+  // from a JSX surface's first commit. Each fixer removes what the
+  // error names and nothing else.
+  '@stylistic/jsx-shorthand-boolean': 'error',
+  '@stylistic/jsx-shorthand-fragment': 'error',
   // Comments are the one prose Prettier never wraps, so the house's 80
   // columns reach them through this rule, as they reach YAML through
   // `yml/max-len`: eslint-config-prettier lists it as a special rule
@@ -1404,6 +1414,19 @@ const staticMainRules: NonNullable<Config['rules']> = {
   // CLAUDE.md.
   'perfectionist/sort-jsx-props': 'error',
   'perfectionist/sort-maps': 'error',
+  // `sortArrowFunctions` (5.14) stays at its default, off, for what it
+  // does and not for what it costs (434 reports over the seven
+  // consumers, 2026-11-21). The rule sorts each run of consecutive
+  // sortable statements, and every other `const` (a table, a schema, a
+  // constant) ends a run: the helpers of two pipelines are pooled in
+  // one alphabet where no constant stands between them, and split
+  // where one does (melcloud-api `src/facades/home-energy.ts`: the
+  // series read and the chart grid, interleaved), so a function is
+  // found neither by its place in the flow nor by its name. And its
+  // fixer moves a function out of an `eslint-disable`/`eslint-enable`
+  // pair: the unattended `--fix` then deletes the pair as unused and
+  // rewrites the function the pair protected (reproduced on
+  // melcloud-api's `resolved`, left on a `require-await` error).
   'perfectionist/sort-modules': [
     'error',
     {

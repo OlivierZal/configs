@@ -96,7 +96,11 @@ describe('the unanalysed-pull-request branch', () => {
       what: 'a fork pull request',
     },
     {
-      env: { EVENT_NAME: 'schedule', HEAD_SHA: ANALYSED_SHA, THIS_REPO },
+      env: {
+        EVENT_NAME: 'workflow_dispatch',
+        HEAD_SHA: ANALYSED_SHA,
+        THIS_REPO,
+      },
       expected: 'has no rule for it',
       what: 'an event with no rule',
     },
@@ -291,6 +295,25 @@ describe('against a stand-in SonarCloud', () => {
       },
     )
 
+    // The scheduled run is the push no merge of the Dependabot lane
+    // raises: it answers for the branch as a push does, on both windows.
+    it.each([
+      { expected: 'house bar holds', project: 'best', status: 0 },
+      {
+        expected: 'violations is 3, the bar is at most 0',
+        project: 'scoped',
+        status: 1,
+      },
+    ])(
+      'reads the branch scope for a scheduled run ($project)',
+      ({ expected, project, status }) => {
+        const result = run(analysedPush(project, { EVENT_NAME: 'schedule' }))
+
+        expect(result.status).toBe(status)
+        expect(result.output).toContain(expected)
+      },
+    )
+
     it.each([...metricsOf('new'), ...metricsOf('overall')])(
       'holds a branch to both windows, %s included',
       (metric) => {
@@ -433,6 +456,21 @@ describe('the reusable CI workflow', () => {
     expect(
       asString(asRecord(scan?.with, 'scan.with').args, 'scan.args'),
     ).toContain('-Dsonar.qualitygate.wait=true')
+  })
+
+  // The gate reads back what the scan published, so the two name the
+  // same branch events: a scheduled run the gate admits and the scan
+  // skips would find the previous push's analysis and refuse it.
+  it('scans on every event the gate reads a branch for', () => {
+    const scan = stepsOf(asRecord(jobs.test, 'test'))
+      .map((step) => asRecord(step, 'step'))
+      .find((step) =>
+        asString(step.uses ?? '', 'uses').includes('sonarqube-scan-action'),
+      )
+    const condition = asString(scan?.if, 'scan.if')
+
+    expect(condition).toContain("github.event_name == 'push'")
+    expect(condition).toContain("github.event_name == 'schedule'")
   })
 
   // Shipping the script without wiring it would leave the unanalysed

@@ -21,9 +21,8 @@ import { asString, repoRoot } from '../helpers.ts'
 // that typedoc resolves by name at run time, and only a run proves the
 // names resolve and the plugins do their work. Each plugin leaves a
 // trace nothing else produces — the coverage badge, and the MDN links
-// on an `Error` subclass's inherited members (the plugin resolves lib
-// names it has a page for; `Error.message` is one, `Promise` is not) —
-// so a plugin that failed to load fails here.
+// on the lib symbols the fixture names — so a plugin that failed to
+// load fails here.
 const workDir = mkdtempSync(path.join(tmpdir(), 'configs-typedoc-'))
 const outDir = path.join(workDir, 'docs')
 
@@ -32,22 +31,23 @@ const htmlFilesUnder = (dir: string): string[] =>
     .filter((entry) => entry.isFile() && entry.name.endsWith('.html'))
     .map((entry) => path.join(entry.parentPath, entry.name))
 
-// The hosts the generated pages link to, read off each parsed URL: the
-// mdn-links trace is a link whose HOST is MDN, and a substring search
-// for the name would also accept a host that merely contains it.
-const linkHostsUnder = (dir: string): string[] =>
-  htmlFilesUnder(dir).flatMap((file) =>
-    readFileSync(file, 'utf8')
-      .matchAll(/href="(?<href>[^"]*)"/gv)
-      .map(({ groups }) => {
-        const { hostname } = new URL(
-          asString(groups?.href, 'href'),
-          'https://example.invalid',
+// The MDN pages the generated site links to, each by the last segment
+// of its path. Read off the parsed URL: the mdn-links trace is a link
+// whose HOST is MDN, and a substring search for the name would also
+// accept a host that merely contains it.
+const mdnPages = (): string[] =>
+  htmlFilesUnder(outDir)
+    .flatMap((file) =>
+      readFileSync(file, 'utf8')
+        .matchAll(/href="(?<href>[^"]*)"/gv)
+        .map(
+          ({ groups }) =>
+            new URL(asString(groups?.href, 'href'), 'https://example.invalid'),
         )
-        return hostname
-      })
-      .toArray(),
-  )
+        .toArray(),
+    )
+    .filter(({ hostname }) => hostname === 'developer.mozilla.org')
+    .map(({ pathname }) => pathname.split('/').at(-1) ?? '')
 
 describe(typedocBase, () => {
   beforeAll(() => {
@@ -94,6 +94,18 @@ describe(typedocBase, () => {
   })
 
   it('should load typedoc-plugin-mdn-links', () => {
-    expect(linkHostsUnder(outDir)).toContain('developer.mozilla.org')
+    expect(mdnPages()).toContain('message')
   })
+
+  // The lib declarations sit in `@typescript/old` under the 6/7
+  // side-by-side layout, a package the plugin does not know by name:
+  // until 8.12.0 named it, only the inherited members above resolved,
+  // and the `{@link TypeError}` of the fixture failed the validation —
+  // which the run in `beforeAll` would now die on.
+  it.each(['Error', 'Map', 'Promise', 'TypeError'])(
+    'should link the lib symbol %s to its MDN page',
+    (name) => {
+      expect(mdnPages()).toContain(name)
+    },
+  )
 })

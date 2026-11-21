@@ -42,6 +42,15 @@ jobs:
           script=node_modules/@olivierzal/configs/scripts/check-pins.sh
           [ -f "$script" ] || script=scripts/check-pins.sh
           bash "$script"
+      # A prerelease in the lock is one a manifest names, or one a range
+      # picked on the day the lock was written — a compiler nightly, the
+      # day typescript-eslint 8.73 met the 6/7 layout. `npm ci` says
+      # nothing of either.
+      - name: Verify the lock
+        run: |
+          script=node_modules/@olivierzal/configs/scripts/check-lock.sh
+          [ -f "$script" ] || script=scripts/check-lock.sh
+          bash "$script"
       # `skipLibCheck: true` hides a repository's own `.d.ts` files; the
       # verifier proves each one its program loads is checked by the
       # declarations program, which `typecheck` chains — or that there is
@@ -161,7 +170,7 @@ jobs:
       # published analysis rather than a pending one.
       - if: |
           matrix.coverage && env.SONAR_TOKEN != '' &&
-          (github.event_name == 'push' ||
+          (github.event_name == 'push' || github.event_name == 'schedule' ||
             (github.event.pull_request.user.login != 'dependabot[bot]' &&
               github.event.pull_request.head.repo.full_name ==
                 github.repository))

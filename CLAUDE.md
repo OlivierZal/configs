@@ -188,11 +188,29 @@ longer turns it off with a reason that was false twice over.
 - Refs to THIS repo may never use `untagged:` (every release is
   tagged — it could only dodge the two-channel agreement), and their
   comment tag must equal the consumer's `@olivierzal/configs` npm pin:
-  one version covers both channels. One ecosystem pilots the bump —
-  Dependabot proposes the npm pin and the workflow refs follow in the
-  SAME branch; the consumer's `github-actions` ecosystem ignores
-  `OlivierZal/configs`, because two separate ecosystem PRs would each
-  fail the two-channel check and deadlock.
+  one version covers both channels. The ADOPTION moves them together,
+  in one hand-made pull request: Dependabot's proposal of the npm pin
+  is the signal and never the vehicle, since a commit added to its
+  branch is refused by the Sonar gate, and the consumer's
+  `github-actions` ecosystem ignores `OlivierZal/configs`, because two
+  separate ecosystem PRs would each fail the two-channel check and
+  deadlock.
+- What the audit ledger read is what a consumer installs (8.12.0).
+  Every package of `src/eslint/audited-versions.ts` that the presets
+  ship is a dependency at an EXACT version. Nine of them sat on a caret
+  until then (the three `@eslint/*` languages and `@eslint/js`,
+  html-eslint, @stylistic, the vitest plugin, es-x, import-x): the
+  ledger watches this repository's tree alone, so a consumer's lock
+  could resolve a minor nobody had read. Pinned by the ledger's suite.
+  `eslint` is the one audited package a consumer declares itself, and
+  it moves the same way: the adoption carries
+  `npm install -D eslint@~<the minor read>`, and the consumer's npm
+  ecosystem ignores eslint's minors and majors — 10.13 was merged by
+  the lane in the seven consumers between 2026-10-24 and 2026-10-29,
+  and read here on 2026-11-04. The other fix weighed, a peer range
+  naming the minor (`~10.15.0` for `>=10.6.0`), keeps one owner and is
+  NOT taken: how Dependabot reports the peer conflict it would raise in
+  a consumer has not been tried.
 
 ## CI matrix doctrine
 
@@ -285,13 +303,23 @@ longer turns it off with a reason that was false twice over.
   at zero stays at zero by induction. The single drift that escapes the
   induction is an analyser update raising issues on untouched code; no
   pull request causes it, so it surfaces on `main`, where it is loud and
-  blocks no review it has nothing to do with. No scheduled sweep re-asks
-  the question: every push to `main` that creates a workflow run
-  evaluates both windows — a merge performed with the repository's
-  `GITHUB_TOKEN` (the Dependabot auto-merge; measured 2026-10-21 on
-  api-core, no `CI` run on such a merge commit) creates none, and its
-  analysis lands with the next push that does — so a weekly one would
-  only re-read what the last analysed push measured.
+  blocks no review it has nothing to do with. Every push to `main` that
+  creates a workflow run evaluates both windows, and since 8.12.0 a
+  SCHEDULED run does too, daily, in every caller (`schedule` in its
+  `ci.yml`; the scan step and the gate both name the event). The sweep
+  was refused on 2026-10-21 as a re-reading of what the last push had
+  measured, on a premise with a hole it named itself: a merge performed
+  with the repository's `GITHUB_TOKEN` (the Dependabot auto-merge)
+  creates no run. Measured on six such merges (2026-11-19): no CI, no
+  zizmor and no Sonar analysis on any of them (CodeQL's default setup
+  alone ran), three pull requests of one base merged within forty
+  seconds in this repository, and the rulesets of the four
+  repositories concerned do not require a branch to be up to date — so
+  the tree the lane leaves on `main` was first built by whichever push
+  a person made next. Requiring an up-to-date branch
+  would let the lane merge one pull request a week (Dependabot does
+  not rebase a sibling that is merely behind); a token other than
+  `GITHUB_TOKEN` would put a write-scoped secret in the shared lane.
 - An EMPTY window is not an UNVERIFIED one, and the script keeps the
   distinction the platform's gate makes. Sonar analyses no Markdown, so a
   documentation-only pull request comes back without a single
@@ -344,6 +372,16 @@ longer turns it off with a reason that was false twice over.
 
 ## Dependency doctrine
 
+- Dependabot proposes no `npm:` alias, so the two compilers of the 6/7
+  layout (`typescript`, an alias of `@typescript/typescript6`, and
+  `@typescript/native`, an alias of `typescript`) move by hand in the
+  eight repositories, patches included. Read in its own job log: the npm
+  run of 2026-11-21 here looked at 34 of the 36 dependencies the manifest
+  declares, those two left out, and dependabot-core's npm file parser
+  drops a requirement that starts with `npm:` (read in its source the
+  same day). Nothing has been missed so far, no release having fallen in
+  either range since the layout (2026-08-11); the next one is TypeScript
+  7.1, which the dated line of the ledger's suite asks about.
 - The split is by TIME, not by tool. A pull request answers for the
   dependencies it introduces — `dependency-review.yml`, diff-shaped,
   blocking. Everything already there is Dependabot's, continuously. An
@@ -428,9 +466,19 @@ longer turns it off with a reason that was false twice over.
   `peerDependenciesMeta` to strip, and the tarball says what the
   packument says. typedoc and its plugins stay devDependencies here for
   the proof — a real typedoc run over a fixture, both plugins loading
-  and leaving their trace (the coverage badge, the MDN links on an
-  `Error` subclass's inherited members) — and the README's typedoc
-  section carries the install line and the majors proven. Pinned in
+  and leaving their trace (the coverage badge, the MDN links on the lib
+  symbols the fixture names) — and the README's typedoc
+  section carries the install line and the majors proven. Those links
+  were nearly all missing until 8.12.0: the plugin resolves a symbol by
+  the package its declaration sits in and knows three by name, while
+  under the TypeScript 6/7 layout the lib declarations sit in
+  `@typescript/old`. Only the inherited members of `Error` resolved (5
+  links on the fixture, its `{@link TypeError}` apart, 12 with the
+  base's `additionalModuleSources` entry), a `{@link TypeError}` failed
+  the docs gate in the libraries,
+  and the suite's own comment had explained the missing `Promise` link
+  by the plugin having no page for it — an explanation nobody had
+  measured. Pinned in
   `export-contracts.test.ts`: the three names in no installer field,
   the peer set exact, no meta. Re-verify through the registry, never
   the tarball, once 5.0.0 is published: `npm view` of 5.0.0's
@@ -497,6 +545,27 @@ longer turns it off with a reason that was false twice over.
   suite drives it through `DECLARATION_FILES` (the fixtures have no main
   program to list) and `TSC` (this repo's compiler), so the resolution and
   the file listing it asserts on are the real ones.
+- `check-lock.sh` (8.12.0) is the fourth: it reads the lock and fails
+  on a prerelease no manifest names exactly, the root's or a
+  dependency's, as the lock restates them. A named prerelease is a
+  decision: a library's alpha in the consumer that tries it, the
+  `@emnapi` beta `@rolldown/binding-wasm32-wasi` asks for by its
+  version. One a range admitted is whichever was newest the day the
+  lock was written (a nightly, younger than the seven days Dependabot's
+  `cooldown` waits), and `npm ci` says nothing of it — the TypeScript
+  nightly of the 8.12.0 entry (Plugin triage) is the case that brought
+  the check, which npm 10's `npm ci` installs and npm 11's leaves out.
+  A name counts when the manifest that writes it is itself settled: the
+  repository's, a release's, or a prerelease so named in turn. Without
+  that, two prereleases a range picked vouch for each other — `vitest`
+  and `@vitest/coverage-v8` name each other at their own version, betas
+  included, and all eight manifests hold the pair on carets (found in
+  review, before the release). The eight committed locks hold no
+  prerelease at all (2026-11-21), so it costs nothing until it has
+  something to say. The answer then is the lock's previous entries for
+  the dependency `npm ls --package-lock-only` names (`npm explain` does
+  not find an aliased entry), or the prerelease written down at an exact
+  version; never an exemption in the script.
 
 ## Adopting a fixer
 
@@ -1201,6 +1270,75 @@ api-core 47, heatzy-api 14, homey-kit 8, com.melcloud 8,
 com.melcloud.extension 4, com.heatzy 0. The adoptions pay them in code
 and by hand: a description is written, never stubbed. eslint 10.15 rode
 along, behaviour only (`src/eslint/audited-versions.ts` has the detail).
+
+8.12.0 reads @stylistic 6.0, typescript-eslint 8.73 and perfectionist
+5.14, measured on 2026-11-21 with a pack of the bumped tree in clones
+of the seven consumers, then a probe config for the one opt-in.
+@stylistic 6 is a major for what the family does not configure: of its
+four rules in the table none loses an option, two leave more comments
+alone (`multiline-comment-style`: the `@ts-` directives,
+`prettier-ignore`, the coverage pragmas, webpack's magic comments, the
+triple-slash references; `spaced-comment`: a triple-slash reference
+written without its space), zero sites. Its two new rules are the two
+JSX idioms Prettier does not write and enter the main table as latent
+guards, on the footing of `sort-jsx-props`: `jsx-shorthand-boolean`
+and `jsx-shorthand-fragment`. `jsx-pascal-case`, the third `suggestion`
+rule of that JSX half and never decided, takes a ledger row, owned by
+`naming-convention`; every other JSX rule of the plugin is typed
+`layout` by the plugin itself, the formatter's. typescript-eslint 8.73
+is read and HELD, the pin staying at 8.72.2. For the experimental
+TypeScript 7.1 backend of its project service, its parser declares an
+optional peer on `@typescript/native` at `>=7.1.0-dev.20261009.1` — the
+name under which the 6/7 layout installs the family's 7.0 compiler. The
+peer is there and too old, and npm settles it with a compiler nobody
+chose: resolving this package's manifest from nothing, npm 10.9.8 and
+11.20.0 both nest the day's nightly (`7.1.0-dev.20261121.1`) beneath
+`@typescript-eslint/utils`; on the lock npm 11 writes from the previous
+one, npm 10's `npm ci` stops instead (`Missing:
+@typescript/native@7.1.0-dev.20261121.1 from lock file`, the Node 22
+leg of this release's first run). The hold is re-examined the day
+`@typescript/native` is a 7.1 here, a version that range admits, and a
+hand brings that day (Dependency doctrine, the aliases): the ledger's
+suite carries a dated line that asks, fails once the compiler has moved
+and fails too if the `ignore` of `.github/dependabot.yml`, which keeps
+the releases in between away, goes first.
+Holding the pin does not close the door: third-party plugins reach
+`@typescript-eslint/utils` through a caret, so a lock written from
+nothing takes 8.73 there, and its nightly, whatever this package pins —
+`check-lock.sh` (Commands) is what says so. What 8.73 adds was measured
+before the hold and waits with it:
+`no-unsafe-class-instance-assignment`, which `strictTypeChecked` turns
+on by itself: a value used where an instance of a class is expected
+and that no constructor of that class made — the lookalike TypeScript's
+structural typing lets through and an `instanceof` then refuses, which
+the family's transports, errors and models all rely on. 17 sites, every
+one in a test and every one a looseness worth naming (api-core 10, two
+`it.each` tables of errors whose rows TypeScript reduces to one of
+their classes; melcloud-api 5, `mock(model)` used on a REAL model as a
+non-null assertion, where `defined` is the helper; one in each SDK's
+kernel, a foreign transport handed to the client on purpose, for `cast`
+to say). The 8.12.0 adoptions rewrite them ahead of the rule. A double
+declared with its type (`mock<T>()`, `cast`) is not reported.
+perfectionist 5.14 gives `sort-modules` the
+`sortArrowFunctions` option, the one contested point, kept at its
+default for what it does and not for its 434 reports. The rule sorts
+each run of consecutive sortable statements and every other `const`
+ends a run (read in its source), so a module is sorted in patches
+whose borders are wherever a table or a constant happens to stand:
+in melcloud-api's `home-energy.ts` the helpers of the series read and
+of the chart grid come out pooled in one alphabet, then split by a
+table further down — found neither by their place in the flow nor by
+their name. A class body or an object has no such walls, which is why
+the same alphabet works there. And its fixer moves a function out of
+an `eslint-disable`/`eslint-enable` pair: under the unattended `--fix`
+the pair is then deleted as unused and the function it protected is
+rewritten by the rule it was protected from (reproduced on
+melcloud-api's `resolved`; typecheck and the 1,298 tests still pass,
+the lint ends on a `require-await` error). The release also closes
+three holes of the Dependabot review of 2026-11-19 — the exact pins of
+the audited packages and eslint's move (Pin doctrine), the scheduled
+run (Sonar gate doctrine) — and the lib symbols the typedoc base no
+longer linked (Dependencies nothing imports).
 
 Maintenance is a gate — an unmaintained plugin is refused regardless of
 coverage — and the claim is scoped to what was measured: the three
