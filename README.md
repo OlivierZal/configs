@@ -413,7 +413,10 @@ become stubs. The Homey apps' process — `reusable-homey-validate.yml`,
 `reusable-homey-publish.yml` and the iOS floor watch — lives in
 `@olivierzal/homey-kit` (6.1.0), the second two-channel package
 `check-pins.sh` polices. `check-declarations.sh` runs beside it, over
-the repository's own `.d.ts` files (see tsconfig above).
+the repository's own `.d.ts` files (see tsconfig above), and
+`check-lock.sh` over the lock: a prerelease there is one a manifest
+names at an exact version, the repository's or a dependency's, never
+one a range picked on the day the lock was written.
 
 ```yaml title=".github/workflows/publish.yml"
 jobs:

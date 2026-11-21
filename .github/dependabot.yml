@@ -55,6 +55,16 @@ updates:
         patterns:
           - '@vitest/*'
           - vitest
+    # typescript-eslint is held at 8.72. From 8.73 its parser asks, as an
+    # optional peer, for a TypeScript 7.1 under the name the 6/7 layout
+    # gives the 7.0 compiler, and npm settles that with a nightly
+    # (`src/eslint/audited-versions.ts` has the measurement). The entry
+    # goes the day `@typescript/native` is a 7.1 here: the ledger's suite
+    # fails that day, and fails too if this goes first.
+    ignore:
+      - dependency-name: typescript-eslint
+        versions:
+          - '>=8.73.0'
     package-ecosystem: npm
     schedule:
       interval: weekly

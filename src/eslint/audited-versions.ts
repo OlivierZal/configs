@@ -161,19 +161,32 @@
  * `jsx-pascal-case`, the third `suggestion` rule of its JSX half, the
  * ledger; `jsx-indent`, `jsx-props-no-multi-spaces` and
  * `jsx-sort-props` are gone, none of them configured; the rest of the
- * release is layout, the formatter's. typescript-eslint 8.73 —
+ * release is layout, the formatter's. perfectionist 5.14 —
+ * `sort-modules` gains `sortArrowFunctions`, kept at its default and
+ * reasoned at the rule site, and reads the dependencies a decorator
+ * names, zero sites. typescript-eslint 8.73 is read and HELD, the
+ * entry staying at 8.72: for the experimental TypeScript 7.1 backend
+ * of its project service, the parser declares an optional peer on
+ * `@typescript/native` at `>=7.1.0-dev.20261009.1`, the name under
+ * which the family's 6/7 layout installs the 7.0 compiler. The peer is
+ * there and too old, and npm settles it with a compiler nobody chose:
+ * npm 10.9.8 and 11.20.0 both nest the day's nightly
+ * (`7.1.0-dev.20261121.1`) beneath `@typescript-eslint/utils` when
+ * they resolve this package's manifest from nothing, and on the lock
+ * npm 11 writes from the previous one, npm 10's `npm ci` stops
+ * (`Missing: @typescript/native@7.1.0-dev.20261121.1 from lock file`).
+ * The hold is re-examined the day `@typescript/native` is a 7.1 here,
+ * a version that range admits: the suite watches for it, and
+ * `.github/dependabot.yml` ignores the releases in between. What 8.73
+ * brings was measured before the hold:
  * `no-unsafe-class-instance-assignment` arrives through
  * `strictTypeChecked` (a value used where a class instance is expected
- * and that no constructor of that class made): 17 sites, every one in
- * a test, paid by the adoptions (api-core 10, two tables of errors
- * whose rows TypeScript reduces to one of their classes; melcloud-api 6
- * and heatzy-api 1, a helper meant for doubles taken for a non-null
- * assertion, and a foreign transport handed over on purpose);
- * `consistent-type-imports` narrows the place it reports at; the
- * experimental TypeScript 7.1 backend of the project service is not
- * taken. perfectionist 5.14 — `sort-modules` gains
- * `sortArrowFunctions`, kept at its default and reasoned at the rule
- * site, and reads the dependencies a decorator names, zero sites.
+ * and that no constructor of that class made), 17 sites, every one in
+ * a test (api-core 10, two tables of errors whose rows TypeScript
+ * reduces to one of their classes; melcloud-api 6 and heatzy-api 1, a
+ * helper meant for doubles taken for a non-null assertion, and a
+ * foreign transport handed over on purpose), and
+ * `consistent-type-imports` narrows the place it reports at.
  */
 export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@eslint/css': '2.0',
@@ -194,5 +207,5 @@ export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   'eslint-plugin-regexp': '3.3',
   'eslint-plugin-unicorn': '80.0',
   'eslint-plugin-yml': '3.10',
-  'typescript-eslint': '8.73',
+  'typescript-eslint': '8.72',
 }

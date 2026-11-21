@@ -534,6 +534,20 @@ longer turns it off with a reason that was false twice over.
   suite drives it through `DECLARATION_FILES` (the fixtures have no main
   program to list) and `TSC` (this repo's compiler), so the resolution and
   the file listing it asserts on are the real ones.
+- `check-lock.sh` (8.12.0) is the fourth: it reads the lock and fails
+  on a prerelease no manifest names exactly, the root's or a
+  dependency's, as the lock restates them. A named prerelease is a
+  decision: a library's alpha in the consumer that tries it, the
+  `@emnapi` beta `@rolldown/binding-wasm32-wasi` asks for by its
+  version. One a range admitted is whichever was newest the day the
+  lock was written, younger than the seven days the family waits before
+  taking a release, and `npm ci` installs it without a word — the
+  TypeScript nightly of the 8.12.0 entry (Plugin triage) is the case
+  that brought the check. The eight committed locks hold no prerelease
+  at all (2026-11-21), so it costs nothing until it has something to
+  say. The answer then is the lock's previous entries for the
+  dependency `npm explain` names, or the prerelease written down at an
+  exact version; never an exemption in the script.
 
 ## Adopting a fixer
 
@@ -1254,19 +1268,38 @@ and `jsx-shorthand-fragment`. `jsx-pascal-case`, the third `suggestion`
 rule of that JSX half and never decided, takes a ledger row, owned by
 `naming-convention`; every other JSX rule of the plugin is typed
 `layout` by the plugin itself, the formatter's. typescript-eslint 8.73
-adds `no-unsafe-class-instance-assignment`, which `strictTypeChecked`
-turns on by itself: a value used where an instance of a class is
-expected and that no constructor of that class made — the lookalike
-TypeScript's structural typing lets through and an `instanceof` then
-refuses, which the family's transports, errors and models all rely on.
-It stays on, tests included: 17 sites, every one in a test and every
-one a looseness worth naming (api-core 10, two `it.each` tables of
-errors whose rows TypeScript reduces to one of their classes;
-melcloud-api 5, `mock(model)` used on a REAL model as a non-null
-assertion, where `defined` is the helper; one in each SDK's kernel, a
-foreign transport handed to the client on purpose, now through
-`cast`). A double declared with its type (`mock<T>()`, `cast`) is
-not reported. perfectionist 5.14 gives `sort-modules` the
+is read and HELD, the pin staying at 8.72.2. For the experimental
+TypeScript 7.1 backend of its project service, its parser declares an
+optional peer on `@typescript/native` at `>=7.1.0-dev.20261009.1` — the
+name under which the 6/7 layout installs the family's 7.0 compiler. The
+peer is there and too old, and npm settles it with a compiler nobody
+chose: resolving this package's manifest from nothing, npm 10.9.8 and
+11.20.0 both nest the day's nightly (`7.1.0-dev.20261121.1`) beneath
+`@typescript-eslint/utils`; on the lock npm 11 writes from the previous
+one, npm 10's `npm ci` stops instead (`Missing:
+@typescript/native@7.1.0-dev.20261121.1 from lock file`, the Node 22
+leg of this release's first run). The hold is re-examined the day
+`@typescript/native` is a 7.1 here, a version that range admits: the
+ledger's suite fails that day, and `.github/dependabot.yml` ignores the
+releases in between (the suite fails too if that entry goes first).
+Holding the pin does not close the door: third-party plugins reach
+`@typescript-eslint/utils` through a caret, so a lock written from
+nothing takes 8.73 there, and its nightly, whatever this package pins —
+`check-lock.sh` (Commands) is what says so. What 8.73 adds was measured
+before the hold and waits with it:
+`no-unsafe-class-instance-assignment`, which `strictTypeChecked` turns
+on by itself: a value used where an instance of a class is expected
+and that no constructor of that class made — the lookalike TypeScript's
+structural typing lets through and an `instanceof` then refuses, which
+the family's transports, errors and models all rely on. 17 sites, every
+one in a test and every one a looseness worth naming (api-core 10, two
+`it.each` tables of errors whose rows TypeScript reduces to one of
+their classes; melcloud-api 5, `mock(model)` used on a REAL model as a
+non-null assertion, where `defined` is the helper; one in each SDK's
+kernel, a foreign transport handed to the client on purpose, for `cast`
+to say). The 8.12.0 adoptions rewrite them ahead of the rule. A double
+declared with its type (`mock<T>()`, `cast`) is not reported.
+perfectionist 5.14 gives `sort-modules` the
 `sortArrowFunctions` option, the one contested point, kept at its
 default for what it does and not for its 434 reports. The rule sorts
 each run of consecutive sortable statements and every other `const`
@@ -1287,7 +1320,7 @@ the audited packages and eslint's move (Pin doctrine), the scheduled
 run (Sonar gate doctrine) — and the lib symbols the typedoc base no
 longer linked (Dependencies nothing imports). It ships no version
 younger than the seven days Dependabot's own `cooldown` waits:
-typescript-eslint 8.73.0, the youngest, was published on 2026-11-16.
+@stylistic 6.0.1, the youngest, was published on 2026-11-16.
 
 Maintenance is a gate — an unmaintained plugin is refused regardless of
 coverage — and the claim is scoped to what was measured: the three
