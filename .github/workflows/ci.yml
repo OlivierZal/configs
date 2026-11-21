@@ -21,8 +21,8 @@ on:
     branches: [main]
   # A merge the Dependabot lane performs is pushed with the repository's
   # GITHUB_TOKEN and raises no workflow: the tree it leaves on `main` is
-  # built, tested and analysed by this run, the next morning at the
-  # latest, and no longer by whichever push happens to follow.
+  # built, tested and analysed by this daily run, and no longer by
+  # whichever push happens to follow.
   schedule:
     - cron: '23 4 * * *'
 permissions: {}

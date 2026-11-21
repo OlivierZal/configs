@@ -176,9 +176,12 @@
  * npm 11 writes from the previous one, npm 10's `npm ci` stops
  * (`Missing: @typescript/native@7.1.0-dev.20261121.1 from lock file`).
  * The hold is re-examined the day `@typescript/native` is a 7.1 here,
- * a version that range admits: the suite watches for it, and
- * `.github/dependabot.yml` ignores the releases in between. What 8.73
- * brings was measured before the hold:
+ * a version that range admits. A hand brings that day: Dependabot
+ * proposes no `npm:` alias (its run of 2026-11-21 looked at 34 of the
+ * 36 dependencies this manifest declares, the two compilers left out),
+ * so the suite carries a date that asks, and `.github/dependabot.yml`
+ * ignores the releases in between. What 8.73 brings was measured
+ * before the hold:
  * `no-unsafe-class-instance-assignment` arrives through
  * `strictTypeChecked` (a value used where a class instance is expected
  * and that no constructor of that class made), 17 sites, every one in

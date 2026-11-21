@@ -44,8 +44,8 @@ jobs:
           bash "$script"
       # A prerelease in the lock is one a manifest names, or one a range
       # picked on the day the lock was written — a compiler nightly, the
-      # day typescript-eslint 8.73 met the 6/7 layout. `npm ci` installs
-      # either without a word.
+      # day typescript-eslint 8.73 met the 6/7 layout. `npm ci` says
+      # nothing of either.
       - name: Verify the lock
         run: |
           script=node_modules/@olivierzal/configs/scripts/check-lock.sh

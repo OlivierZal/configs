@@ -33,11 +33,12 @@ floor here and in the apps, whose device floor lives in
 at all. Re-derive it when the tree moves. The peers are the tools every
 consumer runs: `eslint >=10.6.0` (es-x's own floor), `prettier >=3.5`,
 `vitest >=4`. Every rule-bearing package the presets load is a
-dependency of this one at an exact version, the one its release notes
-were read against, so a consumer's lock cannot resolve a plugin nobody
-read. `eslint` itself is the consumer's: it moves with the adoption of
-the release that read it (`npm install -D eslint@^<that minor>`), and
-the consumer's Dependabot leaves its minors and majors alone.
+dependency of this one at an exact version, in the minor its release
+notes were read against, so a consumer's lock cannot resolve a minor
+nobody read. `eslint` itself is the consumer's: it moves with the
+adoption of the release that read it
+(`npm install -D eslint@~<that minor>`), and the consumer's Dependabot
+leaves its minors and majors alone.
 
 ### eslint
 

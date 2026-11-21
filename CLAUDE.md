@@ -372,6 +372,16 @@ longer turns it off with a reason that was false twice over.
 
 ## Dependency doctrine
 
+- Dependabot proposes no `npm:` alias, so the two compilers of the 6/7
+  layout (`typescript`, an alias of `@typescript/typescript6`, and
+  `@typescript/native`, an alias of `typescript`) move by hand in the
+  eight repositories, patches included. Read in its own job log: the npm
+  run of 2026-11-21 here looked at 34 of the 36 dependencies the manifest
+  declares, those two left out, and dependabot-core's npm file parser
+  drops a requirement that starts with `npm:` (read in its source the
+  same day). Nothing has been missed so far, no release having fallen in
+  either range since the layout (2026-08-11); the next one is TypeScript
+  7.1, which the dated line of the ledger's suite asks about.
 - The split is by TIME, not by tool. A pull request answers for the
   dependencies it introduces — `dependency-review.yml`, diff-shaped,
   blocking. Everything already there is Dependabot's, continuously. An
@@ -463,8 +473,9 @@ longer turns it off with a reason that was false twice over.
   the package its declaration sits in and knows three by name, while
   under the TypeScript 6/7 layout the lib declarations sit in
   `@typescript/old`. Only the inherited members of `Error` resolved (5
-  links on the fixture, 12 with the base's `additionalModuleSources`
-  entry), a `{@link TypeError}` failed the docs gate in the libraries,
+  links on the fixture, its `{@link TypeError}` apart, 12 with the
+  base's `additionalModuleSources` entry), a `{@link TypeError}` failed
+  the docs gate in the libraries,
   and the suite's own comment had explained the missing `Promise` link
   by the plugin having no page for it — an explanation nobody had
   measured. Pinned in
@@ -540,14 +551,21 @@ longer turns it off with a reason that was false twice over.
   decision: a library's alpha in the consumer that tries it, the
   `@emnapi` beta `@rolldown/binding-wasm32-wasi` asks for by its
   version. One a range admitted is whichever was newest the day the
-  lock was written, younger than the seven days the family waits before
-  taking a release, and `npm ci` installs it without a word — the
-  TypeScript nightly of the 8.12.0 entry (Plugin triage) is the case
-  that brought the check. The eight committed locks hold no prerelease
-  at all (2026-11-21), so it costs nothing until it has something to
-  say. The answer then is the lock's previous entries for the
-  dependency `npm explain` names, or the prerelease written down at an
-  exact version; never an exemption in the script.
+  lock was written (a nightly, younger than the seven days Dependabot's
+  `cooldown` waits), and `npm ci` says nothing of it — the TypeScript
+  nightly of the 8.12.0 entry (Plugin triage) is the case that brought
+  the check, which npm 10's `npm ci` installs and npm 11's leaves out.
+  A name counts when the manifest that writes it is itself settled: the
+  repository's, a release's, or a prerelease so named in turn. Without
+  that, two prereleases a range picked vouch for each other — `vitest`
+  and `@vitest/coverage-v8` name each other at their own version, betas
+  included, and all eight manifests hold the pair on carets (found in
+  review, before the release). The eight committed locks hold no
+  prerelease at all (2026-11-21), so it costs nothing until it has
+  something to say. The answer then is the lock's previous entries for
+  the dependency `npm ls --package-lock-only` names (`npm explain` does
+  not find an aliased entry), or the prerelease written down at an exact
+  version; never an exemption in the script.
 
 ## Adopting a fixer
 
@@ -1279,9 +1297,11 @@ chose: resolving this package's manifest from nothing, npm 10.9.8 and
 one, npm 10's `npm ci` stops instead (`Missing:
 @typescript/native@7.1.0-dev.20261121.1 from lock file`, the Node 22
 leg of this release's first run). The hold is re-examined the day
-`@typescript/native` is a 7.1 here, a version that range admits: the
-ledger's suite fails that day, and `.github/dependabot.yml` ignores the
-releases in between (the suite fails too if that entry goes first).
+`@typescript/native` is a 7.1 here, a version that range admits, and a
+hand brings that day (Dependency doctrine, the aliases): the ledger's
+suite carries a dated line that asks, fails once the compiler has moved
+and fails too if the `ignore` of `.github/dependabot.yml`, which keeps
+the releases in between away, goes first.
 Holding the pin does not close the door: third-party plugins reach
 `@typescript-eslint/utils` through a caret, so a lock written from
 nothing takes 8.73 there, and its nightly, whatever this package pins —
@@ -1318,9 +1338,7 @@ the lint ends on a `require-await` error). The release also closes
 three holes of the Dependabot review of 2026-11-19 — the exact pins of
 the audited packages and eslint's move (Pin doctrine), the scheduled
 run (Sonar gate doctrine) — and the lib symbols the typedoc base no
-longer linked (Dependencies nothing imports). It ships no version
-younger than the seven days Dependabot's own `cooldown` waits:
-@stylistic 6.0.1, the youngest, was published on 2026-11-16.
+longer linked (Dependencies nothing imports).
 
 Maintenance is a gate — an unmaintained plugin is refused regardless of
 coverage — and the claim is scoped to what was measured: the three

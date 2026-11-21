@@ -99,14 +99,22 @@ describe('the lock check', () => {
     expect(output).toContain('resolves @vitest/browser@5.0.0-beta.9')
   })
 
-  // The three ways a manifest writes a version down. The second is the
-  // shape a fresh resolution of this package holds today
-  // (`@rolldown/binding-wasm32-wasi` and `@napi-rs/wasm-runtime` on
-  // `@emnapi/core`); the third is how the 6/7 layout spells a compiler.
+  // The ways a manifest writes a version down. The first two are the
+  // shapes a fresh resolution of this package holds today
+  // (`@rolldown/binding-wasm32-wasi`, then `@napi-rs/wasm-runtime`, on
+  // `@emnapi/core`); the third is how the 6/7 layout spells a compiler,
+  // and the last three what npm itself reads as a version.
   it.each([
     { name: 'on its own', spec: '2.0.0-beta.2' },
     { name: 'as one side of an alternative', spec: '^1.7.1 || 2.0.0-beta.2' },
     { name: 'behind an alias', spec: 'npm:core@2.0.0-beta.2' },
+    {
+      name: 'behind an alias of a scoped package',
+      spec: 'npm:@scope/core@2.0.0-beta.2',
+    },
+    { name: 'behind an equals sign', spec: '=2.0.0-beta.2' },
+    { name: 'after an equals sign and a space', spec: '= 2.0.0-beta.2' },
+    { name: 'with a v', spec: 'v2.0.0-beta.2' },
   ])('accepts a prerelease a dependency names $name', ({ spec }) => {
     const { output, status } = check({
       'node_modules/@emnapi/core': { version: '2.0.0-beta.2' },
@@ -120,23 +128,107 @@ describe('the lock check', () => {
     expect(output).toContain('1 prerelease(s), none chosen by a range')
   })
 
+  it.each([
+    'dependencies',
+    'devDependencies',
+    'optionalDependencies',
+    'peerDependencies',
+  ])('reads the name the root writes in %s', (field) => {
+    const { status } = check({
+      '': { [field]: { '@emnapi/core': '2.0.0-beta.2' } },
+      'node_modules/@emnapi/core': { version: '2.0.0-beta.2' },
+    })
+
+    expect(status).toBe(0)
+  })
+
   // The libraries' alpha flow, on both of its sides: the consumer pins
-  // the alpha it tries, that alpha pins the one it was built on, and
-  // the library's own branch carries the alpha as its version.
+  // the alpha it tries, that alpha pins the one it was built on, which
+  // pins its own in turn, and the library's own branch carries the alpha
+  // as its version. A name holds through any number of such links.
   it('accepts the alphas of a release in progress', () => {
     const { status } = check({
       '': {
         dependencies: { '@olivierzal/melcloud-api': '63.0.0-alpha.0' },
         version: '47.0.0-alpha.0',
       },
-      'node_modules/@olivierzal/api-core': { version: '3.0.0-alpha.1' },
+      'node_modules/@olivierzal/api-core': {
+        dependencies: { '@olivierzal/temporal': '1.0.0-alpha.4' },
+        version: '3.0.0-alpha.1',
+      },
       'node_modules/@olivierzal/melcloud-api': {
         dependencies: { '@olivierzal/api-core': '3.0.0-alpha.1' },
         version: '63.0.0-alpha.0',
       },
+      'node_modules/@olivierzal/temporal': { version: '1.0.0-alpha.4' },
     })
 
     expect(status).toBe(0)
+  })
+
+  // A name counts when the manifest that writes it is itself settled.
+  // `vitest` and `@vitest/coverage-v8` name each other at their own
+  // version, betas included: on two carets the pair moves from one beta
+  // to the next with no manifest change, each vouching for the other.
+  it('rejects two prereleases a range chose that name each other', () => {
+    const { output, status } = check({
+      '': {
+        devDependencies: {
+          '@vitest/coverage-v8': '^5.0.0-beta.1',
+          vitest: '^5.0.0-beta.1',
+        },
+      },
+      'node_modules/@vitest/coverage-v8': {
+        peerDependencies: { vitest: '5.0.0-beta.6' },
+        version: '5.0.0-beta.6',
+      },
+      'node_modules/@vitest/spy': { version: '5.0.0-beta.6' },
+      'node_modules/vitest': {
+        dependencies: { '@vitest/spy': '5.0.0-beta.6' },
+        peerDependencies: { '@vitest/coverage-v8': '5.0.0-beta.6' },
+        version: '5.0.0-beta.6',
+      },
+    })
+
+    expect(status).toBe(1)
+    expect(output).toContain('resolves vitest@5.0.0-beta.6')
+    expect(output).toContain('resolves @vitest/coverage-v8@5.0.0-beta.6')
+  })
+
+  // The same pair, written down: nothing floats.
+  it('accepts that pair once the manifest names it', () => {
+    const { status } = check({
+      '': {
+        devDependencies: {
+          '@vitest/coverage-v8': '5.0.0-beta.6',
+          vitest: '5.0.0-beta.6',
+        },
+      },
+      'node_modules/@vitest/coverage-v8': {
+        peerDependencies: { vitest: '5.0.0-beta.6' },
+        version: '5.0.0-beta.6',
+      },
+      'node_modules/vitest': {
+        peerDependencies: { '@vitest/coverage-v8': '5.0.0-beta.6' },
+        version: '5.0.0-beta.6',
+      },
+    })
+
+    expect(status).toBe(0)
+  })
+
+  // A lockfileVersion 1 lock keeps its tree elsewhere: read as an empty
+  // one, it would pass with nothing checked.
+  it('rejects a lock it cannot read the packages of', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'lock-'))
+    writeFileSync(
+      path.join(root, 'package-lock.json'),
+      JSON.stringify({ dependencies: { ms: { version: '3.0.0-canary.1' } } }),
+    )
+    const { output, status } = runScript(script, { args: [root] })
+
+    expect(status).toBe(1)
+    expect(output).toContain('has no `packages` map')
   })
 })
 
