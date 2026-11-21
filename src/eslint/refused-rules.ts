@@ -75,6 +75,15 @@ const REDUNDANT_DATA_LAYOUT =
 const REDUNDANT_HTML =
   "Prettier's output already satisfies it — 0 hits when forced on over com.melcloud's three pages (2026-09-27) — and Prettier formats every page (`format` runs on HTML too). Never on: `html/recommended` does not enable it, so an `off` here validated nothing."
 
+// Why a rule about the INSIDE of a JSDoc type brace has no object in
+// the family: the brace is the error. Seven rows rest on it, each with
+// what the rule does before it and what holds the real code after.
+const TYPE_BRACE_IS_THE_ERROR =
+  "A type brace is itself the error on every tag of the family's vocabulary that takes a JSDoc type: `jsdoc/no-types` on `@param` and `@returns` in every signature context, `jsdoc/valid-types` through `structuredTags` on `@template`, `@throws` and `@yields`, and `jsdoc/check-tag-names` under `typed` forbids `@typedef`, `@property` and `@type` outright."
+
+const onTypeBraces = (what: string, rest: string): string =>
+  `${what} ${TYPE_BRACE_IS_THE_ERROR} ${rest}`
+
 const SEO_HTML =
   'SEO: a Homey settings page or widget renders inside the Homey app and no crawler reads it. The `<meta name="description">` tags the apps carry are cargo (2024-09, no recorded reason), free to leave.'
 
@@ -261,8 +270,10 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
   {
     class: 'owned',
     owner: 'jsdoc/no-types',
-    reason:
-      "Reports the Google Closure `{type=}` suffix, a detail of a type brace the family does not write: the brace itself is the error on every tag of the family's vocabulary that takes a JSDoc type: `jsdoc/no-types` on `@param` and `@returns` in every signature context, `jsdoc/valid-types` through `structuredTags` on `@template`, `@throws` and `@yields`, and `jsdoc/check-tag-names` under `typed` forbids `@typedef`, `@property` and `@type` outright. Alone, the rule can only name a `{T=}` on `@next`, whose structure the plugin's helper pins, or after a tag that has no type position. Its fixer (`enableFixer`) writes `{T} [name]`, which `jsdoc/no-defaults` with `noOptionalParamNames` refuses, and `{T|undefined}` on the other tags, which keeps the brace (jsdoc 65.5, 2026-11-20).",
+    reason: onTypeBraces(
+      'Reports the Google Closure `{type=}` suffix, a detail of a type brace the family does not write.',
+      "Alone, the rule can only name a `{T=}` on `@next`, whose structure the plugin's helper pins, or after a tag that has no type position. Its fixer (`enableFixer`) writes `{T} [name]`, which `jsdoc/no-defaults` with `noOptionalParamNames` refuses, and `{T|undefined}` on the other tags, which keeps the brace (jsdoc 65.5, 2026-11-20).",
+    ),
     rule: 'jsdoc/check-syntax',
   },
   {
@@ -274,8 +285,10 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
   {
     class: 'owned',
     owner: 'jsdoc/no-types',
-    reason:
-      "Checks that the package named by an inline `import()` type in a doc brace is listed in `package.json`. In the family's TypeScript there is no such brace to check: the brace itself is the error on every tag of the family's vocabulary that takes a JSDoc type: `jsdoc/no-types` on `@param` and `@returns` in every signature context, `jsdoc/valid-types` through `structuredTags` on `@template`, `@throws` and `@yields`, and `jsdoc/check-tag-names` under `typed` forbids `@typedef`, `@property` and `@type` outright. It never reads a real import, whose dependency status is TypeScript's and `import-x/no-extraneous-dependencies`'.",
+    reason: onTypeBraces(
+      "Checks that the package named by an inline `import()` type in a doc brace is listed in `package.json`. In the family's TypeScript there is no such brace to check.",
+      "It never reads a real import, whose dependency status is TypeScript's and `import-x/no-extraneous-dependencies`'.",
+    ),
     rule: 'jsdoc/imports-as-dependencies',
   },
   {
@@ -307,8 +320,10 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
   {
     class: 'owned',
     owner: 'jsdoc/no-types',
-    reason:
-      "Replaces an inline `import()` type in a doc brace by a JSDoc `@import` tag, the idiom of JSDoc-typed JavaScript. In a TypeScript file that tag is inert, the compiler does not read it, and the brace that carries the `import()` is itself the error: the brace itself is the error on every tag of the family's vocabulary that takes a JSDoc type: `jsdoc/no-types` on `@param` and `@returns` in every signature context, `jsdoc/valid-types` through `structuredTags` on `@template`, `@throws` and `@yields`, and `jsdoc/check-tag-names` under `typed` forbids `@typedef`, `@property` and `@type` outright. Its fixer, on by default and run unattended in every consumer, would write into TypeScript sources a block the house then rejects. At `error` in the table until 8.11.0, on no stated reason.",
+    reason: onTypeBraces(
+      'Replaces an inline `import()` type in a doc brace by a JSDoc `@import` tag, the idiom of JSDoc-typed JavaScript. In a TypeScript file that tag is inert, the compiler does not read it, and the brace that carries the `import()` is an error of its own.',
+      'Its fixer, on by default and run unattended in every consumer, would write into TypeScript sources a block the house then rejects. At `error` in the table until 8.11.0, on no stated reason.',
+    ),
     rule: 'jsdoc/prefer-import-tag',
   },
   {
@@ -376,29 +391,37 @@ export const REFUSED_RULES: readonly RefusedRule[] = [
   {
     class: 'owned',
     owner: 'jsdoc/no-types',
-    reason:
-      "Chooses between `{run(): void}` and `{run: () => void}` inside a doc-block type: the style of a brace the house does not write, since the brace itself is the error on every tag of the family's vocabulary that takes a JSDoc type: `jsdoc/no-types` on `@param` and `@returns` in every signature context, `jsdoc/valid-types` through `structuredTags` on `@template`, `@throws` and `@yields`, and `jsdoc/check-tag-names` under `typed` forbids `@typedef`, `@property` and `@type` outright. The real declarations are held by `@typescript-eslint/method-signature-style`.",
+    reason: onTypeBraces(
+      'Chooses between `{run(): void}` and `{run: () => void}` inside a doc-block type: the style of a brace the house does not write.',
+      'The real declarations are held by `@typescript-eslint/method-signature-style`.',
+    ),
     rule: 'jsdoc/ts-method-signature-style',
   },
   {
     class: 'owned',
     owner: 'jsdoc/no-types',
-    reason:
-      "Simplifies a template-literal type written inside a doc brace: a refinement of a brace the house does not write, since the brace itself is the error on every tag of the family's vocabulary that takes a JSDoc type: `jsdoc/no-types` on `@param` and `@returns` in every signature context, `jsdoc/valid-types` through `structuredTags` on `@template`, `@throws` and `@yields`, and `jsdoc/check-tag-names` under `typed` forbids `@typedef`, `@property` and `@type` outright. Template-literal types in code are held by `@typescript-eslint/no-unnecessary-template-expression`.",
+    reason: onTypeBraces(
+      'Simplifies a template-literal type written inside a doc brace: a refinement of a brace the house does not write.',
+      'Template-literal types in code are held by `@typescript-eslint/no-unnecessary-template-expression`.',
+    ),
     rule: 'jsdoc/ts-no-unnecessary-template-expression',
   },
   {
     class: 'owned',
     owner: 'jsdoc/no-types',
-    reason:
-      "Rewrites a lone call signature `{(): void}` into a function type inside a doc-block type: the style of a brace the house does not write, since the brace itself is the error on every tag of the family's vocabulary that takes a JSDoc type: `jsdoc/no-types` on `@param` and `@returns` in every signature context, `jsdoc/valid-types` through `structuredTags` on `@template`, `@throws` and `@yields`, and `jsdoc/check-tag-names` under `typed` forbids `@typedef`, `@property` and `@type` outright. The real declarations are held by `@typescript-eslint/prefer-function-type`.",
+    reason: onTypeBraces(
+      'Rewrites a lone call signature `{(): void}` into a function type inside a doc-block type: the style of a brace the house does not write.',
+      'The real declarations are held by `@typescript-eslint/prefer-function-type`.',
+    ),
     rule: 'jsdoc/ts-prefer-function-type',
   },
   {
     class: 'owned',
     owner: 'jsdoc/no-types',
-    reason:
-      "Normalises the inside of a type brace (spacing, array style, quotes). The house does not style those braces, it forbids them: the brace itself is the error on every tag of the family's vocabulary that takes a JSDoc type: `jsdoc/no-types` on `@param` and `@returns` in every signature context, `jsdoc/valid-types` through `structuredTags` on `@template`, `@throws` and `@yields`, and `jsdoc/check-tag-names` under `typed` forbids `@typedef`, `@property` and `@type` outright. Its fixer, on by default, would rewrite in place a brace every owner wants removed.",
+    reason: onTypeBraces(
+      'Normalises the inside of a type brace (spacing, array style, quotes). The house does not style those braces, it forbids them.',
+      'Its fixer, on by default, would rewrite in place a brace every owner wants removed.',
+    ),
     rule: 'jsdoc/type-formatting',
   },
   {
