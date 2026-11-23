@@ -23,8 +23,8 @@ set -euo pipefail
 readonly root=${1:-.}
 readonly program=tsconfig.declarations.json
 # The family's compiler, by its explicit path: under the official
-# TypeScript 6/7 layout the `.bin/tsc` shim is the TypeScript 6 compat
-# package, and every repository's `typecheck` names the native one.
+# TypeScript 6/7 layout two installed packages declare a `tsc` bin, and
+# the path names the one every repository's `typecheck` means.
 readonly tsc=${TSC:-$root/node_modules/@typescript/native/bin/tsc}
 
 failures=0
