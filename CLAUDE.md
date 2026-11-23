@@ -210,7 +210,8 @@ longer turns it off with a reason that was false twice over.
   and read here on 2026-11-04. The other fix weighed, a peer range
   naming the minor (`~10.15.0` for `>=10.6.0`), keeps one owner and is
   NOT taken: how Dependabot reports the peer conflict it would raise in
-  a consumer has not been tried.
+  a consumer has not been tried. The range that stands, `>=10.6.0`, is
+  es-x's own floor: `eslint-plugin-es-x` 10.1.0 declares that very peer.
 
 ## CI matrix doctrine
 
@@ -1835,10 +1836,16 @@ Same family doctrine as every repo: Conventional-Commits PR titles
 zero-duplication Sonar bar if wired (the new-code window verified before
 merge, not after), docs updated in the same PR, and every substantive
 wave ends with a targeted cleanup/simplification pass over its own
-diff. README speaks to the package CONSUMER (install, wiring,
-reference); this file speaks to the MAINTAINER (rules, their reasons,
-the incidents behind them) — a rule stated in both must say the same
-thing, and doctrine evolves HERE first.
+diff. The README speaks to the package's USER: what it gives, how to
+install it and how to use it, with examples that compile. It never
+explains how the package is built or why (owner's rule, 2026-11-22):
+the full surface is the doc comments', the doctrine and its reasons are
+this file's, the workflow is CONTRIBUTING.md's. No reference is
+generated for this package, and the members of `HomeyAppOptions` and
+`LibraryOptions` carry `//` notes that never reach the declarations, so
+the README's tables stay the reference for the presets' options and the
+workflows' inputs, without the reasons behind them. A rule stated in
+both must say the same thing, and doctrine evolves HERE first.
 
 Auto-merge is never armed on an authored PR (verdict 2026-09-07:
 api-core#12 had it armed and merged 13 s before Copilot's review landed,

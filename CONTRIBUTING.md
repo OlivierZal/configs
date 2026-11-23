@@ -36,8 +36,11 @@ npm run test:coverage   # vitest run --coverage (must remain at 100%)
 npm run lint:package    # build + publint --strict
 ```
 
-`prepublishOnly` chains tests, typecheck, lint and format, so publishing
-without them passing is impossible.
+`prepublishOnly` chains tests, typecheck, lint and format, so an
+`npm publish` run from the working tree stops when one of them fails.
+The release workflow publishes the packed tarball instead, for which npm
+runs no `prepublishOnly`: there, the checks required on `main` are what
+stands behind a release.
 
 `typecheck` and `build` spell the compiler out as
 `node ./node_modules/@typescript/native/bin/tsc`, and must keep doing
@@ -68,9 +71,11 @@ commit.
 Every rule, option and workflow input here is consumed by seven other
 repositories plus this one. Two habits follow:
 
-- A rule evaluated and refused stays as a config-level `'off'` carrying a
-  one-line reason. That is a triage ledger, not a suppression — and a
-  ledger entry is re-examined when its stated reason expires.
+- A rule a preset turns on and the family refuses stays a config-level
+  `'off'` at its rule site, with its reason. A refusal of a rule no
+  preset turns on is an entry of `src/eslint/refused-rules.ts`, never an
+  `'off'`. Both are a triage ledger, not a suppression, and an entry is
+  re-examined when its stated reason expires.
 - A breaking change to a workflow input, a job name, or a required status
   check name forces every consumer to move in lockstep. Say so in the
   pull request, and prefer an additive shape when one exists.
