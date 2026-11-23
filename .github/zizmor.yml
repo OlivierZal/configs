@@ -10,11 +10,13 @@ rules:
   # nothing from the repository. Line-scoped on purpose: an inline ignore
   # covers the whole `on:` block, so a dangerous trigger added later would
   # go unreported (measured with 1.31.1); this entry leaves any other one
-  # reported and lapses when the line moves. Each caller's
+  # reported and lapses when the line moves. A lapse is an alert, which
+  # fails no check: `tests/unit/zizmor-ignores.test.ts` fails the pull
+  # request that moves the line instead. Each caller's
   # `.github/zizmor.yml` carries the same entry for its stub.
   dangerous-triggers:
     ignore:
-      - claude.yml:36
+      - claude.yml:45
   # Not applicable: we publish to GitHub Packages with the job-scoped
   # GITHUB_TOKEN (already OIDC-based), not to npmjs.org. The step lives
   # in the reusable; publish.yml is a stub over it.

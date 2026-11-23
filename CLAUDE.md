@@ -1813,7 +1813,14 @@ used (the family's two effective runs, both owner comments). The entry is
 an inline ignore covers the whole `on:` block and would hide a
 `pull_request_target` added later, where the line-scoped entry leaves it
 reported and lapses when the line moves. Re-evaluate if either gate
-loosens.
+loosens. A lapse is an alert on the code scanning page and fails no
+check: here the entry still named line 36 after a comment had pushed the
+trigger to line 45, and the alert stayed open unseen until 2026-11-23
+(the seven callers' entries were right that day). Since then
+`tests/unit/zizmor-ignores.test.ts` holds the entry to the line of the
+trigger, so the pull request that moves the line is the one that
+re-reads it; the callers have no such test, and their stubs change only
+with an adoption.
 
 ## Governance files
 
