@@ -1,4 +1,4 @@
-import { type SpawnSyncReturns, execFileSync } from 'node:child_process'
+import { type SpawnSyncReturns, execFileSync, spawn } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
@@ -45,6 +45,41 @@ export const runScript = (
       return { output: error.stderr, status: error.status ?? 1 }
     }
     throw error
+  }
+}
+
+export interface Stub {
+  readonly host: string
+  readonly stop: () => void
+}
+
+// Starts a stand-in server (`tests/stub-server.ts`) as a process of its
+// own and answers the address it listens on. Its stdin is piped: the
+// stand-in exits when this end closes, so a killed worker leaves no
+// server behind.
+export const startStub = async (script: string): Promise<Stub> => {
+  const stub = spawn(process.execPath, [script], {
+    stdio: ['pipe', 'pipe', 'inherit'],
+  })
+  const host = await new Promise<string>((resolve, reject) => {
+    stub.stdout.on('data', (chunk: Buffer) => {
+      const port = /PORT=(?<port>\d+)/v.exec(chunk.toString())?.groups?.port
+      if (port !== undefined) {
+        resolve(`http://127.0.0.1:${port}`)
+      }
+    })
+    stub.on('error', reject)
+    // A stand-in that dies before it listens prints no port: name the
+    // exit instead of waiting on it.
+    stub.on('exit', (code) => {
+      reject(new Error(`the stand-in exited with ${String(code)}`))
+    })
+  })
+  return {
+    host,
+    stop: (): void => {
+      stub.kill()
+    },
   }
 }
 

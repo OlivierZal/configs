@@ -39,8 +39,8 @@ npm run lint:package    # build + publint --strict
 `prepublishOnly` chains tests, typecheck, lint and format, so an
 `npm publish` run from the working tree stops when one of them fails.
 The release workflow publishes the packed tarball instead, for which npm
-runs no `prepublishOnly`: there, the checks required on `main` are what
-stands behind a release.
+runs no `prepublishOnly`: there, the publish job itself refuses a commit
+whose latest CI run on `main` has not succeeded.
 
 `typecheck` and `build` spell the compiler out as
 `node ./node_modules/@typescript/native/bin/tsc`, and must keep doing

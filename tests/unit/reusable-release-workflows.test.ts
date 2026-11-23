@@ -58,7 +58,8 @@ describe('reusable-docs.yml', () => {
   })
 
   // The rehearsal gates the deploy job and nothing else: the build half
-  // runs in full, which is what a dry run is for.
+  // runs in full, the release guard included, which is what a dry run
+  // is for.
   it('should skip only the deploy job on a dry run', () => {
     expect(jobOf('reusable-docs.yml', 'deploy').if).toMatch(
       /^\$\{\{ !inputs\.dry-run \}\}$/v,
@@ -94,9 +95,9 @@ describe('reusable-publish.yml', () => {
     const steps = stepsOf('reusable-publish.yml', 'publish')
     const runs = steps.map(({ run }) => run).filter((run) => run !== undefined)
 
-    expect(runs).toHaveLength(2)
-    expect(runs[0]).toBe('npm pack')
-    expect(runs[1]).toMatch(
+    expect(runs).toHaveLength(3)
+    expect(runs[1]).toBe('npm pack')
+    expect(runs[2]).toMatch(
       /^npm publish \*\.tgz \$\{\{ github\.event\.release\.prerelease && '--tag next' \|\| '' \}\}$/v,
     )
     expect(
@@ -118,5 +119,45 @@ describe('reusable-publish.yml', () => {
     expect(publish.permissions).toStrictEqual(
       jobOf('reusable-publish.yml', 'publish').permissions,
     )
+  })
+})
+
+// A release publishes its package and its documentation from a commit
+// its CI has judged: the guard is the first command of each job, right
+// after the install its script is read from, under the job's own
+// token, for the commit, the default branch and the prerelease flag of
+// the event. Naming the script is not running it: the script ends on
+// the call, and the step holds an environment and a script and nothing
+// else, neither a condition nor a tolerated failure.
+describe('the release guard', () => {
+  it.each([
+    ['reusable-publish.yml', 'publish'],
+    ['reusable-docs.yml', 'build'],
+  ])('should judge the commit first in %s', (file, id) => {
+    const steps = stepsOf(file, id)
+    const index = steps.findIndex(({ run }) => run !== undefined)
+    const guard = asRecord(steps[index], `${file}#${id} guard`)
+    const env = asRecord(guard.env, `${file}#${id} guard env`)
+
+    expect(steps[index - 1]?.uses).toMatch(/\/setup-node-and-install$/v)
+    expect(Object.keys(guard)).toStrictEqual(['env', 'run'])
+    expect(guard.run).toContain('check-release.sh')
+    expect(guard.run).toMatch(/^ *bash "\$script"$/mv)
+    expect(Object.keys(env)).toStrictEqual([
+      'DEFAULT_BRANCH',
+      'GITHUB_TOKEN',
+      'HEAD_SHA',
+      'IS_PRERELEASE',
+      'THIS_REPO',
+    ])
+    expect(env.DEFAULT_BRANCH).toMatch(
+      /^\$\{\{ github\.event\.repository\.default_branch \}\}$/v,
+    )
+    expect(env.GITHUB_TOKEN).toMatch(/^\$\{\{ secrets\.GITHUB_TOKEN \}\}$/v)
+    expect(env.HEAD_SHA).toMatch(/^\$\{\{ github\.sha \}\}$/v)
+    expect(env.IS_PRERELEASE).toMatch(
+      /^\$\{\{ github\.event\.release\.prerelease \}\}$/v,
+    )
+    expect(env.THIS_REPO).toMatch(/^\$\{\{ github\.repository \}\}$/v)
   })
 })

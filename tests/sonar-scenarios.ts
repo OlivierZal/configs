@@ -5,15 +5,12 @@
 // the branch, the token). Every scenario answers each scope with its
 // own measures, so a read against the wrong scope is a different
 // verdict rather than the same one by luck.
+import type { Outage } from './stub-server.ts'
+
 export type Measures = Readonly<Record<string, string>>
 
-export interface Scenario {
+export interface Scenario extends Outage {
   readonly measures: Readonly<Record<Scope, Measures>>
-  // The status the outage answers with, 503 unless the scenario says.
-  readonly failureStatus?: number
-  // Fires once per stub lifetime: the stand-in counts the outage down
-  // and never re-arms it, so a scenario with an outage serves one run.
-  readonly failuresFirst?: number
   // How a new-code measure carries its value: SonarCloud's `periods`
   // array (the default), SonarQube Server's `period` object, or a
   // `bare` entry with no value at all.

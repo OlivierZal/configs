@@ -1,4 +1,3 @@
-import { type ChildProcess, spawn } from 'node:child_process'
 import { mkdtempSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -7,12 +6,14 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import {
   type RunResult,
+  type Stub,
   asArray,
   asRecord,
   asString,
   repoRoot,
   reusableCi,
   runScript,
+  startStub,
 } from '../helpers.ts'
 import {
   ANALYSED_SHA,
@@ -131,34 +132,16 @@ describe('the unanalysed-pull-request branch', () => {
 // The analysed path reads from a stand-in SonarCloud (see
 // `tests/sonar-stub.ts` for the scenario each project key plays).
 describe('against a stand-in SonarCloud', () => {
-  let stub: ChildProcess | undefined
+  let stub: Stub | undefined
   let sonarHost = ''
 
   beforeAll(async () => {
-    // The stand-in's stdin is piped: it exits when this end closes, so a
-    // killed worker leaves no server behind.
-    stub = spawn(process.execPath, [stubScript], {
-      stdio: ['pipe', 'pipe', 'inherit'],
-    })
-    const { stdout } = stub
-    sonarHost = await new Promise((resolve, reject) => {
-      stdout?.on('data', (chunk: Buffer) => {
-        const port = /PORT=(?<port>\d+)/v.exec(chunk.toString())?.groups?.port
-        if (port !== undefined) {
-          resolve(`http://127.0.0.1:${port}`)
-        }
-      })
-      stub?.on('error', reject)
-      // A stand-in that dies before it listens prints no port: name the
-      // exit instead of waiting on it.
-      stub?.on('exit', (code) => {
-        reject(new Error(`the stand-in exited with ${String(code)}`))
-      })
-    })
+    stub = await startStub(stubScript)
+    sonarHost = stub.host
   })
 
   afterAll(() => {
-    stub?.kill()
+    stub?.stop()
   })
 
   const analysedPullRequest = (

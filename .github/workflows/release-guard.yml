@@ -1,0 +1,84 @@
+# The release guard reads the runs of a CI workflow through the API,
+# under a job's own token, which a stand-in cannot prove: this workflow
+# runs the script for real whenever a pull request touches it, against
+# this repository's own runs. It holds two verdicts, each by its reason
+# and not by its exit code alone, so that a guard that can read nothing
+# fails both. The default branch's latest CI run is read here by
+# another route: the guard must name that run, and accept its commit
+# when the run succeeded or refuse it when it did not (it waits for a
+# run still going, so the run is read again afterwards). And the pull
+# request's own head, a commit the default branch never held, must be
+# refused for want of a run. The job holds `contents: read` and no
+# `actions: read`: the runs of a public repository are read without it,
+# which is why the reusable asks its callers for no grant.
+jobs:
+  rehearse:
+    name: Rehearse the release guard
+    permissions:
+      contents: read
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # No install, so no cache either: a job that installs nothing
+      # would save an empty one under the key the CI jobs share.
+      - uses: $/.github/actions/setup-node-and-install
+        with:
+          cache: none
+          install: 'false'
+      - env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          THIS_REPO: ${{ github.repository }}
+        run: |
+          runs="repos/$THIS_REPO/actions/workflows/ci.yml/runs"
+          # The newest run of this repository's branch: the platform
+          # lists a fork's branch of the same name with it.
+          latest=$(gh api "$runs?branch=$DEFAULT_BRANCH&per_page=20" --jq '
+            first(.workflow_runs[]
+              | select(.head_repository.full_name == env.THIS_REPO))
+            | "\(.id) \(.run_number) \(.head_sha)"')
+          read -r id number sha <<<"$latest"
+          if [[ -z $sha ]]; then
+            echo "::error::no run of ci.yml on $DEFAULT_BRANCH to read"
+            exit 1
+          fi
+          actual=0
+          verdict=$(HEAD_SHA=$sha bash scripts/check-release.sh 2>&1) ||
+            actual=$?
+          echo "$verdict"
+          state=$(gh api "repos/$THIS_REPO/actions/runs/$id" --jq \
+            '"\(.status)/\(.conclusion)"')
+          expected=1
+          if [[ $state == completed/success ]]; then
+            expected=0
+          fi
+          if [[ $actual != "$expected" ||
+            $verdict != *"run #$number of ci.yml"* ]]; then
+            echo "::error::$sha: run #$number is $state," \
+              "and the guard exited $actual without that verdict on it"
+            exit 1
+          fi
+          # A commit without a run is waited on like one whose run is
+          # late: the pause is shortened, not the reads.
+          refusal=$(POLL_SECONDS=1 HEAD_SHA=$PR_HEAD_SHA \
+            bash scripts/check-release.sh 2>&1) && refused=0 || refused=$?
+          echo "$refusal"
+          if [[ $refused == 0 || $refusal != *'never ran on'* ]]; then
+            echo "::error::$PR_HEAD_SHA was never on $DEFAULT_BRANCH:" \
+              "the guard must refuse it for want of a run"
+            exit 1
+          fi
+    timeout-minutes: 15
+name: Release guard
+on:
+  pull_request:
+    paths:
+      - .github/workflows/release-guard.yml
+      - .github/workflows/reusable-docs.yml
+      - .github/workflows/reusable-publish.yml
+      - scripts/check-release.sh
+permissions: {}

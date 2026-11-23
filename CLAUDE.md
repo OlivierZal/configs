@@ -543,6 +543,80 @@ longer turns it off with a reason that was false twice over.
   `tests/unit/reusable-release-workflows.test.ts` holds the shape the
   callers depend on: the call surface, the environments and grants, the
   dry-run gate and the dogfood reference.
+- The release judges the commit it publishes (9.0.0,
+  `scripts/check-release.sh`). Nothing in the publish job looked at the
+  code again: it installs without scripts, packs and publishes, and
+  `prepublishOnly` never runs for a tarball, so what stood behind a
+  release was the habit of cutting it from a green default branch. The
+  guard is the first command of the job, right after the install its
+  script is read from: the LATEST run of the caller's `ci.yml`, of the
+  default branch itself, for the release's commit, must have succeeded.
+  The latest, so that a commit whose CI has failed since is not
+  released. `reusable-docs.yml` holds the same step at the head of its
+  build job, so a release that is not published does not publish its
+  documentation either.
+
+  Five things are read on each run, the query naming the commit alone,
+  because the platform's listing answers for more than the branch it is
+  asked for (measured 2026-11-23 on public repositories). Its `branch`
+  filter goes by name: a pull request from a fork whose branch is called
+  `main` is listed under `main`, `head_repository` naming the fork, or
+  `null` once it is gone (vitest-dev/vitest, eslint/eslint). And a pull
+  request headed by the default branch, into another branch, gives runs
+  that carry that branch's name, its tip and the repository itself,
+  while they judge the merge into the other branch
+  (ant-design/ant-design, "merge master into feature"): only their
+  `event` tells them apart. Hence the commit, the workflow file, the
+  branch, the repository and the event.
+
+  A verdict that is not in yet is waited for, eight minutes at the most
+  (thirty-two reads, fifteen seconds apart), whether the run is still
+  going or not listed yet. The first design failed at once with the way
+  out, and the releases themselves refused it. Of the 145 releases the
+  five libraries published from 2026-08-15 to 2026-11-23, 119 went out
+  while the run of their commit was still going and then succeeded, 3
+  before that run was even listed (2, 4 and 68 seconds early), 19 after
+  a green run; the guard would have refused the 4 others, 2 cut on a
+  failed run (api-core v1.0.0, homey-kit v9.0.0) and 2 whose run failed
+  afterwards (configs v4.3.0 and v7.1.0). The CI of the eight
+  repositories takes two minutes at the median and 391 seconds at the
+  most (the last thirty green runs of each `main`). A commit still
+  without a run after the wait never had one coming: a tag on a commit
+  the default branch never held, or a commit the Dependabot lane merged,
+  whose push raises no workflow and which the daily run judges.
+
+  A prerelease may be cut from any branch of the repository, on any
+  event: the latest run that names its commit must have succeeded, and a
+  branch has such a run once it has a pull request. The rule is not a
+  courtesy: melcloud-api cut nine alphas in July 2026 from `release/…`
+  and feature branches, never from `main`, and none of those commits has
+  a CI run at all. Its alpha flow gains one step, a pull request on the
+  branch (a draft will do), and is rewritten at its adoption.
+
+  The guard asks its callers for no grant. The first draft claimed
+  `actions: read`, which made every caller change and the release a
+  major for that alone; the runs of a public repository are served to a
+  token that does not hold it, which the rehearsal measures on every run
+  (its job holds `contents: read` and nothing else). A private caller
+  would be refused, and the job would then have to claim the grant.
+
+  The script is proven four ways, none sufficient alone. Against a
+  stand-in GitHub (`tests/github-stub.ts`): thirty-seven mutations of
+  the rule, each killed by the suite, and the request timeout alone has
+  no test (no cheap one exists). In the workflows' shape
+  (`reusable-release-workflows.test.ts`): the step right after the
+  install, holding an environment and a script and nothing that softens
+  the verdict, thirteen mutations killed. For real on every pull request
+  that touches it (`release-guard.yml`): it must name the default
+  branch's latest CI run, read there by another route, and agree with
+  its state, then refuse the pull request's own head for want of a run;
+  both by their reason, so that a guard that reads nothing fails. And in
+  each caller before any release: the docs dry run dispatched after an
+  adoption starts on the same step, under the caller's own token.
+  Weighed and left: replaying the checks in the publish job. It would
+  restate what `reusable-ci.yml` runs in a second place, where the two
+  could drift, and its bar would be lower (no Sonar read-back on a
+  `release` event).
 
 ## Commands
 

@@ -429,6 +429,23 @@ scope, with a provenance attestation, in an environment named `npm`; a
 prerelease goes out under the dist-tag `next`. The job runs no build:
 your package must build when it is packed (a `prepare` script).
 
+Before it packs, the job judges the commit of the release: the latest
+run of your `ci.yml` on the default branch, for that commit, must have
+succeeded.
+
+| The commit of the release                      | What the job does                                       |
+| ---------------------------------------------- | ------------------------------------------------------- |
+| Its latest CI run on the default branch passed | Publishes                                               |
+| That run is still going, or not listed yet     | Waits for it, eight minutes at the most, then judges it |
+| That run failed or was cancelled               | Fails: re-run the CI run if it can pass, then this job  |
+| It still has no CI run on the default branch   | Fails: release a commit of that branch that has one     |
+
+A prerelease may be cut from any branch of your repository: the latest
+run of `ci.yml` for its commit must have succeeded, whichever branch it
+ran on. A branch gets such a run once it has a pull request. The job
+reads the runs without a permission of its own, which a public
+repository allows and a private one does not.
+
 ```yaml title=".github/workflows/docs.yml"
 jobs:
   docs:
@@ -455,9 +472,11 @@ permissions: {}
 
 The `Build docs` job runs `npm run build` then `npm run docs` and
 uploads the `docs` directory; the `Deploy docs` job publishes it to
-GitHub Pages in the `github-pages` environment. Run the workflow by
-hand with `dry-run` ticked to rehearse before a release: the site is
-built and packed but not deployed.
+GitHub Pages in the `github-pages` environment. The build judges the
+commit first, as the publish job does: a release that is not published
+does not publish its documentation either. Run the workflow by hand
+with `dry-run` ticked to rehearse before a release: the commit you run
+it on is judged, and the site is built and packed but not deployed.
 
 ### Reuse the smaller workflows
 
