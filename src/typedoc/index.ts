@@ -55,8 +55,10 @@ const staticTypedocOptions: Record<string, unknown> = {
   // Languages used in code fences across the README and TSDoc.
   // `javascript` covers `js` blocks inherited from the TypeScript
   // stdlib's `Error` example annotations, which propagate to every
-  // error subclass.
-  highlightLanguages: ['ini', 'javascript', 'shell', 'typescript'],
+  // error subclass; `yaml`, the workflow a README shows its callers.
+  // A fence in a language left out is published as plain text, under
+  // a warning that `treatWarningsAsErrors` below makes fatal.
+  highlightLanguages: ['ini', 'javascript', 'shell', 'typescript', 'yaml'],
   includeVersion: true,
   markdownLinkExternal: true,
   out: 'docs',
@@ -82,7 +84,9 @@ const staticTypedocOptions: Record<string, unknown> = {
   searchInComments: true,
   searchInDocuments: true,
   sourceLinkExternal: true,
-  treatValidationWarningsAsErrors: true,
+  // Every warning, the validation's included: typedoc exits 0 on one
+  // of its own accord, and a site it warned about is still published.
+  treatWarningsAsErrors: true,
   tsconfig: 'tsconfig.build.json',
   useFirstParagraphOfCommentAsSummary: true,
   validation: {

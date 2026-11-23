@@ -305,8 +305,10 @@ export default config
 The site is built from `tsconfig.build.json` into `docs/`, with
 `README.md` as its index page, and standard types link to their MDN
 pages. The build fails on an undocumented export (properties apart), on
-an invalid link and on a symbol that a signature names without
-exporting it.
+an invalid link, on a symbol that a signature names without exporting
+it, and on any other warning typedoc raises. One of them is a code
+block in a language the preset does not highlight: write your fences as
+`ini`, `js`, `sh`, `ts` or `yaml`.
 
 ### Test with vitest
 

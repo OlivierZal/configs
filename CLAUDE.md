@@ -485,6 +485,21 @@ longer turns it off with a reason that was false twice over.
   the tarball, once 5.0.0 is published: `npm view` of 5.0.0's
   `peerDependencies --json` must name exactly those three, and the
   apps' re-pin locks must lose `node_modules/typedoc`.
+- The typedoc preset makes EVERY warning fatal (`treatWarningsAsErrors`,
+  9.0.0), where it made the validation's alone. The case: homey-kit's
+  README gained a `yaml` fence on 2026-11-23, a workflow shown to its
+  callers; `highlightLanguages` did not list the language, typedoc
+  published the block as plain text under a warning, and the docs build
+  exited 0 through two reviews of that README. `yaml` joined the list in
+  the same change. Measured before the switch, with the option passed on
+  the command line: api-core, heatzy-api and melcloud-api build without
+  a warning, homey-kit with that one alone (exit 5), and an undocumented
+  export still fails under the wider option (exit 4), so the narrower
+  one is gone rather than kept beside it. A language a README starts to
+  use is added to the list here, in the package: the suite builds the
+  fixture with a `yaml` fence, asserts that the run says nothing and
+  that the block is highlighted, and runs a second build over a `toml`
+  fence that must fail.
 
 ## Reusable-workflow blind spot
 
