@@ -1392,6 +1392,20 @@ hand brings that day (Dependency doctrine, the aliases): the ledger's
 suite carries a dated line that asks, fails once the compiler has moved
 and fails too if the `ignore` of `.github/dependabot.yml`, which keeps
 the releases in between away, goes first.
+The hold has a cost, weighed on 2026-11-23:
+`@typescript-eslint/typescript-estree` 8.72.2 wants `minimatch`
+`^10.2.2`, and every 10.x is under GHSA-g3hv-75wg-m249 (moderate, fixed
+in 11.0.1), where 8.73.0 takes `^11.0.1`. It is a tolerated one
+(Dependency doctrine): the scope is development in the seven consumers,
+the patterns `minimatch` reads there are a repository's own globs, and
+in the five repositories that install typedoc, 0.28.20, its latest,
+wants `^10.2.5` all the same. It is what `npm audit` prints as eight
+`moderate` lines at every install, one per package of the chain. In the
+three apps the hold is the one thing that keeps the advisory there, and
+their alerts say otherwise: dismissed on 2026-11-09, before 8.73.0
+existed, they read that no latest release has left `^10`, and a
+dismissed alert cannot be edited (the API answers 409). The next
+dismissal says it.
 Holding the pin does not close the door: third-party plugins reach
 `@typescript-eslint/utils` through a caret, so a lock written from
 nothing takes 8.73 there, and its nightly, whatever this package pins —
