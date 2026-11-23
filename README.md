@@ -40,12 +40,9 @@ version and the tag your workflow references name.
 - `jiti`, which ESLint needs to load an `eslint.config.ts`, and
   `@vitest/coverage-v8`, which `vitest --coverage` needs: both in your
   `devDependencies` too.
-- TypeScript under the family's two names: the TypeScript 7 compiler as
-  `@typescript/native` (an alias of `npm:typescript`), which the CI and
-  the `typecheck` script below call by path, and TypeScript 6 as
-  `typescript` (an alias of `npm:@typescript/typescript6`), for the
-  tools that load it as a library. Add `@types/node`: both tsconfig
-  bases load it.
+- TypeScript 7 and TypeScript 6 side by side, under the two names the
+  presets expect, and `@types/node`, which both tsconfig bases load
+  (see "Installation").
 - A GitHub personal access token with the `read:packages` scope, to
   install from GitHub Packages.
 - For the CI, publish and docs workflows: GitHub.com and runner 2.336.0
@@ -75,6 +72,16 @@ The exact version matters: the presets report a range on an
 same version. The package is ES modules only and has no root entry:
 every import names a subpath.
 
+Install TypeScript under its two names, with `@types/node`:
+
+```sh title="typescript"
+npm install --save-dev @typescript/native@npm:typescript@7 typescript@npm:@typescript/typescript6@6 @types/node
+```
+
+`@typescript/native` is the TypeScript 7 compiler, which the CI and the
+`typecheck` script call by path. `typescript` is TypeScript 6, for the
+tools that load TypeScript as a library.
+
 ## Quick start
 
 A published library, linted, formatted and compiled with the family's
@@ -92,8 +99,16 @@ const config: Config[] = defineConfig([
 export default config
 ```
 
-```jsonc title="package.json"
-{ "prettier": "@olivierzal/configs/prettier" }
+```json title="package.json"
+{
+  "prettier": "@olivierzal/configs/prettier",
+  "scripts": {
+    "format": "prettier . --check",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "typecheck": "node ./node_modules/@typescript/native/bin/tsc --noEmit"
+  }
+}
 ```
 
 ```jsonc title="tsconfig.json"
@@ -103,6 +118,9 @@ export default config
   "include": ["*.config.ts", "src", "tests"],
 }
 ```
+
+Those four scripts are the ones the family CI runs (see "Run the
+family CI").
 
 ## Usage
 
@@ -228,8 +246,8 @@ in the `tsconfig.build.json` that the typedoc preset reads.
 ### Type-check your own declaration files
 
 Both bases set `skipLibCheck: true`, which also skips the `.d.ts` files
-you write yourself. When the program of your `tsconfig.json` loads one,
-add a second program over them:
+you write yourself. When your `tsconfig.json` includes one, add a
+second tsconfig that checks them:
 
 ```jsonc title="tsconfig.declarations.json"
 {
@@ -245,9 +263,9 @@ node ./node_modules/@typescript/native/bin/tsc --noEmit && node ./node_modules/@
 ```
 
 The `Check` job of the family CI fails when such a `.d.ts` is missing
-from that second program, or when `typecheck` does not name it. To
+from that second tsconfig, or when `typecheck` does not name it. To
 replace a package's types, map the package to your declaration file
-through `paths` rather than an ambient `declare module`: the program
+through `paths` rather than an ambient `declare module`: the compiler
 then reaches your file without loading the package's own `.d.ts`.
 
 ### Document a library with typedoc
@@ -275,15 +293,20 @@ const config = typedocBase({
 export default config
 ```
 
-Those four options are required: the `@category` names in the order the
-site lists them, the URL it is served from, its title and its header
-links by label. Two are optional: `entryPoints`, the modules to document
-(default `['src/index.ts']`), and `intentionallyNotExported`, the
-symbols a published signature may name without exporting them. The site
-is built from `tsconfig.build.json` into `docs/`, with `README.md` as
-its index page, and standard types link to their MDN pages. The build
-fails on an undocumented export (properties apart), on an invalid link
-and on a symbol that a signature names without exporting it.
+| Option                     | Required                          | What it does                                                                                    |
+| -------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `categoryOrder`            | yes                               | The `@category` names, in the order the site lists them. One left out comes after the last one. |
+| `hostedBaseUrl`            | yes                               | The URL the site is served from.                                                                |
+| `name`                     | yes                               | The site's title.                                                                               |
+| `navigationLinks`          | yes                               | The header links, by label.                                                                     |
+| `entryPoints`              | no: `['src/index.ts']` by default | The modules to document.                                                                        |
+| `intentionallyNotExported` | no                                | The symbols a published signature may name without exporting them.                              |
+
+The site is built from `tsconfig.build.json` into `docs/`, with
+`README.md` as its index page, and standard types link to their MDN
+pages. The build fails on an undocumented export (properties apart), on
+an invalid link and on a symbol that a signature names without
+exporting it.
 
 ### Test with vitest
 
@@ -367,6 +390,7 @@ With `SONAR_TOKEN` set, it uploads the analysis to SonarCloud on a push,
 on a scheduled run and on a pull request from a branch of the same
 repository that Dependabot did not open, and fails when SonarCloud's own
 quality gate rejects it.
+
 The `Sonar` job then requires, on the analysis of the run's own commit,
 zero issues, zero duplication, 100 % coverage and every security hotspot
 reviewed: on new code for a pull request, on new and overall code
@@ -378,25 +402,60 @@ without the token.
 
 ### Release a library
 
-Two more callers run on a published GitHub release, each one job in the
-shape of the CI caller, with no secret.
+Two more workflow files of yours run on a published GitHub release.
+Each calls one reusable workflow, as `ci.yml` does above, and needs no
+secret.
 
-`publish.yml` references `reusable-publish.yml` and grants
-`attestations: write`, `contents: read`, `id-token: write` and
-`packages: write`. It publishes your package to GitHub Packages under
-the `@olivierzal` scope, with a provenance attestation, in an
-environment named `npm`; a prerelease goes out under the dist-tag
-`next`. The job runs no build: your package must build when it is
-packed (a `prepare` script).
+```yaml title=".github/workflows/publish.yml"
+jobs:
+  publish:
+    permissions:
+      attestations: write
+      contents: read
+      id-token: write
+      packages: write
+    uses: OlivierZal/configs/.github/workflows/reusable-publish.yml@<commit sha> # vX.Y.Z
+name: Publish package to GitHub Packages
+on:
+  release:
+    types: [published]
+permissions: {}
+```
 
-`docs.yml` references `reusable-docs.yml` and grants `contents: read`,
-`id-token: write`, `packages: read` and `pages: write`. The `Build docs`
-job runs `npm run build` then `npm run docs` and uploads the `docs`
-directory; the `Deploy docs` job publishes it to GitHub Pages in the
-`github-pages` environment. With the input `dry-run: true` the site is
-built and packed but not deployed. To rehearse before a release, give
-the caller a `workflow_dispatch` trigger with a boolean `dry-run` input
-and pass it on as `dry-run: ${{ inputs.dry-run || false }}`.
+It publishes your package to GitHub Packages under the `@olivierzal`
+scope, with a provenance attestation, in an environment named `npm`; a
+prerelease goes out under the dist-tag `next`. The job runs no build:
+your package must build when it is packed (a `prepare` script).
+
+```yaml title=".github/workflows/docs.yml"
+jobs:
+  docs:
+    permissions:
+      contents: read
+      id-token: write
+      packages: read
+      pages: write
+    uses: OlivierZal/configs/.github/workflows/reusable-docs.yml@<commit sha> # vX.Y.Z
+    with:
+      dry-run: ${{ inputs.dry-run || false }}
+name: Generate & deploy docs
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        default: false
+        description: Build the site without deploying it.
+        type: boolean
+permissions: {}
+```
+
+The `Build docs` job runs `npm run build` then `npm run docs` and
+uploads the `docs` directory; the `Deploy docs` job publishes it to
+GitHub Pages in the `github-pages` environment. Run the workflow by
+hand with `dry-run` ticked to rehearse before a release: the site is
+built and packed but not deployed.
 
 ### Reuse the smaller workflows
 
