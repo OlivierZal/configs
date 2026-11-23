@@ -22,7 +22,12 @@ const INSTALL_ACTION = 'setup-node-and-install'
 // Every job that reads a script out of the package. Kept explicit rather
 // than derived: a new entry is rare, and appearing here is the moment to
 // confirm the job installs.
-const RESOLVING_JOBS = ['reusable-ci.yml#check', 'reusable-ci.yml#sonar']
+const RESOLVING_JOBS = [
+  'reusable-ci.yml#check',
+  'reusable-ci.yml#sonar',
+  'reusable-docs.yml#build',
+  'reusable-publish.yml#publish',
+]
 
 interface Job {
   readonly id: string

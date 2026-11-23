@@ -1,14 +1,17 @@
-# The published libraries' release pipeline, callable: pack, attest the
-# tarball's provenance, publish it to GitHub Packages. Derived from the
-# four identical publish.yml files the libraries carried (2026-09-07) —
-# the same job, steps and pins, with `workflow_call` in place of the
-# release trigger the caller keeps, minus an `IS_PRERELEASE` env entry
-# nothing read. The `npm` environment and the
-# `id-token: write` the attestation needs travel with the job; the
-# caller grants them and nothing more. This repo's own publish.yml calls
-# it through `$/`, so the path runs here on every release of this
-# package — the one release-only reusable a run from this repo can
-# exercise (CLAUDE.md, the reusable-workflow blind spot).
+# The published libraries' release pipeline, callable: judge the commit,
+# pack, attest the tarball's provenance, publish it to GitHub Packages.
+# Derived from the four identical publish.yml files the libraries
+# carried (2026-09-07) — the same job, steps and pins, with
+# `workflow_call` in place of the release trigger the caller keeps,
+# minus an `IS_PRERELEASE` env entry nothing read (the guard reads one
+# since 9.0.0). The `npm` environment and the `id-token: write` the
+# attestation needs travel with the job; the caller grants them and
+# nothing more. The guard asks for no grant of its own: the runs of a
+# public repository are read without `actions: read`, and no caller is
+# private. This repo's own publish.yml calls it through `$/`, so the
+# path runs here on every release of this package — the one
+# release-only reusable a run from this repo can exercise (CLAUDE.md,
+# the reusable-workflow blind spot).
 concurrency:
   cancel-in-progress: false
   group: publish
@@ -34,6 +37,22 @@ jobs:
           npm-token: ${{ secrets.GITHUB_TOKEN }}
           registry-url: https://npm.pkg.github.com
           scope: '@olivierzal'
+      # Nothing in this job looks at the code again: it installs without
+      # scripts, packs and publishes. So the commit must be one its CI
+      # has judged, on the default branch (on any branch of the
+      # repository for a prerelease), and the pipeline says so itself
+      # rather than leave it to the habit of releasing from a green
+      # branch.
+      - env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.sha }}
+          IS_PRERELEASE: ${{ github.event.release.prerelease }}
+          THIS_REPO: ${{ github.repository }}
+        run: |
+          script=node_modules/@olivierzal/configs/scripts/check-release.sh
+          [ -f "$script" ] || script=scripts/check-release.sh
+          bash "$script"
       # Publish the exact tarball we attest.
       - run: npm pack
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2

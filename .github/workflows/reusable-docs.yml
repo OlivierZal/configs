@@ -11,7 +11,9 @@
 # and watches the build half succeed on the reusable before a release
 # ever reaches the deploy half (CLAUDE.md, the reusable-workflow blind
 # spot — no run from this repo exercises these jobs, which document
-# nothing).
+# nothing). That half starts on the release guard, which the dry run
+# therefore proves in the caller, under the caller's own token, before
+# a release depends on it.
 concurrency:
   cancel-in-progress: false
   group: pages
@@ -31,6 +33,21 @@ jobs:
       - uses: $/.github/actions/setup-node-and-install
         with:
           npm-token: ${{ secrets.GITHUB_TOKEN }}
+      # A release publishes its documentation as it publishes its
+      # package, from a commit its CI has judged (reusable-publish.yml
+      # holds the same step). Unconditional, so that a dry run rehearses
+      # it: dispatched on the default branch, it judges that branch's
+      # head, and from a tag, the commit a release would.
+      - env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.sha }}
+          IS_PRERELEASE: ${{ github.event.release.prerelease }}
+          THIS_REPO: ${{ github.repository }}
+        run: |
+          script=node_modules/@olivierzal/configs/scripts/check-release.sh
+          [ -f "$script" ] || script=scripts/check-release.sh
+          bash "$script"
       - run: npm run build
       - run: npm run docs
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0

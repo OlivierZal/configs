@@ -1,12 +1,9 @@
 // A SonarCloud stand-in for the `check-sonar-gate.sh` suites: the three
 // read-back endpoints answered from the scenario the project key names
 // (`tests/sonar-scenarios.ts`), so the script under test runs
-// unmodified against a local `SONAR_HOST_URL`. It is a process of its
-// own because the suites run the script synchronously, and a server
-// inside the test process could not answer while that call blocks.
-// Prints the port it listens on, then serves until it is killed or its
-// stdin closes.
-import { type IncomingMessage, createServer } from 'node:http'
+// unmodified against a local `SONAR_HOST_URL`. The server itself is
+// `tests/stub-server.ts`'s.
+import type { IncomingMessage } from 'node:http'
 
 import {
   type Measures,
@@ -17,20 +14,11 @@ import {
   PULL_REQUEST_KEY,
   scenarios,
 } from './sonar-scenarios.ts'
-
-type Reply = readonly [status: number, body: unknown]
+import { type Reply, createOutage, HTTP, serve } from './stub-server.ts'
 
 // Listed FIRST in both listings, so position and identity disagree: a
 // lookup by key or by name finds the analysis, the first entry does not.
 const DECOY_SHA = 'd'.repeat(40)
-
-const HTTP = {
-  badRequest: 400,
-  notFound: 404,
-  ok: 200,
-  unauthorized: 401,
-  unavailable: 503,
-}
 
 const errors = (message: string): unknown => ({ errors: [{ msg: message }] })
 
@@ -131,7 +119,7 @@ const routes = new Map<string, Route>([
   ],
 ])
 
-const failuresLeft = new Map<string, number>()
+const outageOf = createOutage()
 
 // The refusals that precede any route: a token the scenario demands
 // and did not get, the status it always answers with, and the outage
@@ -150,15 +138,8 @@ const refuse = (
   if (scenario.status !== undefined) {
     return [scenario.status, errors(`always ${String(scenario.status)}`)]
   }
-  const left = failuresLeft.get(project) ?? scenario.failuresFirst ?? 0
-  if (left > 0) {
-    failuresLeft.set(project, left - 1)
-    return [
-      scenario.failureStatus ?? HTTP.unavailable,
-      errors('try again later'),
-    ]
-  }
-  return undefined
+  const outage = outageOf(project, scenario)
+  return outage === undefined ? undefined : [outage, errors('try again later')]
 }
 
 const answer = (request: IncomingMessage): Reply => {
@@ -179,23 +160,4 @@ const answer = (request: IncomingMessage): Reply => {
     : route(scenario, url)
 }
 
-const server = createServer((request, response) => {
-  const [status, body] = answer(request)
-  response.writeHead(status, { 'content-type': 'application/json' })
-  response.end(JSON.stringify(body))
-})
-
-server.listen(0, '127.0.0.1', () => {
-  const address = server.address()
-  const port =
-    typeof address === 'object' && address !== null ? address.port : 0
-  process.stdout.write(`PORT=${String(port)}\n`)
-})
-
-// Exits with the test process even when `afterAll` never runs (a
-// crashed or signalled worker): the OS closes its end of stdin as it
-// dies.
-process.stdin.on('end', () => {
-  server.close()
-})
-process.stdin.resume()
+serve(answer)
