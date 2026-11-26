@@ -189,7 +189,24 @@
  * reduces to one of their classes; melcloud-api 6 and heatzy-api 1, a
  * helper meant for doubles taken for a non-null assertion, and a
  * foreign transport handed over on purpose), and
- * `consistent-type-imports` narrows the place it reports at.
+ * `consistent-type-imports` narrows the place it reports at;
+ * 2026-11-26, for 9.0.1 (a pack of the bumped tree in clones of the
+ * three apps, the consumers that lint HTML): html-eslint 0.69 — the two
+ * installs expose the same 66 rules, schemas and five shared configs,
+ * so no table moves; the release is fixes. Two reach rules the block
+ * runs: `no-duplicate-id` judges the content of each `<template>` as a
+ * tree of its own, and `no-invalid-attr-value` stops refusing a
+ * duration on `<time datetime>` and an empty `contenteditable`
+ * (html-standard 0.0.14). The five pages lint clean before and after
+ * and hold none of the three; on a probe page five reports fall and
+ * none appears. The rest lands on rules the block turns off (`indent`,
+ * `require-closing-tags`), on a ledgered refusal
+ * (`no-extra-spacing-text`) or on a fixer no HTML file reaches
+ * (`require-button-type` in a template literal). Its guard against
+ * malformed attributes is partial: an attribute with no name stopped
+ * the run in `no-obsolete-attrs` and now stops it in
+ * `no-duplicate-attrs`, so such a page fails the lint either way, with
+ * its file and line.
  */
 export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@eslint/css': '2.0',
@@ -197,7 +214,7 @@ export const AUDITED_PLUGIN_VERSIONS: Readonly<Record<string, string>> = {
   '@eslint/json': '2.1',
   '@eslint/markdown': '9.0',
   '@eslint-community/eslint-plugin-eslint-comments': '4.8',
-  '@html-eslint/eslint-plugin': '0.68',
+  '@html-eslint/eslint-plugin': '0.69',
   '@stylistic/eslint-plugin': '6.0',
   '@vitest/eslint-plugin': '1.6',
   eslint: '10.15',

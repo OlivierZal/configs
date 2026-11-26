@@ -1444,6 +1444,28 @@ the audited packages and eslint's move (Pin doctrine), the scheduled
 run (Sonar gate doctrine) — and the lib symbols the typedoc base no
 longer linked (Dependencies nothing imports).
 
+9.0.1 reads html-eslint 0.69 (2026-11-26), measured with a pack of the
+bumped tree in clones of the three apps, the only consumers that lint
+HTML. Nothing moves in the tables: the two installs expose the same 66
+rules, schemas and five shared configs, and the release is fixes. Two
+reach rules the block runs. `no-duplicate-id` judges the content of
+each `<template>` as a tree of its own: an id repeated between a
+template and the document, or between two templates, is no longer
+reported, one repeated inside a template still is. And
+`no-invalid-attr-value` stops refusing two valid values (html-standard
+0.0.14), a duration on `<time datetime>` and an empty
+`contenteditable`. The five pages lint clean before and after and hold
+none of the three; on a probe page five reports fall, one is reworded
+and none appears. The rest lands on rules the block turns off
+(`indent`, `require-closing-tags`), on a ledgered refusal
+(`no-extra-spacing-text`) or on a fixer no HTML file reaches
+(`require-button-type` in a template literal). Its guard against
+malformed attributes is partial: an attribute with no name
+(`<div ="x">`) stopped the run in `no-obsolete-attrs` and now stops it
+in `no-duplicate-attrs`, both recommended, so such a page fails the
+lint either way, with its file and line. A table move and nothing
+else: a patch.
+
 Maintenance is a gate — an unmaintained plugin is refused regardless of
 coverage — and the claim is scoped to what was measured: the three
 long-standing refusals (n, promise, security) are active under
